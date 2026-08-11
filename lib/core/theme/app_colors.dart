@@ -64,4 +64,21 @@ class AppColors {
   static const textSecondary = Color(0xFF374151);
   static const textMuted = Color(0xFF6B7280);
   static const textFaint = Color(0xFF9CA3AF);
+
+  // ⬅️ nuevo — usados en la pantalla de Gestión de Usuarios (admin_home_screen.dart)
+  static const searchBg = Color(0xFFF9FAFB);
+  static const iconTotal = navy;
+
+  static const badgeOpBlueBg = Color(0xFFE0ECFF);
+  static const badgeOpBlueText = Color(0xFF2563EB);
+
+  /// Paleta rotativa para los avatares circulares de la lista de usuarios.
+  static const List<Map<String, Color>> avatarPalette = [
+    {'bg': Color(0xFFDBEAFE), 'text': Color(0xFF1D4ED8)},
+    {'bg': Color(0xFFFCE7F3), 'text': Color(0xFFBE185D)},
+    {'bg': Color(0xFFD1FAE5), 'text': Color(0xFF065F46)},
+    {'bg': Color(0xFFFEF9C3), 'text': Color(0xFF92400E)},
+    {'bg': Color(0xFFEDE9FE), 'text': Color(0xFF5B21B6)},
+    {'bg': Color(0xFFFEE2E2), 'text': Color(0xFF991B1B)},
+  ];
 }
