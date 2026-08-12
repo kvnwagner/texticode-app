@@ -11,4 +11,5 @@ class ApiConstants {
   static const String usuarios = '$baseUrl/usuarios';
   static const String auth = '$baseUrl/auth';
   static const String ordenes = '$baseUrl/ordenes'; // ⬅️ nuevo — Gestión de Producción
+  static const String comprobantes = '$baseUrl/comprobantes';
 }

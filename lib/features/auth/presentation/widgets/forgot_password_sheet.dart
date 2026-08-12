@@ -70,7 +70,7 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.navy.withOpacity(0.08),
+                color: AppColors.navy.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Icon(Icons.mail_outline, color: AppColors.navy, size: 20),

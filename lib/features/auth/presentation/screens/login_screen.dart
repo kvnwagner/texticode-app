@@ -144,12 +144,12 @@ class _LoginCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.45),
+            color: Colors.black.withValues(alpha: 0.45),
             blurRadius: 64,
             offset: const Offset(0, 24),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
+            color: Colors.black.withValues(alpha: 0.25),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -320,8 +320,8 @@ class _LoginCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     Expanded(child: Divider(color: AppColors.inputBorder)),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 10),
@@ -347,7 +347,7 @@ class _LoginCard extends StatelessWidget {
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ).copyWith(
-                      backgroundColor: MaterialStateProperty.resolveWith(
+                      backgroundColor: WidgetStateProperty.resolveWith(
                         (states) => AppColors.navy,
                       ),
                     ),
@@ -417,7 +417,7 @@ class _Logo extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: const Color(0xFFF8FAFC),
-        border: Border.all(color: AppColors.navy.withOpacity(0.12), width: 2),
+        border: Border.all(color: AppColors.navy.withValues(alpha: 0.12), width: 2),
       ),
       alignment: Alignment.center,
       child: ClipOval(

@@ -172,7 +172,7 @@ class _ActionTile extends StatelessWidget {
               width: 32,
               height: 32,
               decoration:
-              BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+              BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
               child: Icon(icon, size: 16, color: color),
             ),
             const SizedBox(width: 16),

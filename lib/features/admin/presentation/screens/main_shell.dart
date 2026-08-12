@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import 'admin_home_screen.dart';
-import 'perfil_screen.dart'; // ⬅️ nuevo
-import 'produccion_screen.dart'; // ⬅️ nuevo — Gestión de Producción
-import 'produccion_screen.dart'; // ⬅️ nuevo — Gestión de Producción
+import 'perfil_screen.dart'; // ⬅️ nuevo (compañero)
+import 'produccion_screen.dart'; // ⬅️ nuevo — Gestión de Producción (compañero)
+import 'clientes_screen.dart'; // ⬅️ nuevo (tu rama)
 
 /// Contenedor principal del panel admin: header + sub-tabs superiores
 /// (Usuarios | Clientes | Operarios) + dock inferior de 5 iconos.
@@ -49,9 +49,6 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
-  // ⬅️ nuevo — antes vivía dentro de admin_home_screen.dart. Ahora está aquí
-  // para que quede ARRIBA de las sub-tabs (Usuarios | Clientes | Operarios).
-  // Se quitó la campana de notificaciones, tal como pediste.
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -80,7 +77,7 @@ class _MainShellState extends State<MainShell> {
             ),
           ),
           const SizedBox(width: 10),
-          Expanded(
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -88,14 +85,14 @@ class _MainShellState extends State<MainShell> {
                 Text('Gestión de Usuarios',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary)),
                 Text('Administración y control de accesos',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                    style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
               ],
             ),
           ),
@@ -114,7 +111,6 @@ class _MainShellState extends State<MainShell> {
               child: const Icon(Icons.logout, size: 16, color: AppColors.errorText),
             ),
           ),
-          // ⬅️ campana de notificaciones eliminada, tal como pediste.
         ],
       ),
     );
@@ -127,8 +123,7 @@ class _MainShellState extends State<MainShell> {
           case 0:
             return const AdminHomeScreen();
           case 1:
-            return const _SectionPlaceholder(
-                title: 'Gestión de Clientes', icon: Icons.groups_outlined);
+            return const ClientesScreen(); // ⬅️ antes: _SectionPlaceholder(title: 'Gestión de Clientes', ...)
           case 2:
           default:
             return const _SectionPlaceholder(
@@ -201,7 +196,7 @@ class _MainShellState extends State<MainShell> {
           border: Border.all(color: AppColors.cardBorder),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -247,16 +242,22 @@ class _SectionPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.pageBg,
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 40, color: AppColors.textFaint),
-          const SizedBox(height: 12),
-          Text(title, style: const TextStyle(fontSize: 14, color: AppColors.textFaint)),
-          const SizedBox(height: 4),
-          const Text('Próximamente', style: TextStyle(fontSize: 11, color: AppColors.textFaint)),
-        ],
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 48, color: AppColors.textFaint),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

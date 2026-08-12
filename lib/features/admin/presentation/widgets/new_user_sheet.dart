@@ -145,10 +145,10 @@ class _NewUserSheetState extends State<NewUserSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('ROL', style: _labelStyle),
+        const Text('ROL', style: _labelStyle),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: _rolSeleccionado,
+          initialValue: _rolSeleccionado,
           decoration: _dec('Selecciona un rol'),
           icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textFaint),
           style: const TextStyle(fontSize: 13, color: AppColors.inputText),
