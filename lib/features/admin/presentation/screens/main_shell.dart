@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import 'admin_home_screen.dart';
+import 'perfil_screen.dart'; // ⬅️ nuevo
+import 'produccion_screen.dart'; // ⬅️ nuevo — Gestión de Producción
+import 'produccion_screen.dart'; // ⬅️ nuevo — Gestión de Producción
 
 /// Contenedor principal del panel admin: header + sub-tabs superiores
 /// (Usuarios | Clientes | Operarios) + dock inferior de 5 iconos.
@@ -132,8 +135,7 @@ class _MainShellState extends State<MainShell> {
                 title: 'Gestión de Operarios', icon: Icons.engineering_outlined);
         }
       case 1:
-        return const _SectionPlaceholder(
-            title: 'Inventario', icon: Icons.inventory_2_outlined);
+        return const ProduccionScreen(); // ⬅️ antes: _SectionPlaceholder(Inventario)
       case 2:
         return const _SectionPlaceholder(
             title: 'Estadísticas', icon: Icons.bar_chart_rounded);
@@ -142,8 +144,7 @@ class _MainShellState extends State<MainShell> {
             title: 'Configuración', icon: Icons.settings_outlined);
       case 4:
       default:
-        return const _SectionPlaceholder(
-            title: 'Perfil', icon: Icons.person_outline_rounded);
+        return const PerfilScreen(); // ⬅️ nuevo — antes era _SectionPlaceholder
     }
   }
 
