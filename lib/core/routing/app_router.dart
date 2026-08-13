@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../features/auth/domain/models/user_role.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
-import '../../features/admin/presentation/screens/admin_home_screen.dart';
+import '../../features/admin/presentation/screens/main_shell.dart'; // ⬅️ nuevo
 import '../../features/operario/presentation/screens/operario_home_screen.dart';
 import '../../features/cliente/presentation/screens/cliente_home_screen.dart';
 
@@ -31,7 +31,7 @@ class AppRouter {
   static Widget _homeForRole(UserRole? role) {
     switch (role) {
       case UserRole.admin:
-        return const AdminHomeScreen();
+        return const MainShell(); // ⬅️ antes: AdminHomeScreen()
       case UserRole.operario:
         return const OperarioHomeScreen();
       case UserRole.cliente:
