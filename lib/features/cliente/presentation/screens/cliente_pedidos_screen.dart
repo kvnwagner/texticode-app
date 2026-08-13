@@ -1,0 +1,229 @@
+import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../data/cliente_orders_data.dart';
+import '../widgets/cliente_shared_widgets.dart';
+
+class ClientePedidosScreen extends StatefulWidget {
+  final VoidCallback onLogout;
+  const ClientePedidosScreen({super.key, required this.onLogout});
+
+  @override
+  State<ClientePedidosScreen> createState() => _ClientePedidosScreenState();
+}
+
+class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
+  String _query = '';
+  String _filter = 'Todos';
+
+  static const filters = ['Todos', 'En progreso', 'Completado', 'Pausado'];
+
+  Color _filterColor(String f) {
+    switch (f) {
+      case 'En progreso':
+        return ClienteColors.statusInProgress;
+      case 'Completado':
+        return ClienteColors.statusDone;
+      case 'Pausado':
+        return ClienteColors.statusPaused;
+      default:
+        return AppColors.navy;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = ClienteOrdersData.orders.where((o) {
+      final matchQ = o.name.toLowerCase().contains(_query.toLowerCase()) ||
+          o.id.toLowerCase().contains(_query.toLowerCase());
+      final matchF = _filter == 'Todos' || o.status == _filter;
+      return matchQ && matchF;
+    }).toList();
+
+    return Column(
+      children: [
+        ClienteLogoHeader(
+          title: 'Mis Pedidos',
+          subtitle: 'Seguimiento y estado',
+          onLogout: widget.onLogout,
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Container(
+            height: 42,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: AppColors.inputBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.inputBorder, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.search, size: 16, color: AppColors.textFaint),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    onChanged: (v) => setState(() => _query = v),
+                    decoration: const InputDecoration(
+                      hintText: 'Buscar por nombre o número...',
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                    style: const TextStyle(fontSize: 13, color: AppColors.inputText),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 40,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: filters.map((f) {
+              final active = _filter == f;
+              final col = _filterColor(f);
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () => setState(() => _filter = f),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: active ? col : col.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: active ? col : col.withValues(alpha: 0.25)),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(f,
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: active ? Colors.white : col)),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: filtered.isEmpty
+              ? const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.search_off, size: 32, color: AppColors.textFaint),
+                SizedBox(height: 8),
+                Text('No se encontraron pedidos',
+                    style: TextStyle(fontSize: 13, color: AppColors.textFaint)),
+              ],
+            ),
+          )
+              : ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            itemCount: filtered.length,
+            itemBuilder: (context, i) {
+              final o = filtered[i];
+              final barColor = _filterColor(o.status);
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.pageBg,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(o.name,
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary)),
+                              const SizedBox(height: 2),
+                              Text('${o.id} · Kevin A. Castro',
+                                  style: const TextStyle(
+                                      fontSize: 10, color: AppColors.textFaint)),
+                            ],
+                          ),
+                        ),
+                        ClienteStatusBadge(status: o.status),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ClienteProgressBar(pct: o.pct, color: barColor),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Avance',
+                            style: TextStyle(fontSize: 10, color: AppColors.textFaint)),
+                        Text('${o.pct}%',
+                            style: TextStyle(
+                                fontSize: 10, fontWeight: FontWeight.w800, color: barColor)),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.only(top: 10),
+                      decoration: const BoxDecoration(
+                        border: Border(top: BorderSide(color: AppColors.cardBorder)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('MATERIAL',
+                                    style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.textFaint)),
+                                Text(o.material,
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textSecondary)),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('ENTREGA ESTIMADA',
+                                    style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.textFaint)),
+                                Text(o.delivery,
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textSecondary)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
