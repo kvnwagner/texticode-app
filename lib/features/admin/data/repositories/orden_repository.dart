@@ -102,6 +102,27 @@ class OrdenRepository {
     }
   }
 
+  Future<void> reportarAvance({
+    required Orden orden,
+    required int cantidadActual,
+  }) async {
+    final nuevaCantidad = cantidadActual.clamp(0, orden.cantidadTotal);
+    await actualizarOrden(
+      id: orden.idOrden,
+      idCliente: orden.idCliente,
+      producto: orden.producto,
+      descripcion: orden.descripcion,
+      materiales: orden.materiales,
+      cantidadTotal: orden.cantidadTotal,
+      cantidadActual: nuevaCantidad,
+      idOperario: orden.idOperario,
+      prioridad: orden.prioridad,
+      estado:
+          nuevaCantidad >= orden.cantidadTotal ? 'Completada' : 'En proceso',
+      fechaLimite: orden.fechaLimite ?? '',
+    );
+  }
+
   /// Delete definitivo. Úsalo con cuidado.
   Future<void> eliminarOrden(int id) async {
     final res = await http.delete(Uri.parse('${ApiConstants.ordenes}/$id'));

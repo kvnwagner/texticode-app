@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../admin/data/models/orden_model.dart';
+import '../../../admin/data/repositories/orden_repository.dart';
 import 'perfil_screen.dart';
+import 'tareas_asignadas_view.dart';
+import 'reportar_avances_view.dart';
 
-/// Home / shell del rol operario.
-///
-/// TODO PARA EL EQUIPO: cada tab de abajo (menos "Perfil", que ya está
-/// terminado) es un PLACEHOLDER "En construcción". Cuando alguien vaya a
-/// construir esa pantalla:
-///   1. Crea el archivo en lib/features/operario/presentation/screens/
-///   2. Reemplaza el `_SectionPlaceholder(...)` correspondiente en
-///      `_buildBody()` por tu widget real (mismo patrón que se hizo con
-///      `AdminHomeScreen` dentro de `MainShell`).
-/// No borres el dock ni los íconos: son la guía de qué falta por hacer.
 class OperarioHomeScreen extends StatefulWidget {
   const OperarioHomeScreen({super.key});
 
@@ -20,28 +14,71 @@ class OperarioHomeScreen extends StatefulWidget {
 }
 
 class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
-  int _bottomIndex = 0; // 0 Tareas · 1 Escaneo · 2 Historial · 3 Configuración · 4 Perfil
+  final _repo = OrdenRepository();
+  int _bottomIndex = 1;
+  List<Orden> _ordenes = [];
+  bool _loading = true;
+  String? _error;
 
-  // ⚠️ Nombres/íconos tentativos — el equipo los puede ajustar según
-  // las pantallas reales que se definan para el rol Operario.
   static const _bottomIcons = [
     Icons.assignment_outlined,
-    Icons.qr_code_scanner_outlined,
-    Icons.history_outlined,
-    Icons.settings_outlined,
+    Icons.trending_up_rounded,
     Icons.person_outline_rounded,
   ];
 
-  static const _bottomLabels = [
-    'Tareas',
-    'Escaneo',
-    'Historial',
-    'Configuración',
-    'Perfil',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
 
-  void _logout() {
-    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+  Future<void> _cargar() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final data = await _repo.getOrdenes();
+      if (!mounted) return;
+      setState(() => _ordenes = data);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _reportarAvance(Orden orden) async {
+    final updated = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ReportProgressSheet(
+        orden: orden,
+        onSubmit: (cantidad) => _repo.reportarAvance(
+          orden: orden,
+          cantidadActual: cantidad,
+        ),
+      ),
+    );
+    if (updated == true) _cargar();
+  }
+
+  Future<void> _pausar(Orden orden) async {
+    try {
+      await _repo.actualizarEstado(orden.idOrden, 'Pendiente');
+      await _cargar();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Orden pausada.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
   }
 
   @override
@@ -57,16 +94,29 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
   }
 
   Widget _buildBody() {
-    if (_bottomIndex == 4) return const PerfilScreen();
-    return _SectionPlaceholder(
-      title: _bottomLabels[_bottomIndex],
-      icon: _bottomIcons[_bottomIndex],
-      onLogout: _logout,
-    );
+    switch (_bottomIndex) {
+      case 0:
+        return TareasAsignadasView(
+          ordenes: _ordenes,
+          loading: _loading,
+          error: _error,
+          onRefresh: _cargar,
+        );
+      case 2:
+        return const PerfilScreen();
+      case 1:
+      default:
+        return ReportarAvancesView(
+          ordenes: _ordenes,
+          loading: _loading,
+          error: _error,
+          onRefresh: _cargar,
+          onReport: _reportarAvance,
+          onPause: _pausar,
+        );
+    }
   }
 
-  // Mismo dock (tamaño, radios, animación) que usa MainShell en Admin,
-  // para que la navegación se sienta igual entre roles.
   Widget _buildDock() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
@@ -78,7 +128,7 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
           border: Border.all(color: AppColors.cardBorder),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -107,76 +157,6 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
             );
           }),
         ),
-      ),
-    );
-  }
-}
-
-/// Placeholder "En construcción" para los tabs que todavía no tiene el
-/// rol operario. Incluye el mismo botón de cerrar sesión que tenía la
-/// pantalla anterior, para no perder esa función mientras se construyen
-/// las vistas reales.
-class _SectionPlaceholder extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final VoidCallback onLogout;
-
-  const _SectionPlaceholder({
-    required this.title,
-    required this.icon,
-    required this.onLogout,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.pageBg,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(title,
-                      style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                ),
-                GestureDetector(
-                  onTap: onLogout,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppColors.errorBg,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.errorBorder),
-                    ),
-                    child: const Icon(Icons.logout, size: 16, color: AppColors.errorText),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 40, color: AppColors.textFaint),
-                  const SizedBox(height: 12),
-                  Text(title, style: const TextStyle(fontSize: 14, color: AppColors.textFaint)),
-                  const SizedBox(height: 4),
-                  const Text('En construcción',
-                      style: TextStyle(fontSize: 11, color: AppColors.textFaint)),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
