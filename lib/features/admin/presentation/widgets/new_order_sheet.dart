@@ -257,7 +257,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                   _fieldLabel('Cliente'),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<Usuario>(
-                    value: _clienteSeleccionado,
+                    initialValue: _clienteSeleccionado,
                     decoration: _dec(_loadingUsuarios ? 'Cargando...' : 'Selecciona un cliente'),
                     icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textFaint),
                     style: const TextStyle(fontSize: 13, color: AppColors.inputText),
@@ -331,7 +331,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                   _fieldLabel('Operador Asignado'),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<Usuario>(
-                    value: _operarioSeleccionado,
+                    initialValue: _operarioSeleccionado,
                     decoration: _dec(_loadingUsuarios ? 'Cargando...' : 'Seleccionar operador'),
                     icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textFaint),
                     style: const TextStyle(fontSize: 13, color: AppColors.inputText),
@@ -352,7 +352,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                             _fieldLabel('Prioridad'),
                             const SizedBox(height: 6),
                             DropdownButtonFormField<String>(
-                              value: _prioridad,
+                              initialValue: _prioridad,
                               decoration: _dec('Media'),
                               icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textFaint),
                               style: const TextStyle(fontSize: 13, color: AppColors.inputText),

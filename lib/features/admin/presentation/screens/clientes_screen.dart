@@ -927,16 +927,16 @@ class _ComprobantePreviewSheet extends StatelessWidget {
                           padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                           child: Row(
                             children: [
-                              Expanded(
+                              const Expanded(
                                 child: Column(
                                   children: [
-                                    const Text('ENTREGADO POR',
+                                    Text('ENTREGADO POR',
                                         style: TextStyle(
                                             fontSize: 9,
                                             color: AppColors.textMuted,
                                             letterSpacing: 0.5)),
-                                    const SizedBox(height: 4),
-                                    const Text('TEXTICODE S.A.S.',
+                                    SizedBox(height: 4),
+                                    Text('TEXTICODE S.A.S.',
                                         style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,

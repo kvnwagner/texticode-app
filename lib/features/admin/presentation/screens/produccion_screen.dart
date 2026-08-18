@@ -227,7 +227,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: s.color.withOpacity(0.08),
+                        color: s.color.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(s.icon, size: 16, color: s.color),
@@ -408,10 +408,10 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
   }
 
   Widget _buildEmpty() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40),
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 40),
       child: Column(
-        children: const [
+        children: [
           Icon(Icons.inventory_2_outlined, size: 32, color: AppColors.textFaint),
           SizedBox(height: 8),
           Text('No hay órdenes de producción',

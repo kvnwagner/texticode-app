@@ -121,11 +121,11 @@ class ComprobantePreviewSheet extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 10),
-                                Expanded(
+                                const Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'TEXTICODE',
                                         style: TextStyle(
                                           color: Colors.white,
@@ -134,7 +134,7 @@ class ComprobantePreviewSheet extends StatelessWidget {
                                           letterSpacing: 1.5,
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
+                                      SizedBox(height: 2),
                                       Text(
                                         'Bogotá, Colombia · texticode@correo.com\n+57 300 000 0000',
                                         style: TextStyle(
@@ -160,7 +160,7 @@ class ComprobantePreviewSheet extends StatelessWidget {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      const Text(
                                         'COMPROBANTE DE ENTREGA',
                                         style: TextStyle(
                                           color: _ComprobanteColors.azulClaro,
@@ -413,16 +413,16 @@ class ComprobantePreviewSheet extends StatelessWidget {
                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                         child: Row(
                           children: [
-                            Expanded(
+                            const Expanded(
                               child: Column(
                                 children: [
-                                  const Text('ENTREGADO POR',
+                                  Text('ENTREGADO POR',
                                       style: TextStyle(
                                           fontSize: 9,
                                           color: _ComprobanteColors.grisTexto,
                                           letterSpacing: 0.5)),
-                                  const SizedBox(height: 4),
-                                  const Text('TEXTICODE S.A.S.',
+                                  SizedBox(height: 4),
+                                  Text('TEXTICODE S.A.S.',
                                       style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
@@ -462,7 +462,7 @@ class ComprobantePreviewSheet extends StatelessWidget {
                         child: Text(
                           'Este documento es un comprobante oficial de entrega emitido por TEXTICODE. · Generado el ${_fechaHoy()}',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: _ComprobanteColors.azulClaro, fontSize: 10),
+                          style: const TextStyle(color: _ComprobanteColors.azulClaro, fontSize: 10),
                         ),
                       ),
                     ],
