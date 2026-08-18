@@ -159,7 +159,7 @@ class _ProfileCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: AppColors.navy.withOpacity(0.25),
+            color: AppColors.navy.withValues(alpha: 0.25),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -176,9 +176,9 @@ class _ProfileCard extends StatelessWidget {
                 height: 52,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.14),
+                  color: Colors.white.withValues(alpha: 0.14),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                 ),
                 child: Text(initials,
                     style: const TextStyle(
@@ -237,9 +237,9 @@ class _EditButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.18)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
@@ -268,13 +268,13 @@ class _InfoTile extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Colors.white.withOpacity(0.7)),
+          Icon(icon, size: 16, color: Colors.white.withValues(alpha: 0.7)),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -285,7 +285,7 @@ class _InfoTile extends StatelessWidget {
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.6,
-                        color: Colors.white.withOpacity(0.55))),
+                        color: Colors.white.withValues(alpha: 0.55))),
                 const SizedBox(height: 2),
                 Text(value,
                     style: const TextStyle(

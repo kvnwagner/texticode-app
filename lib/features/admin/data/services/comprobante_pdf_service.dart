@@ -77,14 +77,14 @@ class ComprobantePdfService {
                             crossAxisAlignment: pw.CrossAxisAlignment.start,
                             children: [
                               pw.Text('TEXTICODE',
-                                  style: pw.TextStyle(
+                                  style: const pw.TextStyle(
                                       color: PdfColors.white,
                                       fontSize: 16,
                                       fontWeight: pw.FontWeight.bold,
                                       letterSpacing: 2)),
                               pw.SizedBox(height: 3),
                               pw.Text('Bogotá, Colombia  ·  texticode@correo.com  ·  +57 300 000 0000',
-                                  style: pw.TextStyle(
+                                  style: const pw.TextStyle(
                                       color: PdfColor.fromInt(0xFF93C5FD), fontSize: 8)),
                             ],
                           ),
@@ -94,13 +94,13 @@ class ComprobantePdfService {
                         crossAxisAlignment: pw.CrossAxisAlignment.end,
                         children: [
                           pw.Text('COMPROBANTE DE ENTREGA',
-                              style: pw.TextStyle(
+                              style: const pw.TextStyle(
                                   color: PdfColor.fromInt(0xFF93C5FD),
                                   fontSize: 9,
                                   letterSpacing: 1.5)),
                           pw.SizedBox(height: 3),
                           pw.Text('N.° $numero',
-                              style: pw.TextStyle(
+                              style: const pw.TextStyle(
                                   color: PdfColors.white,
                                   fontSize: 20,
                                   fontWeight: pw.FontWeight.bold)),
@@ -126,17 +126,17 @@ class ComprobantePdfService {
                             _label('CLIENTE'),
                             pw.SizedBox(height: 4),
                             pw.Text(comprobante.usuario,
-                                style: pw.TextStyle(
+                                style: const pw.TextStyle(
                                     fontSize: 12, fontWeight: pw.FontWeight.bold, color: _negro)),
                             if (clienteEmail.isNotEmpty) ...[
                               pw.SizedBox(height: 2),
                               pw.Text(clienteEmail,
-                                  style: pw.TextStyle(fontSize: 9, color: _grisTexto)),
+                                  style: const pw.TextStyle(fontSize: 9, color: _grisTexto)),
                             ],
                             if (clienteTel.isNotEmpty) ...[
                               pw.SizedBox(height: 2),
                               pw.Text('Tel: $clienteTel',
-                                  style: pw.TextStyle(fontSize: 9, color: _grisTexto)),
+                                  style: const pw.TextStyle(fontSize: 9, color: _grisTexto)),
                             ],
                           ],
                         ),
@@ -147,12 +147,12 @@ class ComprobantePdfService {
                           children: [
                             _label('FECHA DE EMISIÓN'),
                             pw.SizedBox(height: 4),
-                            pw.Text(fechaHoy, style: pw.TextStyle(fontSize: 10, color: _negro)),
+                            pw.Text(fechaHoy, style: const pw.TextStyle(fontSize: 10, color: _negro)),
                             pw.SizedBox(height: 12),
                             _label('FECHA DE ENTREGA'),
                             pw.SizedBox(height: 4),
                             pw.Text(comprobante.fechaCorta,
-                                style: pw.TextStyle(fontSize: 10, color: _negro)),
+                                style: const pw.TextStyle(fontSize: 10, color: _negro)),
                           ],
                         ),
                       ),
@@ -173,7 +173,7 @@ class ComprobantePdfService {
                             pw.SizedBox(height: 12),
                             _label('ORDEN DE REFERENCIA'),
                             pw.SizedBox(height: 4),
-                            pw.Text('#$numero', style: pw.TextStyle(fontSize: 10, color: _negro)),
+                            pw.Text('#$numero', style: const pw.TextStyle(fontSize: 10, color: _negro)),
                           ],
                         ),
                       ),
@@ -203,11 +203,11 @@ class ComprobantePdfService {
                     pw.TableRow(
                       decoration: const pw.BoxDecoration(color: PdfColors.white),
                       children: [
-                        _tdCell('01', color: PdfColor.fromInt(0xFF9CA3AF)),
+                        _tdCell('01', color: const PdfColor.fromInt(0xFF9CA3AF)),
                         pw.Padding(
                           padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           child: pw.Text(descripcion,
-                              style: pw.TextStyle(
+                              style: const pw.TextStyle(
                                   fontSize: 10, fontWeight: pw.FontWeight.bold, color: _negro)),
                         ),
                         _tdCell('$cantidad', align: pw.TextAlign.center),
@@ -252,7 +252,7 @@ class ComprobantePdfService {
                               padding: const pw.EdgeInsets.all(10),
                               decoration: pw.BoxDecoration(border: pw.Border.all(color: _grisLinea)),
                               child: pw.Text(observaciones,
-                                  style: pw.TextStyle(fontSize: 9, color: _grisTexto)),
+                                  style: const pw.TextStyle(fontSize: 9, color: _grisTexto)),
                             ),
                           ],
                         ),
@@ -262,9 +262,9 @@ class ComprobantePdfService {
                         children: [
                           pw.Container(width: 110, height: 1, color: _negro),
                           pw.SizedBox(height: 4),
-                          pw.Text('Entregado por', style: pw.TextStyle(fontSize: 8, color: _grisTexto)),
+                          pw.Text('Entregado por', style: const pw.TextStyle(fontSize: 8, color: _grisTexto)),
                           pw.Text('TEXTICODE S.A.S.',
-                              style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _azul)),
+                              style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _azul)),
                         ],
                       ),
                       pw.SizedBox(width: 24),
@@ -272,9 +272,9 @@ class ComprobantePdfService {
                         children: [
                           pw.Container(width: 110, height: 1, color: _negro),
                           pw.SizedBox(height: 4),
-                          pw.Text('Recibido por', style: pw.TextStyle(fontSize: 8, color: _grisTexto)),
+                          pw.Text('Recibido por', style: const pw.TextStyle(fontSize: 8, color: _grisTexto)),
                           pw.Text(comprobante.usuario,
-                              style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _azul)),
+                              style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _azul)),
                         ],
                       ),
                     ],
@@ -292,9 +292,9 @@ class ComprobantePdfService {
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
                       pw.Text('Documento de uso oficial · TEXTICODE S.A.S.',
-                          style: pw.TextStyle(color: PdfColor.fromInt(0xFF93C5FD), fontSize: 8)),
+                          style: const pw.TextStyle(color: PdfColor.fromInt(0xFF93C5FD), fontSize: 8)),
                       pw.Text('Generado el $fechaHoy',
-                          style: pw.TextStyle(color: PdfColor.fromInt(0xFF93C5FD), fontSize: 8)),
+                          style: const pw.TextStyle(color: PdfColor.fromInt(0xFF93C5FD), fontSize: 8)),
                     ],
                   ),
                 ),
@@ -310,7 +310,7 @@ class ComprobantePdfService {
 
   static pw.Widget _label(String text) {
     return pw.Text(text,
-        style: pw.TextStyle(
+        style: const pw.TextStyle(
             fontSize: 8,
             fontWeight: pw.FontWeight.bold,
             color: _grisTexto,
@@ -322,7 +322,7 @@ class ComprobantePdfService {
       padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: pw.Text(text,
           textAlign: align,
-          style: pw.TextStyle(
+          style: const pw.TextStyle(
               fontSize: 7.5,
               fontWeight: pw.FontWeight.bold,
               color: PdfColors.white,
