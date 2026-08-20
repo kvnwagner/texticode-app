@@ -87,9 +87,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
           ),
           Positioned(
-            bottom: 100,
-            right: 16,
-            child: FloatingActionButton(
+             bottom: 20,
+             right: 16,
+             child: FloatingActionButton(
               backgroundColor: AppColors.navy,
               onPressed: () => showModalBottomSheet(
                 context: context,

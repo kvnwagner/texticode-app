@@ -28,10 +28,6 @@ class _MainShellState extends State<MainShell> {
     Icons.person_outline_rounded,
   ];
 
-  void _logout() {
-    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,6 +46,8 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
+  // ⬅️ Botón de cerrar sesión ELIMINADO del header (ya vive en
+  // PerfilScreen, tal como pediste).
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -95,21 +93,6 @@ class _MainShellState extends State<MainShell> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
               ],
-            ),
-          ),
-          const SizedBox(width: 4),
-          // Botón de cerrar sesión — momentáneo, tal como pediste.
-          GestureDetector(
-            onTap: _logout,
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: AppColors.errorBg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.errorBorder),
-              ),
-              child: const Icon(Icons.logout, size: 16, color: AppColors.errorText),
             ),
           ),
         ],
