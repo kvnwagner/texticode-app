@@ -11,9 +11,10 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.6
   google_fonts: ^6.2.1
-  http: ^1.2.0 # usuario_repository.dart depende de este paquete
-  pdf: ^3.10.7 # generación del PDF
-  printing: ^5.12.0 # vista previa + compartir/guardar/imprimir
+  http: ^1.2.0
+  pdf: ^3.10.7
+  printing: ^5.12.0
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
