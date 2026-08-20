@@ -12,4 +12,5 @@ class ApiConstants {
   static const String auth = '$baseUrl/auth';
   static const String ordenes = '$baseUrl/ordenes';
   static const String comprobantes = '$baseUrl/comprobantes';
+  static const String materiales = '$baseUrl/materiales'; // ⬅️ nuevo — Gestión de Inventario
 }

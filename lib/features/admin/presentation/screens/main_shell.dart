@@ -5,7 +5,7 @@ import 'admin_home_screen.dart';
 import 'perfil_screen.dart'; // ⬅️ nuevo (compañero)
 import 'produccion_screen.dart'; // ⬅️ nuevo — Gestión de Producción (compañero)
 import 'clientes_screen.dart'; // ⬅️ nuevo (tu rama)
-import 'operarios_screen.dart'; // ⬅️ nuevo — Eficiencia / Carga Laboral (Operarios)
+import 'inventario_screen.dart'; // ⬅️ nuevo — Gestión de Inventario
 
 /// Contenedor principal del panel admin: header + sub-tabs superiores
 /// (Usuarios | Clientes | Operarios) + dock inferior de 5 iconos.
@@ -17,7 +17,7 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  int _bottomIndex = 0; // 0 Usuarios/Clientes/Operarios · 1 Inventario · 2 Estadísticas · 3 Config · 4 Perfil
+  int _bottomIndex = 0; // 0 Usuarios/Clientes/Operarios · 1 Producción · 2 Estadísticas · 3 Inventario · 4 Perfil
   int _topIndex = 0; // 0 Usuarios · 1 Clientes · 2 Operarios (solo aplica si _bottomIndex == 0)
 
   static const _bottomIcons = [
@@ -110,8 +110,8 @@ class _MainShellState extends State<MainShell> {
             return const ClientesScreen(); // ⬅️ antes: _SectionPlaceholder(title: 'Gestión de Clientes', ...)
           case 2:
           default:
-            // ⬅️ antes: _SectionPlaceholder(title: 'Gestión de Operarios', ...)
-            return const OperariosScreen();
+            return const _SectionPlaceholder(
+                title: 'Gestión de Operarios', icon: Icons.engineering_outlined);
         }
       case 1:
         return const ProduccionScreen(); // ⬅️ antes: _SectionPlaceholder(Inventario)
@@ -119,8 +119,7 @@ class _MainShellState extends State<MainShell> {
         return const _SectionPlaceholder(
             title: 'Estadísticas', icon: Icons.bar_chart_rounded);
       case 3:
-        return const _SectionPlaceholder(
-            title: 'Configuración', icon: Icons.settings_outlined);
+        return const InventarioScreen(); // ⬅️ nuevo — antes era _SectionPlaceholder(Configuración)
       case 4:
       default:
         return const PerfilScreen(); // ⬅️ nuevo — antes era _SectionPlaceholder
