@@ -5,6 +5,7 @@ import 'admin_home_screen.dart';
 import 'perfil_screen.dart'; // ⬅️ nuevo (compañero)
 import 'produccion_screen.dart'; // ⬅️ nuevo — Gestión de Producción (compañero)
 import 'clientes_screen.dart'; // ⬅️ nuevo (tu rama)
+import 'operarios_screen.dart'; // ⬅️ nuevo — Eficiencia / Carga Laboral (Operarios)
 
 /// Contenedor principal del panel admin: header + sub-tabs superiores
 /// (Usuarios | Clientes | Operarios) + dock inferior de 5 iconos.
@@ -126,8 +127,8 @@ class _MainShellState extends State<MainShell> {
             return const ClientesScreen(); // ⬅️ antes: _SectionPlaceholder(title: 'Gestión de Clientes', ...)
           case 2:
           default:
-            return const _SectionPlaceholder(
-                title: 'Gestión de Operarios', icon: Icons.engineering_outlined);
+            // ⬅️ antes: _SectionPlaceholder(title: 'Gestión de Operarios', ...)
+            return const OperariosScreen();
         }
       case 1:
         return const ProduccionScreen(); // ⬅️ antes: _SectionPlaceholder(Inventario)
