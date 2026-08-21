@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'operarios_screen.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import 'admin_home_screen.dart';
@@ -6,6 +7,7 @@ import 'perfil_screen.dart'; // ⬅️ nuevo (compañero)
 import 'produccion_screen.dart'; // ⬅️ nuevo — Gestión de Producción (compañero)
 import 'clientes_screen.dart'; // ⬅️ nuevo (tu rama)
 import 'inventario_screen.dart'; // ⬅️ nuevo — Gestión de Inventario
+import 'reportes_screen.dart'; // ⬅️ nuevo — Reportes
 
 /// Contenedor principal del panel admin: header + sub-tabs superiores
 /// (Usuarios | Clientes | Operarios) + dock inferior de 5 iconos.
@@ -107,22 +109,20 @@ class _MainShellState extends State<MainShell> {
           case 0:
             return const AdminHomeScreen();
           case 1:
-            return const ClientesScreen(); // ⬅️ antes: _SectionPlaceholder(title: 'Gestión de Clientes', ...)
+            return const ClientesScreen();
           case 2:
           default:
-            return const _SectionPlaceholder(
-                title: 'Gestión de Operarios', icon: Icons.engineering_outlined);
+            return const OperariosScreen(); // ⬅️ corregido: antes era _SectionPlaceholder
         }
       case 1:
-        return const ProduccionScreen(); // ⬅️ antes: _SectionPlaceholder(Inventario)
+        return const ProduccionScreen();
       case 2:
-        return const _SectionPlaceholder(
-            title: 'Estadísticas', icon: Icons.bar_chart_rounded);
+        return const ReportesScreen(); // ⬅️ nuevo — antes era _SectionPlaceholder(Estadísticas)
       case 3:
-        return const InventarioScreen(); // ⬅️ nuevo — antes era _SectionPlaceholder(Configuración)
+        return const InventarioScreen();
       case 4:
       default:
-        return const PerfilScreen(); // ⬅️ nuevo — antes era _SectionPlaceholder
+        return const PerfilScreen();
     }
   }
 
