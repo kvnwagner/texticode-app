@@ -269,58 +269,80 @@ class _InventarioScreenState extends State<InventarioScreen> {
 
   Widget _buildMetrics() {
     final categorias = _materiales.map((m) => m.categoria).toSet().length;
-    final items = [
-      (
-        'Total Materiales',
-        '${_materiales.length}',
-        Icons.inventory_2_outlined,
-        AppColors.navy,
-      ),
-      ('Alertas de Stock', '${_alertas.length}', Icons.error_outline, AppColors.errorText),
-      ('Categorías', '$categorias', Icons.filter_list, AppColors.iconOp),
+    final items = <_StatItem>[
+      _StatItem('Total Materiales', _materiales.length, Icons.inventory_2_outlined, AppColors.navy),
+      _StatItem('Alertas de Stock', _alertas.length, Icons.error_outline, AppColors.errorText),
+      _StatItem('Categorías', categorias, Icons.filter_list, AppColors.iconOp),
     ];
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: SizedBox(
-        height: 104,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: items.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 10),
-          itemBuilder: (context, i) {
-            final (label, value, icon, color) = items[i];
-            return Container(
-              width: 118,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.pageBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.cardBorder),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: items.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          mainAxisExtent: 78, // misma altura fija que Gestión de Usuarios
+        ),
+        itemBuilder: (context, index) => _buildStatCard(items[index]),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(_StatItem s) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.pageBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Row(
+          children: [
+            Container(width: 3.5, color: s.color),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('${s.value}',
+                              style: TextStyle(
+                                  fontSize: 26, fontWeight: FontWeight.bold, color: s.color)),
+                          const SizedBox(height: 3),
+                          Text(s.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textMuted)),
+                        ],
+                      ),
                     ),
-                    child: Icon(icon, size: 15, color: color),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(value,
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-                  Text(label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 9, color: AppColors.textMuted)),
-                ],
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: s.color.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(s.icon, size: 16, color: s.color),
+                    ),
+                  ],
+                ),
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
@@ -662,4 +684,12 @@ class _InventarioScreenState extends State<InventarioScreen> {
       ),
     );
   }
+}
+
+class _StatItem {
+  final String label;
+  final int value;
+  final IconData icon;
+  final Color color;
+  _StatItem(this.label, this.value, this.icon, this.color);
 }

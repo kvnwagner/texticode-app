@@ -7,6 +7,7 @@ import 'perfil_screen.dart'; // ⬅️ nuevo (compañero)
 import 'produccion_screen.dart'; // ⬅️ nuevo — Gestión de Producción (compañero)
 import 'clientes_screen.dart'; // ⬅️ nuevo (tu rama)
 import 'inventario_screen.dart'; // ⬅️ nuevo — Gestión de Inventario
+import 'reportes_screen.dart'; // ⬅️ nuevo — Reportes
 
 /// Contenedor principal del panel admin: header + sub-tabs superiores
 /// (Usuarios | Clientes | Operarios) + dock inferior de 5 iconos.
@@ -116,8 +117,7 @@ class _MainShellState extends State<MainShell> {
       case 1:
         return const ProduccionScreen();
       case 2:
-        return const _SectionPlaceholder(
-            title: 'Estadísticas', icon: Icons.bar_chart_rounded);
+        return const ReportesScreen(); // ⬅️ nuevo — antes era _SectionPlaceholder(Estadísticas)
       case 3:
         return const InventarioScreen();
       case 4:
