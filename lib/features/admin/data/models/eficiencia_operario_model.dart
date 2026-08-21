@@ -26,6 +26,42 @@ Color eficienciaRendimientoBg(String rendimiento) {
   }
 }
 
+class ObservacionOperario {
+  final int idObservacion;
+  final String observacion;
+  final String? fecha;
+  final String admin;
+
+  ObservacionOperario({
+    required this.idObservacion,
+    required this.observacion,
+    this.fecha,
+    required this.admin,
+  });
+
+  factory ObservacionOperario.fromJson(Map<String, dynamic> json) {
+    return ObservacionOperario(
+      idObservacion: _asInt(json['Id_Observacion']),
+      observacion: json['Observacion'] ?? '',
+      fecha: json['Fecha'],
+      admin: json['Admin'] ?? '',
+    );
+  }
+
+  /// Formatea Fecha (ISO) a "d de mes de yyyy, HH:mm"
+  String get fechaCorta {
+    if (fecha == null || fecha!.isEmpty) return '';
+    try {
+      final d = DateTime.parse(fecha!).toLocal();
+      final hh = d.hour.toString().padLeft(2, '0');
+      final mm = d.minute.toString().padLeft(2, '0');
+      return '${d.day}/${d.month}/${d.year}, $hh:$mm';
+    } catch (_) {
+      return fecha!;
+    }
+  }
+}
+
 class OrdenEficienciaDetalle {
   final int idOrden;
   final String producto;
@@ -37,6 +73,7 @@ class OrdenEficienciaDetalle {
   final String? fechaLimite;
   final bool vencida;
   final bool tieneProblema;
+  final List<ObservacionOperario> observaciones;
 
   OrdenEficienciaDetalle({
     required this.idOrden,
@@ -49,10 +86,22 @@ class OrdenEficienciaDetalle {
     this.fechaLimite,
     required this.vencida,
     required this.tieneProblema,
+    this.observaciones = const [],
   });
 
   double get avance =>
       unidades == 0 ? 0 : (unidadesRealizadas / unidades).clamp(0, 1).toDouble();
+
+  /// Formatea Fecha_Limite (ISO) a "d/m/yyyy"
+  String get fechaLimiteCorta {
+    if (fechaLimite == null || fechaLimite!.isEmpty) return '';
+    try {
+      final d = DateTime.parse(fechaLimite!);
+      return '${d.day}/${d.month}/${d.year}';
+    } catch (_) {
+      return fechaLimite!;
+    }
+  }
 
   factory OrdenEficienciaDetalle.fromJson(Map<String, dynamic> json) {
     return OrdenEficienciaDetalle(
@@ -66,6 +115,10 @@ class OrdenEficienciaDetalle {
       fechaLimite: json['Fecha_Limite'],
       vencida: json['vencida'] == true,
       tieneProblema: json['tiene_problema'] == true,
+      observaciones: (json['observaciones'] as List?)
+              ?.map((e) => ObservacionOperario.fromJson(e))
+              .toList() ??
+          const [],
     );
   }
 }
@@ -128,6 +181,68 @@ class EficienciaOperario {
       ordenesDetalle: (json['ordenes_detalle'] as List?)
           ?.map((e) => OrdenEficienciaDetalle.fromJson(e))
           .toList(),
+    );
+  }
+}
+
+/// Mapea GET /api/eficiencia/operarios/:id/historial?periodo=
+class EficienciaHistorialPeriodo {
+  final double prendasPorDia;
+  final int totalUnidades;
+  final int completadas;
+  final int enCurso;
+  final int retrasos;
+  final int conProblema;
+  final String rendimiento;
+
+  EficienciaHistorialPeriodo({
+    required this.prendasPorDia,
+    required this.totalUnidades,
+    required this.completadas,
+    required this.enCurso,
+    required this.retrasos,
+    required this.conProblema,
+    required this.rendimiento,
+  });
+
+  factory EficienciaHistorialPeriodo.fromJson(Map<String, dynamic> json) {
+    return EficienciaHistorialPeriodo(
+      prendasPorDia: _asDouble(json['prendas_por_dia']),
+      totalUnidades: _asInt(json['total_unidades']),
+      completadas: _asInt(json['completadas']),
+      enCurso: _asInt(json['en_curso']),
+      retrasos: _asInt(json['retrasos']),
+      conProblema: _asInt(json['con_problema']),
+      rendimiento: json['rendimiento'] ?? 'Bajo',
+    );
+  }
+}
+
+class EficienciaHistorial {
+  final String periodo; // semana | mes | trimestre
+  final int dias;
+  final EficienciaHistorialPeriodo actual;
+  final EficienciaHistorialPeriodo anterior;
+  final String tendencia; // subiendo | bajando | estable
+  final double diferenciaPrendas;
+
+  EficienciaHistorial({
+    required this.periodo,
+    required this.dias,
+    required this.actual,
+    required this.anterior,
+    required this.tendencia,
+    required this.diferenciaPrendas,
+  });
+
+  factory EficienciaHistorial.fromJson(Map<String, dynamic> json) {
+    return EficienciaHistorial(
+      periodo: json['periodo'] ?? 'semana',
+      dias: _asInt(json['dias']),
+      actual: EficienciaHistorialPeriodo.fromJson(json['actual'] ?? {}),
+      anterior: EficienciaHistorialPeriodo.fromJson(json['anterior'] ?? {}),
+      tendencia: json['tendencia'] ?? 'estable',
+      diferenciaPrendas: _asDouble(json['diferencia_prendas']),
     );
   }
 }
