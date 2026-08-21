@@ -515,7 +515,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
             build: (ctx) => [
               pw.Text('Reporte de Pedidos', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 12),
-              pw.Table.fromTextArray(
+              pw.TableHelper.fromTextArray(
                 headers: ['Código', 'Producto', 'Cliente', 'Operario', 'Estado', 'Progreso'],
                 data: _ordenes
                     .map((o) => [
@@ -555,7 +555,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
               pw.Text('Reporte de Eficiencia Operaria',
                   style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 12),
-              pw.Table.fromTextArray(
+              pw.TableHelper.fromTextArray(
                 headers: ['Operario', 'Órdenes Asignadas', 'Completadas', '% Completación'],
                 data: porOperario.entries.map((e) {
                   final totalOp = e.value.length;
@@ -592,7 +592,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
             build: (ctx) => [
               pw.Text('Reporte de Inventario', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 12),
-              pw.Table.fromTextArray(
+              pw.TableHelper.fromTextArray(
                 headers: ['Material', 'Categoría', 'Stock', 'Mínimo', 'Máximo'],
                 data: _materiales
                     .map((m) => [

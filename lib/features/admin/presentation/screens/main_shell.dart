@@ -215,33 +215,3 @@ class _MainShellState extends State<MainShell> {
     );
   }
 }
-
-class _SectionPlaceholder extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  const _SectionPlaceholder({required this.title, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.pageBg,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 48, color: AppColors.textFaint),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
