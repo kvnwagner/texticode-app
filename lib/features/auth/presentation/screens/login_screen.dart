@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../data/demo_credentials.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../../domain/models/user_role.dart';
 import '../widgets/forgot_password_sheet.dart';
 
@@ -15,6 +15,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authRepo = AuthRepository();
 
   bool _obscurePassword = true;
   bool _loading = false;
@@ -31,22 +32,29 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_loading) return;
     setState(() => _error = null);
 
-    final role = DemoCredentials.tryLogin(
-      _usernameController.text,
-      _passwordController.text,
-    );
+    final correo = _usernameController.text.trim();
+    final contrasena = _passwordController.text;
 
-    if (role == null) {
-      setState(() => _error = 'Credenciales incorrectas.');
+    if (correo.isEmpty || contrasena.isEmpty) {
+      setState(() => _error = 'Completa todos los campos.');
       return;
     }
 
     setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 1200));
-    if (!mounted) return;
-    setState(() => _loading = false);
-
-    _navigateToRoleHome(role);
+    try {
+      // Login real contra POST /api/auth/login — valida con bcrypt en
+      // el backend y guarda el JWT en almacenamiento seguro del cel.
+      final usuario = await _authRepo.login(correo, contrasena);
+      if (!mounted) return;
+      setState(() => _loading = false);
+      _navigateToRoleHome(usuario.role);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
   }
 
   void _navigateToRoleHome(UserRole role) {
@@ -287,7 +295,9 @@ class _LoginCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Google button (solo UI por ahora)
+                // Google button (solo UI por ahora — el backend ya tiene
+                // getGoogleAuthUrl en la web, pero conectarlo en Flutter
+                // es aparte, avísame cuando quieras hacerlo).
                 SizedBox(
                   height: 44,
                   child: OutlinedButton.icon(
