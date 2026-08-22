@@ -1,22 +1,70 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
+import '../../../auth/data/repositories/auth_repository.dart';
+import '../../../admin/data/repositories/usuario_repository.dart';
 
 /// Pantalla "Mi Perfil" del rol cliente.
 ///
-/// TODO: Los datos del usuario (nombre, correo, teléfono, usuario) son
-/// PLACEHOLDER por ahora. Cuando exista un endpoint de "perfil del usuario
-/// autenticado" en el backend (o guardemos el Usuario logueado tras el
-/// login real), este widget debe recibir esos datos en vez de los
-/// valores fijos de abajo — la UI ya queda lista para eso.
-class PerfilScreen extends StatelessWidget {
+/// Ya NO usa datos placeholder: carga el usuario real que guardó
+/// AuthRepository durante el login (nombre, correo, usuario), y
+/// complementa el teléfono consultando UsuarioRepository (el login no
+/// devuelve teléfono, pero la tabla de usuarios sí lo tiene).
+class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
 
-  // Placeholder — reemplazar por el usuario autenticado real.
-  static const String _nombre = 'Cliente Texticode';
-  static const String _correo = 'cliente@texticode.com';
-  static const String _telefono = '+57 300 000 0000';
-  static const String _usuario = 'cliente';
+  @override
+  State<PerfilScreen> createState() => _PerfilScreenState();
+}
+
+class _PerfilScreenState extends State<PerfilScreen> {
+  final _authRepo = AuthRepository();
+  final _usuarioRepo = UsuarioRepository();
+
+  String _nombre = '...';
+  String _correo = '...';
+  String _telefono = '—';
+  String _usuario = '...';
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarPerfil();
+  }
+
+  Future<void> _cargarPerfil() async {
+    final authUser = await _authRepo.getUsuarioGuardado();
+    if (authUser == null) {
+      // No debería pasar (llegaste aquí porque ya iniciaste sesión),
+      // pero por seguridad mandamos de vuelta al login si no hay sesión.
+      if (mounted) Navigator.of(context).pushNamedAndRemoveUntil('/', (r) => false);
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _nombre = authUser.nombreCompleto;
+        _correo = authUser.correo;
+        _usuario = authUser.nombreUsuario;
+        _loading = false;
+      });
+    }
+
+    // El teléfono no viene en la respuesta del login — lo buscamos en
+    // la lista completa de usuarios (mismo endpoint que usa Gestión de
+    // Usuarios). Si falla (sin internet, etc.) simplemente se queda "—".
+    try {
+      final usuarios = await _usuarioRepo.getUsuarios();
+      final match = usuarios.where((u) => u.idUsuario == authUser.idUsuario);
+      if (match.isNotEmpty && mounted) {
+        setState(() => _telefono = match.first.telefono ?? '—');
+      }
+    } catch (_) {
+      // Silencioso a propósito: el teléfono es complementario, no debe
+      // bloquear ni ensuciar la pantalla de perfil con un error.
+    }
+  }
 
   String get _initials {
     final parts = _nombre.trim().split(RegExp(r'\s+'));
@@ -25,8 +73,11 @@ class PerfilScreen extends StatelessWidget {
     return (parts.first.substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
   }
 
-  void _logout(BuildContext context) {
-    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+  Future<void> _logout(BuildContext context) async {
+    await _authRepo.logout();
+    if (context.mounted) {
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+    }
   }
 
   @override
@@ -37,49 +88,48 @@ class PerfilScreen extends StatelessWidget {
         children: [
           _buildHeader(),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _ProfileCard(nombre: _nombre, correo: _correo, telefono: _telefono, usuario: _usuario, initials: _initials),
-                  const SizedBox(height: 16),
-                  _ActionButton(
-                    icon: _GoogleIcon(),
-                    label: 'Vincular con Google',
-                    onTap: () {
-                      // TODO: conectar con el flujo real de Google Sign-In.
-                    },
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _ProfileCard(
+                            nombre: _nombre,
+                            correo: _correo,
+                            telefono: _telefono,
+                            usuario: _usuario,
+                            initials: _initials),
+                        const SizedBox(height: 16),
+                        _ActionButton(
+                          icon: _GoogleIcon(),
+                          label: 'Vincular con Google',
+                          onTap: () {
+                            // TODO: conectar con el flujo real de Google Sign-In.
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        _ActionButton(
+                          icon: const Icon(Icons.sync_rounded, size: 18, color: Colors.white),
+                          label: 'Sincronizar Ahora',
+                          onTap: () {
+                            // TODO: disparar sincronización real contra el backend.
+                          },
+                        ),
+                        const SizedBox(height: 28),
+                        const Divider(height: 1, color: AppColors.cardBorder),
+                        const SizedBox(height: 20),
+                        _LogoutButton(onTap: () => _logout(context)),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  _ActionButton(
-                    icon: const Icon(Icons.sync_rounded, size: 18, color: Colors.white),
-                    label: 'Sincronizar Ahora',
-                    onTap: () {
-                      // TODO: disparar sincronización real contra el backend.
-                    },
-                  ),
-                  // Separación intencional del resto de acciones: "Cerrar
-                  // sesión" no es una acción más de la lista, así que queda
-                  // aparte, con su propio espacio y un divisor sutil.
-                  // Sigue viviendo dentro del contenido scrolleable de la
-                  // pantalla — NO en el dock de navegación inferior.
-                  const SizedBox(height: 28),
-                  const Divider(height: 1, color: AppColors.cardBorder),
-                  const SizedBox(height: 20),
-                  _LogoutButton(onTap: () => _logout(context)),
-                ],
-              ),
-            ),
           ),
         ],
       ),
     );
   }
 
-  // Mismo patrón de header que usa MainShell para la sección de Usuarios
-  // (misma altura, mismo borde inferior), pero con avatar + info del perfil
-  // en vez del logo de la app.
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -128,9 +178,6 @@ class PerfilScreen extends StatelessWidget {
   }
 }
 
-/// Card oscura con la info del usuario. Usa el mismo `primaryGradient`
-/// que ya se usa en el botón de "Iniciar Sesión" del login, para que el
-/// acento navy se sienta consistente en toda la app.
 class _ProfileCard extends StatelessWidget {
   final String nombre;
   final String correo;
@@ -299,8 +346,6 @@ class _InfoTile extends StatelessWidget {
   }
 }
 
-/// Botón oscuro full-width reutilizado para "Vincular con Google" y
-/// "Sincronizar Ahora" — mismo radio/alto que los botones del login.
 class _ActionButton extends StatelessWidget {
   final Widget icon;
   final String label;
@@ -333,9 +378,6 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-/// Mismo ícono "G" con gradiente que ya usa el botón de Google en
-/// login_screen.dart (_LoginCard) — se replica aquí para mantener
-/// consistencia visual del ícono de Google en toda la app.
 class _GoogleIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -353,9 +395,6 @@ class _GoogleIcon extends StatelessWidget {
   }
 }
 
-/// Botón de cerrar sesión — reutiliza exactamente los tokens de error
-/// (errorBg / errorBorder / errorText) que ya usa el resto de la app
-/// (ej. banner de error del login, confirmación de eliminar usuario).
 class _LogoutButton extends StatelessWidget {
   final VoidCallback onTap;
   const _LogoutButton({required this.onTap});
