@@ -5,7 +5,12 @@ import '../../../admin/data/models/orden_model.dart';
 import '../../../operario/presentation/screens/operario_shared_widgets.dart'
     show statusColors, priorityColors, StatusBadge, ErrorState;
 
+/// Widgets compartidos de las vistas de Cliente.
+/// Reutilizan directamente los mismos helpers de color y el mismo
+/// modelo Orden que usan Admin/Operario — cero paleta/estado duplicado.
+
 /// Header con logo — mismo patrón que OperarioHeader / header de Admin.
+/// Sin botón de logout (vive en ClientePerfilScreen).
 class ClienteLogoHeader extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -71,6 +76,7 @@ class ClienteLogoHeader extends StatelessWidget {
   }
 }
 
+/// Header de sección — mismo patrón que _buildSectionHeader de Admin.
 class ClienteSectionHeader extends StatelessWidget {
   final String title;
   final int? count;
@@ -102,6 +108,7 @@ class ClienteSectionHeader extends StatelessWidget {
   }
 }
 
+/// Stat card — mismo diseño que _buildStatCard de Admin/Operario.
 class ClienteStatCard extends StatelessWidget {
   final IconData icon;
   final String value;
@@ -173,8 +180,11 @@ class ClienteStatCard extends StatelessWidget {
   }
 }
 
-/// Card de pedido — recibe un [Orden] REAL del backend (mismo modelo
-/// que usa Admin/Operario). Reutiliza statusColors()/priorityColors().
+/// Card de pedido — recibe un [Orden] REAL (el mismo modelo que usa
+/// Admin/Operario) y se ve EXACTAMENTE igual que TaskCard: franja lateral
+/// de color por estado, badges de estado y prioridad, título, materiales,
+/// barra de progreso con escala 0-25-50-75-100, y footer con operario
+/// asignado + fecha de entrega.
 class ClienteOrderCard extends StatelessWidget {
   final Orden orden;
   const ClienteOrderCard({super.key, required this.orden});
@@ -260,10 +270,10 @@ class ClienteOrderCard extends StatelessWidget {
                       const SizedBox(height: 9),
                       Row(
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Progreso de fabricación',
-                              style: TextStyle(
+                              'Prendas: ${orden.cantidadActual}/${orden.cantidadTotal}',
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textSecondary,
@@ -291,19 +301,15 @@ class ClienteOrderCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      Row(
+                      const Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [0, 25, 50, 75, 100]
-                            .map((m) => Text('$m',
-                                style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: orden.progresoPorcentaje >= m
-                                        ? FontWeight.w800
-                                        : FontWeight.w400,
-                                    color: orden.progresoPorcentaje >= m
-                                        ? progressColor
-                                        : AppColors.textFaint)))
-                            .toList(),
+                        children: [
+                          _ScaleMark(0),
+                          _ScaleMark(25),
+                          _ScaleMark(50),
+                          _ScaleMark(75),
+                          _ScaleMark(100),
+                        ],
                       ),
                       const SizedBox(height: 10),
                       Container(
@@ -315,9 +321,9 @@ class ClienteOrderCard extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                orden.materiales.isNotEmpty
-                                    ? 'Material: ${orden.materiales.first}'
-                                    : 'Material: —',
+                                orden.operario.isEmpty
+                                    ? 'Operario sin asignar'
+                                    : 'Operario: ${orden.operario}',
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 11,
@@ -348,5 +354,16 @@ class ClienteOrderCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ScaleMark extends StatelessWidget {
+  final int value;
+  const _ScaleMark(this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text('$value',
+        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.textFaint));
   }
 }
