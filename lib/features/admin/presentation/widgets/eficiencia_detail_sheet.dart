@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../auth/data/repositories/auth_repository.dart';
 import '../../data/models/eficiencia_operario_model.dart';
 import '../../data/repositories/eficiencia_repository.dart';
-
-// TODO: reemplazar por el Id_Usuario real del admin autenticado
-// (cuando exista el login real / usuario en sesión).
-const int _idAdminActual = 1;
 
 class EficienciaDetailSheet extends StatefulWidget {
   final int idUsuario;
@@ -26,6 +23,15 @@ class EficienciaDetailSheet extends StatefulWidget {
 
 class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
   final _repo = EficienciaRepository();
+  final _authRepo = AuthRepository();
+
+  // ✅ FIX: antes era `const int _idAdminActual = 1;` (fijo, sin importar
+  // quién iniciaba sesión). Si en la tabla `usuario` no existía una fila
+  // con Id_Usuario = 1, el INSERT de la observación fallaba por foreign
+  // key en el backend, y como no había feedback visible en la UI, parecía
+  // que "no pasaba nada" al guardar. Ahora se carga el admin real desde
+  // AuthRepository (mismo usuario que guardó el login).
+  int? _idAdminActual;
 
   Map<String, dynamic>? _detalle;
   bool _loading = true;
@@ -43,6 +49,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
   @override
   void initState() {
     super.initState();
+    _cargarAdminActual();
     _cargar();
     _cargarHistorial();
   }
@@ -53,6 +60,14 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
       c.dispose();
     }
     super.dispose();
+  }
+
+  /// Carga el Id_Usuario del admin realmente autenticado (guardado por
+  /// AuthRepository durante el login) en vez de usar un valor fijo.
+  Future<void> _cargarAdminActual() async {
+    final usuario = await _authRepo.getUsuarioGuardado();
+    if (!mounted) return;
+    setState(() => _idAdminActual = usuario?.idUsuario);
   }
 
   Future<void> _cargar() async {
@@ -100,16 +115,34 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
     final texto = ctrl.text.trim();
     if (texto.isEmpty) return;
 
+    // ✅ FIX: si por alguna razón no hay sesión guardada, avisamos en vez
+    // de mandar un Id_Admin inválido o nulo al backend.
+    if (_idAdminActual == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo identificar tu sesión de administrador.'),
+        ),
+      );
+      return;
+    }
+
     setState(() => _guardandoObs.add(idOrden));
     try {
       await _repo.crearObservacion(
         idOperario: widget.idUsuario,
-        idAdmin: _idAdminActual,
+        idAdmin: _idAdminActual!,
         idOrden: idOrden,
         observacion: texto,
       );
       ctrl.clear();
       await _cargar();
+      // ✅ FIX: feedback de éxito visible — antes, si el guardado fallaba
+      // silenciosamente en el backend, no había forma de saberlo desde la UI.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Observación guardada correctamente.')),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -126,6 +159,11 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
     try {
       await _repo.eliminarObservacion(obs.idObservacion);
       await _cargar();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Observación eliminada.')),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -760,7 +798,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
       ],
     );
   }
-
+// p
   Widget _buildObservacionRow(ObservacionOperario obs) {
     final eliminando = _eliminandoObs.contains(obs.idObservacion);
     return Container(

@@ -3,56 +3,43 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../data/cliente_orders_data.dart';
 
-/// Colores auxiliares específicos de las vistas de cliente
-/// (no están en AppColors para no tocar el archivo global).
-class ClienteColors {
-  ClienteColors._();
+/// Widgets compartidos de las vistas de Cliente.
+/// Unificados 1:1 con los patrones visuales de Admin/Operario:
+/// mismos colores (AppColors), mismo estilo de stat card (barra lateral +
+/// número grande + icono en caja), mismo estilo de card de contenido
+/// (franja de color + badges + barra de progreso con escala), mismo
+/// header (sin logout — el logout vive en Perfil).
 
-  static const statusInProgress = Color(0xFF2563EB);
-  static const statusInProgressBg = Color(0xFFE0ECFF);
-  static const statusDone = Color(0xFF16A34A);
-  static const statusDoneBg = Color(0xFFDCFCE7);
-  static const statusPaused = Color(0xFF6B7280);
-  static const statusPausedBg = Color(0xFFF3F4F6);
-
-  static const profileGradient = [
-    Color(0xFF111827),
-    Color(0xFF1F3A52),
-    Color(0xFF0F2236),
-  ];
-
-  static const logoutBorder = Color(0xFFFECACA);
-  static const logoutText = Color(0xFFDC2626);
-  static const logoutBg = Color(0xFFFEF2F2);
+/// Colores de estado de pedido, mapeados a la MISMA paleta que usa
+/// Admin/Operario (ver operario_shared_widgets.dart -> statusColors):
+///   En progreso -> purple/purpleBg (igual que "En proceso")
+///   Completado  -> iconActive/badgeOpGreenBg (igual que "Completada")
+///   Pausado     -> textMuted/searchBg (igual que "Pendiente")
+(Color, Color) clienteStatusColors(String status) {
+  switch (status) {
+    case 'En progreso':
+      return (AppColors.statusInProgressBg, AppColors.statusInProgressText);
+    case 'Completado':
+      return (AppColors.statusCompletedBg, AppColors.statusCompletedText);
+    case 'Pausado':
+      return (AppColors.statusPendingBg, AppColors.textMuted);
+    default:
+      return (AppColors.statusPendingBg, AppColors.textMuted);
+  }
 }
 
+/// Badge de estado — mismo componente visual que StatusBadge de
+/// operario_shared_widgets.dart (padding, radio, tipografía idénticos).
 class ClienteStatusBadge extends StatelessWidget {
   final String status;
   const ClienteStatusBadge({super.key, required this.status});
 
   @override
   Widget build(BuildContext context) {
-    late Color bg, text;
-    switch (status) {
-      case 'En progreso':
-        bg = ClienteColors.statusInProgressBg;
-        text = ClienteColors.statusInProgress;
-        break;
-      case 'Completado':
-        bg = ClienteColors.statusDoneBg;
-        text = ClienteColors.statusDone;
-        break;
-      case 'Pausado':
-        bg = ClienteColors.statusPausedBg;
-        text = ClienteColors.statusPaused;
-        break;
-      default:
-        bg = const Color(0xFFF3F4F6);
-        text = AppColors.textMuted;
-    }
+    final (bg, text) = clienteStatusColors(status);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
       child: Text(
         status,
         style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: text),
@@ -61,6 +48,7 @@ class ClienteStatusBadge extends StatelessWidget {
   }
 }
 
+/// Barra de progreso — mismo radio/altura que la de TaskCard.
 class ClienteProgressBar extends StatelessWidget {
   final int pct;
   final Color color;
@@ -69,17 +57,19 @@ class ClienteProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(10),
       child: LinearProgressIndicator(
         value: pct / 100,
         minHeight: 6,
-        backgroundColor: AppColors.inputBorder,
+        backgroundColor: AppColors.cardBorder,
         valueColor: AlwaysStoppedAnimation<Color>(color),
       ),
     );
   }
 }
 
+/// Header de sección — mismo patrón que _buildSectionHeader de
+/// admin_home_screen.dart (título + circulo navy con contador).
 class ClienteSectionHeader extends StatelessWidget {
   final String title;
   final int? count;
@@ -88,20 +78,21 @@ class ClienteSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       child: Row(
         children: [
           Text(title,
               style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                  fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           if (count != null) ...[
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(999)),
+              decoration:
+                  BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(20)),
               child: Text('$count',
                   style: const TextStyle(
-                      fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white)),
+                      fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           ],
         ],
@@ -110,76 +101,68 @@ class ClienteSectionHeader extends StatelessWidget {
   }
 }
 
-/// Header estilo "Gestión de Usuarios": logo + título + subtítulo + logout.
-/// Se usa en Comprobantes, Pedidos y Soporte de Cliente.
+/// Header con logo — EXACTAMENTE el mismo patrón visual que el header de
+/// admin_home_screen.dart / operario_shared_widgets.dart (OperarioHeader):
+/// fondo blanco, borde inferior, logo cuadrado 38x38 con esquinas
+/// redondeadas, título + subtítulo. SIN botón de logout — ahora vive
+/// únicamente en ClientePerfilScreen, igual que en Admin/Operario.
 class ClienteLogoHeader extends StatelessWidget {
   final String title;
   final String subtitle;
-  final VoidCallback onLogout;
 
   const ClienteLogoHeader({
     super.key,
     required this.title,
     required this.subtitle,
-    required this.onLogout,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(
+        color: Colors.white,
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.inputBg,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.cardBorder),
-            ),
-            alignment: Alignment.center,
+          SizedBox(
+            width: 38,
+            height: 38,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
               child: Image.asset(
                 AppConstants.logoAssetPath,
-                width: 22,
-                height: 22,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.checkroom, size: 18, color: AppColors.navy),
+                width: 38,
+                height: 38,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.navy,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.checkroom, color: Colors.white, size: 18),
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                        fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                 Text(subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
               ],
-            ),
-          ),
-          InkWell(
-            onTap: onLogout,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: AppColors.errorBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.errorBorder),
-              ),
-              alignment: Alignment.center,
-              child: const Icon(Icons.logout, size: 16, color: AppColors.errorText),
             ),
           ),
         ],
@@ -188,6 +171,10 @@ class ClienteLogoHeader extends StatelessWidget {
   }
 }
 
+/// Stat card — EXACTAMENTE el mismo diseño que _buildStatCard de
+/// admin_home_screen.dart / produccion_screen.dart / inventario_screen.dart:
+/// barra lateral de color de 3.5px, número grande + label debajo a la
+/// izquierda, icono en caja redondeada a la derecha.
 class ClienteStatCard extends StatelessWidget {
   final IconData icon;
   final String value;
@@ -203,154 +190,50 @@ class ClienteStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.pageBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            alignment: Alignment.center,
-            child: Icon(icon, size: 17, color: color),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(value,
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: color,
-                        height: 1.1)),
-                Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 9.5, color: AppColors.textMuted, height: 1.2)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Tarjeta de pedido con barra de color lateral + badges + progreso,
-
-class ClienteOrderCard extends StatelessWidget {
-  final ClienteOrder order;
-  const ClienteOrderCard({super.key, required this.order});
-
-  Color _statusColor() {
-    switch (order.status) {
-      case 'En progreso':
-        return ClienteColors.statusInProgress;
-      case 'Completado':
-        return ClienteColors.statusDone;
-      case 'Pausado':
-        return ClienteColors.statusPaused;
-      default:
-        return AppColors.navy;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _statusColor();
-    const scaleMarks = [0, 25, 50, 75, 100];
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.pageBg,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.cardBorder),
-      ),
-      child: IntrinsicHeight(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.pageBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              width: 4,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(18)),
-              ),
-            ),
+            Container(width: 3.5, color: color),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        ClienteStatusBadge(status: order.status),
-                        const Spacer(),
-                        Text(order.id,
-                            style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textFaint)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(order.name,
-                        style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Progreso de fabricación',
-                            style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textSecondary)),
-                        Text('${order.pct}%',
-                            style: TextStyle(
-                                fontSize: 11, fontWeight: FontWeight.w800, color: color)),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    ClienteProgressBar(pct: order.pct, color: color),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: scaleMarks
-                          .map((m) => Text('$m',
-                              style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight:
-                                      order.pct >= m ? FontWeight.w800 : FontWeight.w400,
-                                  color: order.pct >= m ? color : AppColors.textFaint)))
-                          .toList(),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.only(top: 10),
-                      decoration: const BoxDecoration(
-                        border: Border(top: BorderSide(color: AppColors.cardBorder)),
-                      ),
-                      child: Row(
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Expanded(child: _metaCol('MATERIAL', order.material)),
-                          Expanded(child: _metaCol('ENTREGA ESTIMADA', order.delivery)),
+                          Text(value,
+                              style: TextStyle(
+                                  fontSize: 22, fontWeight: FontWeight.bold, color: color)),
+                          const SizedBox(height: 3),
+                          Text(label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textMuted)),
                         ],
                       ),
+                    ),
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(icon, size: 15, color: color),
                     ),
                   ],
                 ),
@@ -361,19 +244,146 @@ class ClienteOrderCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _metaCol(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.textFaint)),
-        const SizedBox(height: 2),
-        Text(value,
-            style: const TextStyle(
-                fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-      ],
+/// Card de pedido — EXACTAMENTE el mismo diseño que TaskCard
+/// (operario/presentation/screens/task_card.dart): franja de color
+/// lateral de 3px según estado, código pequeño en gris, badge de estado,
+/// título en bold, fila de metadata, barra de progreso con escala
+/// 0-25-50-75-100 debajo.
+class ClienteOrderCard extends StatelessWidget {
+  final ClienteOrder order;
+  const ClienteOrderCard({super.key, required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    final (badgeBg, badgeText) = clienteStatusColors(order.status);
+    final progressColor = order.status == 'Completado'
+        ? AppColors.iconActive
+        : (order.status == 'Pausado' ? AppColors.textFaint : AppColors.purple);
+    const scaleMarks = [0, 25, 50, 75, 100];
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 3, color: badgeText),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            order.id,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textFaint,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ClienteStatusBadge(status: order.status),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        order.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 9),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Progreso de fabricación',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${order.pct}%',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: progressColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ClienteProgressBar(pct: order.pct, color: progressColor),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: scaleMarks
+                            .map((m) => Text('$m',
+                                style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight:
+                                        order.pct >= m ? FontWeight.w800 : FontWeight.w400,
+                                    color: order.pct >= m
+                                        ? progressColor
+                                        : AppColors.textFaint)))
+                            .toList(),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.only(top: 10),
+                        decoration: const BoxDecoration(
+                          border: Border(top: BorderSide(color: AppColors.cardBorder)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Material: ${order.material}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              'Entrega: ${order.delivery}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textFaint,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
