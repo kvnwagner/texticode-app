@@ -5,8 +5,7 @@ import '../../data/cliente_orders_data.dart';
 import '../widgets/cliente_shared_widgets.dart';
 
 class ClienteSoporteScreen extends StatefulWidget {
-  final VoidCallback onLogout;
-  const ClienteSoporteScreen({super.key, required this.onLogout});
+  const ClienteSoporteScreen({super.key});
 
   @override
   State<ClienteSoporteScreen> createState() => _ClienteSoporteScreenState();
@@ -48,10 +47,9 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        ClienteLogoHeader(
+        const ClienteLogoHeader(
           title: 'Centro de Soporte',
           subtitle: 'Estamos aquí para ayudarte',
-          onLogout: widget.onLogout,
         ),
         Expanded(
           child: ListView(
@@ -76,7 +74,7 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: ClienteColors.profileGradient,
+                              colors: AppColors.primaryGradient,
                             ),
                           ),
                           child: Column(

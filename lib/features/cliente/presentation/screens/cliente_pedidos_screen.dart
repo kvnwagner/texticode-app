@@ -4,8 +4,7 @@ import '../../data/cliente_orders_data.dart';
 import '../widgets/cliente_shared_widgets.dart';
 
 class ClientePedidosScreen extends StatefulWidget {
-  final VoidCallback onLogout;
-  const ClientePedidosScreen({super.key, required this.onLogout});
+  const ClientePedidosScreen({super.key});
 
   @override
   State<ClientePedidosScreen> createState() => _ClientePedidosScreenState();
@@ -18,16 +17,9 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
   static const filters = ['Todos', 'En progreso', 'Completado', 'Pausado'];
 
   Color _filterColor(String f) {
-    switch (f) {
-      case 'En progreso':
-        return ClienteColors.statusInProgress;
-      case 'Completado':
-        return ClienteColors.statusDone;
-      case 'Pausado':
-        return ClienteColors.statusPaused;
-      default:
-        return AppColors.navy;
-    }
+    if (f == 'Todos') return AppColors.navy;
+    final (_, text) = clienteStatusColors(f);
+    return text;
   }
 
   @override
@@ -41,10 +33,9 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
 
     return Column(
       children: [
-        ClienteLogoHeader(
+        const ClienteLogoHeader(
           title: 'Mis Pedidos',
           subtitle: 'Seguimiento y estado',
-          onLogout: widget.onLogout,
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -52,13 +43,13 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
             height: 42,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: AppColors.inputBg,
+              color: AppColors.searchBg,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.inputBorder, width: 1.5),
+              border: Border.all(color: AppColors.cardBorder, width: 1.5),
             ),
             child: Row(
               children: [
-                const Icon(Icons.search, size: 16, color: AppColors.textFaint),
+                const Icon(Icons.search, size: 18, color: AppColors.textFaint),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(

@@ -19,84 +19,76 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
     Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
   }
 
+  static const _icons = [
+    Icons.home_outlined,
+    Icons.shopping_bag_outlined,
+    Icons.support_agent_outlined,
+    Icons.person_outline_rounded,
+  ];
+
   @override
   Widget build(BuildContext context) {
     final pages = [
-      ClienteDashboardScreen(
-        onGoOrders: () => setState(() => _tab = 1),
-        onLogout: _logout,
-      ),
-      ClientePedidosScreen(onLogout: _logout),
-      ClienteSoporteScreen(onLogout: _logout),
+      ClienteDashboardScreen(onGoOrders: () => setState(() => _tab = 1)),
+      const ClientePedidosScreen(),
+      const ClienteSoporteScreen(),
       ClientePerfilScreen(onLogout: _logout),
     ];
 
     return Scaffold(
       backgroundColor: AppColors.pageBg,
       body: SafeArea(
-        child: Stack(
-          children: [
-            IndexedStack(index: _tab, children: pages),
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 16,
-              child: _FloatingTabBar(active: _tab, onTap: (i) => setState(() => _tab = i)),
+        bottom: false,
+        child: IndexedStack(index: _tab, children: pages),
+      ),
+      bottomNavigationBar: _buildDock(),
+    );
+  }
+
+  /// Dock inferior — mismo diseño exacto que el de
+  /// operario/presentation/screens/operario_home_screen.dart:
+  /// contenedor blanco flotante con borde, sombra suave, icono
+  /// seleccionado dentro de una caja navy redondeada con animación.
+  Widget _buildDock() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      child: Container(
+        height: 62,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: AppColors.cardBorder),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _FloatingTabBar extends StatelessWidget {
-  final int active;
-  final ValueChanged<int> onTap;
-  const _FloatingTabBar({required this.active, required this.onTap});
-
-  static const _items = [
-    (Icons.home_outlined, Icons.home, 'Inicio'),
-    (Icons.shopping_bag_outlined, Icons.shopping_bag, 'Pedidos'),
-    (Icons.support_agent_outlined, Icons.support_agent, 'Soporte'),
-    (Icons.person_outline, Icons.person, 'Perfil'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      decoration: BoxDecoration(
-        color: const Color(0xEBF9FAFB),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.cardBorder),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(_items.length, (i) {
-          final on = active == i;
-          final (outline, filled, _) = _items[i];
-          return GestureDetector(
-            onTap: () => onTap(i),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: on ? AppColors.navy.withValues(alpha: 0.08) : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: List.generate(_icons.length, (i) {
+            final selected = i == _tab;
+            return GestureDetector(
+              onTap: () => setState(() => _tab = i),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: selected ? AppColors.navy : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  _icons[i],
+                  size: 20,
+                  color: selected ? Colors.white : AppColors.textFaint,
+                ),
               ),
-              alignment: Alignment.center,
-              child: Icon(on ? filled : outline, size: 21, color: on ? AppColors.navy : AppColors.textFaint),
-            ),
-          );
-        }),
+            );
+          }),
+        ),
       ),
     );
   }
