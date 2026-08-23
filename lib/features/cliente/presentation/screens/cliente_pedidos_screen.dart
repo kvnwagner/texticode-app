@@ -1,34 +1,86 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../data/cliente_orders_data.dart';
+import '../../../admin/data/models/orden_model.dart';
+import '../../../operario/presentation/screens/operario_shared_widgets.dart' show ErrorState;
 import '../widgets/cliente_shared_widgets.dart';
 
 class ClientePedidosScreen extends StatefulWidget {
-  const ClientePedidosScreen({super.key});
+  final List<Orden> ordenes;
+  final bool loading;
+  final String? error;
+  final Future<void> Function() onRefresh;
+
+  const ClientePedidosScreen({
+    super.key,
+    required this.ordenes,
+    required this.loading,
+    required this.error,
+    required this.onRefresh,
+  });
 
   @override
   State<ClientePedidosScreen> createState() => _ClientePedidosScreenState();
 }
 
+enum _EstadoFiltro { todos, pendiente, enProceso, completada, retrasada }
+
 class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
   String _query = '';
-  String _filter = 'Todos';
+  _EstadoFiltro _filter = _EstadoFiltro.todos;
 
-  static const filters = ['Todos', 'En progreso', 'Completado', 'Pausado'];
+  bool _matchFiltro(Orden o) {
+    switch (_filter) {
+      case _EstadoFiltro.todos:
+        return true;
+      case _EstadoFiltro.pendiente:
+        return o.isPendiente;
+      case _EstadoFiltro.enProceso:
+        return o.isEnProceso;
+      case _EstadoFiltro.completada:
+        return o.isCompletada;
+      case _EstadoFiltro.retrasada:
+        return o.isRetrasada;
+    }
+  }
 
-  Color _filterColor(String f) {
-    if (f == 'Todos') return AppColors.navy;
-    final (_, text) = clienteStatusColors(f);
-    return text;
+  String _label(_EstadoFiltro f) {
+    switch (f) {
+      case _EstadoFiltro.todos:
+        return 'Todos';
+      case _EstadoFiltro.pendiente:
+        return 'Pendiente';
+      case _EstadoFiltro.enProceso:
+        return 'En proceso';
+      case _EstadoFiltro.completada:
+        return 'Completada';
+      case _EstadoFiltro.retrasada:
+        return 'Retrasada';
+    }
+  }
+
+  Color _color(_EstadoFiltro f) {
+    switch (f) {
+      case _EstadoFiltro.todos:
+        return AppColors.navy;
+      case _EstadoFiltro.pendiente:
+        return AppColors.textMuted;
+      case _EstadoFiltro.enProceso:
+        return AppColors.purple;
+      case _EstadoFiltro.completada:
+        return AppColors.iconActive;
+      case _EstadoFiltro.retrasada:
+        return AppColors.errorText;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = ClienteOrdersData.orders.where((o) {
-      final matchQ = o.name.toLowerCase().contains(_query.toLowerCase()) ||
-          o.id.toLowerCase().contains(_query.toLowerCase());
-      final matchF = _filter == 'Todos' || o.status == _filter;
-      return matchQ && matchF;
+    final filtered = widget.ordenes.where((o) {
+      final q = _query.toLowerCase();
+      final matchQ = q.isEmpty ||
+          o.producto.toLowerCase().contains(q) ||
+          o.codigoOrden.toLowerCase().contains(q);
+      return matchQ && _matchFiltro(o);
     }).toList();
 
     return Column(
@@ -55,7 +107,7 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
                   child: TextField(
                     onChanged: (v) => setState(() => _query = v),
                     decoration: const InputDecoration(
-                      hintText: 'Buscar por nombre o número...',
+                      hintText: 'Buscar por nombre o código...',
                       border: InputBorder.none,
                       isDense: true,
                     ),
@@ -71,9 +123,9 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: filters.map((f) {
+            children: _EstadoFiltro.values.map((f) {
               final active = _filter == f;
-              final col = _filterColor(f);
+              final col = _color(f);
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: GestureDetector(
@@ -86,7 +138,7 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
                       border: Border.all(color: active ? col : col.withValues(alpha: 0.25)),
                     ),
                     alignment: Alignment.center,
-                    child: Text(f,
+                    child: Text(_label(f),
                         style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -99,23 +151,39 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
         ),
         const SizedBox(height: 8),
         Expanded(
-          child: filtered.isEmpty
-              ? const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.search_off, size: 32, color: AppColors.textFaint),
-                      SizedBox(height: 8),
-                      Text('No se encontraron pedidos',
-                          style: TextStyle(fontSize: 13, color: AppColors.textFaint)),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, i) => ClienteOrderCard(order: filtered[i]),
-                ),
+          child: widget.loading
+              ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+              : widget.error != null
+                  ? ErrorState(message: widget.error!, onRetry: widget.onRefresh)
+                  : RefreshIndicator(
+                      color: AppColors.navy,
+                      onRefresh: widget.onRefresh,
+                      child: filtered.isEmpty
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: const [
+                                Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 60),
+                                  child: Column(
+                                    children: [
+                                      Icon(Icons.search_off, size: 32, color: AppColors.textFaint),
+                                      SizedBox(height: 8),
+                                      Text('No se encontraron pedidos',
+                                          style: TextStyle(
+                                              fontSize: 13, color: AppColors.textFaint)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              itemCount: filtered.length,
+                              itemBuilder: (context, i) =>
+                                  ClienteOrderCard(orden: filtered[i]),
+                            ),
+                    ),
         ),
       ],
     );

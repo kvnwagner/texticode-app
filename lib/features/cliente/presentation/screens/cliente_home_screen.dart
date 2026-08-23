@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../admin/data/models/orden_model.dart';
+import '../../../admin/data/repositories/orden_repository.dart';
+import '../../../auth/data/repositories/auth_repository.dart';
 import 'cliente_dashboard_screen.dart';
 import 'cliente_pedidos_screen.dart';
 import 'cliente_soporte_screen.dart';
@@ -13,11 +16,13 @@ class ClienteHomeScreen extends StatefulWidget {
 }
 
 class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
-  int _tab = 0;
+  final _authRepo = AuthRepository();
+  final _ordenRepo = OrdenRepository();
 
-  void _logout() {
-    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-  }
+  int _tab = 0;
+  List<Orden> _ordenes = [];
+  bool _loading = true;
+  String? _error;
 
   static const _icons = [
     Icons.home_outlined,
@@ -27,10 +32,54 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  Future<void> _cargar() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final authUser = await _authRepo.getUsuarioGuardado();
+      if (authUser == null) {
+        if (mounted) Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        return;
+      }
+      final todas = await _ordenRepo.getOrdenes();
+      final propias = todas.where((o) => o.idCliente == authUser.idUsuario).toList();
+      if (!mounted) return;
+      setState(() => _ordenes = propias);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _logout() {
+    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final pages = [
-      ClienteDashboardScreen(onGoOrders: () => setState(() => _tab = 1)),
-      const ClientePedidosScreen(),
+      ClienteDashboardScreen(
+        ordenes: _ordenes,
+        loading: _loading,
+        error: _error,
+        onRefresh: _cargar,
+        onGoOrders: () => setState(() => _tab = 1),
+      ),
+      ClientePedidosScreen(
+        ordenes: _ordenes,
+        loading: _loading,
+        error: _error,
+        onRefresh: _cargar,
+      ),
       const ClienteSoporteScreen(),
       ClientePerfilScreen(onLogout: _logout),
     ];
@@ -45,10 +94,6 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
     );
   }
 
-  /// Dock inferior — mismo diseño exacto que el de
-  /// operario/presentation/screens/operario_home_screen.dart:
-  /// contenedor blanco flotante con borde, sombra suave, icono
-  /// seleccionado dentro de una caja navy redondeada con animación.
   Widget _buildDock() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),

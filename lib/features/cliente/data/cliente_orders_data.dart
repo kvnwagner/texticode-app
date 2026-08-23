@@ -1,21 +1,5 @@
-class ClienteOrder {
-  final String id;
-  final String name;
-  final String status; // En progreso | Completado | Pausado
-  final int pct;
-  final String delivery;
-  final String material;
-
-  const ClienteOrder({
-    required this.id,
-    required this.name,
-    required this.status,
-    required this.pct,
-    required this.delivery,
-    required this.material,
-  });
-}
-
+/// Solo quedan las FAQ de soporte (esas sí son estáticas a propósito).
+/// Los pedidos reales ahora vienen de OrdenRepository — ver cliente_home_screen.dart.
 class FaqItem {
   final String question;
   final String answer;
@@ -24,41 +8,6 @@ class FaqItem {
 
 class ClienteOrdersData {
   ClienteOrdersData._();
-
-  static const List<ClienteOrder> orders = [
-    ClienteOrder(
-      id: '#P-089',
-      name: 'Camisas Oxford x12',
-      status: 'En progreso',
-      pct: 65,
-      delivery: '02/6/2026',
-      material: 'Algodón peinado',
-    ),
-    ClienteOrder(
-      id: '#P-076',
-      name: 'Pantalones slim x6',
-      status: 'Completado',
-      pct: 100,
-      delivery: '18/5/2026',
-      material: 'Denim 12oz',
-    ),
-    ClienteOrder(
-      id: '#P-063',
-      name: 'Vestidos formales x4',
-      status: 'Pausado',
-      pct: 30,
-      delivery: '10/6/2026',
-      material: 'Seda natural',
-    ),
-    ClienteOrder(
-      id: '#P-051',
-      name: 'Chaquetas cuero x2',
-      status: 'Completado',
-      pct: 100,
-      delivery: '01/5/2026',
-      material: 'Cuero sintético',
-    ),
-  ];
 
   static const List<FaqItem> faq = [
     FaqItem(
