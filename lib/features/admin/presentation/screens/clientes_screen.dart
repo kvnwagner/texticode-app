@@ -8,6 +8,7 @@ import '../../data/models/usuario_model.dart';
 import '../../data/repositories/comprobante_repository.dart';
 import '../../data/repositories/usuario_repository.dart';
 import '../../data/services/comprobante_pdf_service.dart';
+import '../widgets/user_action_sheet.dart';
 
 class ClientesScreen extends StatefulWidget {
   const ClientesScreen({super.key});
@@ -183,15 +184,17 @@ class _ClientesScreenState extends State<ClientesScreen> {
     ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: Row(
-        children: items
-            .map((m) => Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: _buildMetricCard(m),
-          ),
-        ))
-            .toList(),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: items.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          mainAxisExtent: 78, // misma altura fija que Gestión de Usuarios
+        ),
+        itemBuilder: (context, index) => _buildMetricCard(items[index]),
       ),
     );
   }
@@ -210,7 +213,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
             Container(width: 3.5, color: m.color),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 child: Row(
                   children: [
                     Expanded(
@@ -221,26 +224,26 @@ class _ClientesScreenState extends State<ClientesScreen> {
                         children: [
                           Text('${m.value}',
                               style: TextStyle(
-                                  fontSize: 22, fontWeight: FontWeight.bold, color: m.color)),
+                                  fontSize: 26, fontWeight: FontWeight.bold, color: m.color)),
                           const SizedBox(height: 3),
                           Text(m.label,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                  fontSize: 9,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w500,
                                   color: AppColors.textMuted)),
                         ],
                       ),
                     ),
                     Container(
-                      width: 28,
-                      height: 28,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
                         color: m.color.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(m.icon, size: 14, color: m.color),
+                      child: Icon(m.icon, size: 16, color: m.color),
                     ),
                   ],
                 ),

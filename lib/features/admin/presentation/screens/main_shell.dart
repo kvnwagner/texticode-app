@@ -41,6 +41,18 @@ class _MainShellState extends State<MainShell> {
     Icons.person_outline_rounded,
   ];
 
+  // Controla el deslizamiento de contenido entre Usuarios / Clientes /
+  // Operarios (las 3 sub-pestañas de arriba). Sincronizado con
+  // _topIndex en ambas direcciones: deslizar cambia _topIndex, y tocar
+  // una pestaña anima el PageView hasta ella.
+  final _topPageController = PageController();
+
+  @override
+  void dispose() {
+    _topPageController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,15 +128,18 @@ class _MainShellState extends State<MainShell> {
   Widget _buildBody() {
     switch (_bottomIndex) {
       case 0:
-        switch (_topIndex) {
-          case 0:
-            return const AdminHomeScreen();
-          case 1:
-            return const ClientesScreen();
-          case 2:
-          default:
-            return const OperariosScreen(); // ⬅️ corregido: antes era _SectionPlaceholder
-        }
+        // Deslizable: PageView en vez de un switch fijo. onPageChanged
+        // mantiene _topIndex sincronizado con la página visible cuando
+        // el cambio viene de deslizar (no de tocar la pestaña).
+        return PageView(
+          controller: _topPageController,
+          onPageChanged: (i) => setState(() => _topIndex = i),
+          children: const [
+            AdminHomeScreen(),
+            ClientesScreen(),
+            OperariosScreen(),
+          ],
+        );
       case 1:
         return const ProduccionScreen();
       case 2:
@@ -152,7 +167,15 @@ class _MainShellState extends State<MainShell> {
             padding: const EdgeInsets.symmetric(horizontal: 18),
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => setState(() => _topIndex = i),
+              // Al tocar una pestaña, el PageView se desliza animado
+              // hasta ella (en vez de solo saltar con setState). El
+              // propio onPageChanged del PageView actualiza _topIndex
+              // cuando la animación termina.
+              onTap: () => _topPageController.animateToPage(
+                i,
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOut,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
