@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:printing/printing.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../admin/data/models/orden_model.dart';
 import '../../../operario/presentation/screens/operario_shared_widgets.dart' show ErrorState;
+import '../../data/services/orden_pdf_service.dart';
 import '../widgets/cliente_shared_widgets.dart';
 
 class ClientePedidosScreen extends StatefulWidget {
@@ -27,6 +29,11 @@ enum _EstadoFiltro { todos, pendiente, enProceso, completada, retrasada }
 class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
   String _query = '';
   _EstadoFiltro _filter = _EstadoFiltro.todos;
+
+  // Id de la orden actualmente expandida (acordeón: solo una a la vez).
+  int? _expandedOrdenId;
+  // Id de la orden cuyo PDF se está generando (para el spinner del botón).
+  int? _descargandoOrdenId;
 
   bool _matchFiltro(Orden o) {
     switch (_filter) {
@@ -70,6 +77,33 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
         return AppColors.iconActive;
       case _EstadoFiltro.retrasada:
         return AppColors.errorText;
+    }
+  }
+
+  /// Alterna la expansión de una card. Si había otra abierta, se cierra
+  /// automáticamente (comportamiento de acordeón: solo una a la vez).
+  void _toggleExpanded(int idOrden) {
+    setState(() {
+      _expandedOrdenId = _expandedOrdenId == idOrden ? null : idOrden;
+    });
+  }
+
+  Future<void> _descargarPdf(Orden orden) async {
+    setState(() => _descargandoOrdenId = orden.idOrden);
+    try {
+      final bytes = await OrdenPdfService.generar(orden: orden);
+      await Printing.layoutPdf(
+        onLayout: (format) async => bytes,
+        name: 'pedido-${orden.codigoOrden.isEmpty ? orden.idOrden : orden.codigoOrden}.pdf',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo generar el PDF del pedido.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _descargandoOrdenId = null);
     }
   }
 
@@ -180,8 +214,17 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
                               physics: const AlwaysScrollableScrollPhysics(),
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                               itemCount: filtered.length,
-                              itemBuilder: (context, i) =>
-                                  ClienteOrderCard(orden: filtered[i]),
+                              itemBuilder: (context, i) {
+                                final orden = filtered[i];
+                                final isExpanded = _expandedOrdenId == orden.idOrden;
+                                return ClienteOrderCard(
+                                  orden: orden,
+                                  expanded: isExpanded,
+                                  onTap: () => _toggleExpanded(orden.idOrden),
+                                  onDownloadPdf: () => _descargarPdf(orden),
+                                  downloading: _descargandoOrdenId == orden.idOrden,
+                                );
+                              },
                             ),
                     ),
         ),

@@ -798,7 +798,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
       ],
     );
   }
-// p
+
   Widget _buildObservacionRow(ObservacionOperario obs) {
     final eliminando = _eliminandoObs.contains(obs.idObservacion);
     return Container(
