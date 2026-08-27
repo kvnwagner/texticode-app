@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/routing/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../domain/models/user_role.dart';
@@ -58,9 +60,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _navigateToRoleHome(UserRole role) {
-    // TODO: reemplazar por go_router / rutas nombradas cuando se agreguen
-    // las pantallas reales de cada rol (admin / operario / cliente).
-    Navigator.of(context).pushReplacementNamed('/home', arguments: role);
+    // Navegación real con go_router: el rol viaja como `extra` y
+    // GoRoute('/home') decide qué home mostrar (ver app_router.dart).
+    context.go(AppRoutes.home, extra: role);
   }
 
   @override
