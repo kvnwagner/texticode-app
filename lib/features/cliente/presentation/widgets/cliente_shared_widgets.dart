@@ -3,7 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../admin/data/models/orden_model.dart';
 import '../../../operario/presentation/screens/operario_shared_widgets.dart'
-    show statusColors, priorityColors, StatusBadge, ErrorState;
+    show statusColors, priorityColors, StatusBadge;
 
 /// Header con logo — mismo patrón que OperarioHeader / header de Admin.
 class ClienteLogoHeader extends StatelessWidget {
