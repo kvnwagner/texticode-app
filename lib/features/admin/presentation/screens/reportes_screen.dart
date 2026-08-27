@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -10,6 +9,8 @@ import '../../data/models/orden_model.dart';
 import '../../data/models/material_model.dart';
 import '../../data/repositories/orden_repository.dart';
 import '../../data/repositories/material_repository.dart';
+import '../../data/services/reporte_pdf_service.dart';
+import '../../data/services/excel_reporte_service.dart';
 
 const _tiposFiltro = ['Todos los tipos', 'Pedidos', 'Eficiencia', 'Inventario'];
 
@@ -509,38 +510,40 @@ class _ReportesScreenState extends State<ReportesScreen> {
   }
 
   Future<void> _descargarPdfPedidos() => _runExport(() async {
-        final doc = pw.Document();
-        doc.addPage(
-          pw.MultiPage(
-            build: (ctx) => [
-              pw.Text('Reporte de Pedidos', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 12),
-              pw.TableHelper.fromTextArray(
-                headers: ['Código', 'Producto', 'Cliente', 'Operario', 'Estado', 'Progreso'],
-                data: _ordenes
-                    .map((o) => [
-                          o.codigoOrden,
-                          o.producto,
-                          o.cliente,
-                          o.operario,
-                          o.estadoLabel,
-                          '${o.progresoPorcentaje}%',
-                        ])
-                    .toList(),
-              ),
-            ],
-          ),
+        final bytes = await ReportePdfService.generar(
+          titulo: 'Pedidos',
+          subtitulo: '$_total órdenes registradas',
+          headers: const ['Código', 'Producto', 'Cliente', 'Operario', 'Estado', 'Progreso'],
+          filas: _ordenes
+              .map((o) => [
+                    o.codigoOrden,
+                    o.producto,
+                    o.cliente,
+                    o.operario,
+                    o.estadoLabel,
+                    '${o.progresoPorcentaje}%',
+                  ])
+              .toList(),
         );
-        await Printing.layoutPdf(onLayout: (_) => doc.save());
+        await Printing.layoutPdf(onLayout: (_) => bytes, name: 'reporte_pedidos.pdf');
       });
 
   Future<void> _exportarCsvPedidos() => _runExport(() async {
-        final buffer = StringBuffer('Codigo,Producto,Cliente,Operario,Estado,Progreso\n');
-        for (final o in _ordenes) {
-          buffer.writeln(
-              '${o.codigoOrden},${_csvSafe(o.producto)},${_csvSafe(o.cliente)},${_csvSafe(o.operario)},${o.estadoLabel},${o.progresoPorcentaje}%');
-        }
-        await _compartirCsv(buffer.toString(), 'reporte_pedidos.csv');
+        final bytes = ExcelReporteService.generar(
+          titulo: 'Pedidos',
+          headers: const ['Código', 'Producto', 'Cliente', 'Operario', 'Estado', 'Progreso'],
+          filas: _ordenes
+              .map((o) => [
+                    o.codigoOrden,
+                    o.producto,
+                    o.cliente,
+                    o.operario,
+                    o.estadoLabel,
+                    '${o.progresoPorcentaje}%',
+                  ])
+              .toList(),
+        );
+        await _compartirBytes(bytes, 'reporte_pedidos.xlsx');
       });
 
   Future<void> _descargarPdfEficiencia() => _runExport(() async {
@@ -548,26 +551,18 @@ class _ReportesScreenState extends State<ReportesScreen> {
         for (final o in _ordenes) {
           porOperario.putIfAbsent(o.operario, () => []).add(o);
         }
-        final doc = pw.Document();
-        doc.addPage(
-          pw.MultiPage(
-            build: (ctx) => [
-              pw.Text('Reporte de Eficiencia Operaria',
-                  style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 12),
-              pw.TableHelper.fromTextArray(
-                headers: ['Operario', 'Órdenes Asignadas', 'Completadas', '% Completación'],
-                data: porOperario.entries.map((e) {
-                  final totalOp = e.value.length;
-                  final compOp = e.value.where((o) => o.isCompletada).length;
-                  final pct = totalOp == 0 ? 0 : ((compOp / totalOp) * 100).round();
-                  return [e.key, '$totalOp', '$compOp', '$pct%'];
-                }).toList(),
-              ),
-            ],
-          ),
+        final bytes = await ReportePdfService.generar(
+          titulo: 'Eficiencia Operaria',
+          subtitulo: '${porOperario.length} operarios con órdenes asignadas',
+          headers: const ['Operario', 'Órdenes Asignadas', 'Completadas', '% Completación'],
+          filas: porOperario.entries.map((e) {
+            final totalOp = e.value.length;
+            final compOp = e.value.where((o) => o.isCompletada).length;
+            final pct = totalOp == 0 ? 0 : ((compOp / totalOp) * 100).round();
+            return [e.key, '$totalOp', '$compOp', '$pct%'];
+          }).toList(),
         );
-        await Printing.layoutPdf(onLayout: (_) => doc.save());
+        await Printing.layoutPdf(onLayout: (_) => bytes, name: 'reporte_eficiencia.pdf');
       });
 
   Future<void> _exportarCsvEficiencia() => _runExport(() async {
@@ -575,56 +570,60 @@ class _ReportesScreenState extends State<ReportesScreen> {
         for (final o in _ordenes) {
           porOperario.putIfAbsent(o.operario, () => []).add(o);
         }
-        final buffer = StringBuffer('Operario,OrdenesAsignadas,Completadas,PorcentajeCompletacion\n');
-        for (final e in porOperario.entries) {
-          final totalOp = e.value.length;
-          final compOp = e.value.where((o) => o.isCompletada).length;
-          final pct = totalOp == 0 ? 0 : ((compOp / totalOp) * 100).round();
-          buffer.writeln('${_csvSafe(e.key)},$totalOp,$compOp,$pct%');
-        }
-        await _compartirCsv(buffer.toString(), 'reporte_eficiencia.csv');
+        final bytes = ExcelReporteService.generar(
+          titulo: 'Eficiencia',
+          headers: const ['Operario', 'Órdenes Asignadas', 'Completadas', '% Completación'],
+          filas: porOperario.entries.map((e) {
+            final totalOp = e.value.length;
+            final compOp = e.value.where((o) => o.isCompletada).length;
+            final pct = totalOp == 0 ? 0 : ((compOp / totalOp) * 100).round();
+            return [e.key, '$totalOp', '$compOp', '$pct%'];
+          }).toList(),
+        );
+        await _compartirBytes(bytes, 'reporte_eficiencia.xlsx');
       });
 
   Future<void> _descargarPdfInventario() => _runExport(() async {
-        final doc = pw.Document();
-        doc.addPage(
-          pw.MultiPage(
-            build: (ctx) => [
-              pw.Text('Reporte de Inventario', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 12),
-              pw.TableHelper.fromTextArray(
-                headers: ['Material', 'Categoría', 'Stock', 'Mínimo', 'Máximo'],
-                data: _materiales
-                    .map((m) => [
-                          m.nombre,
-                          m.categoria,
-                          '${m.stockActual} ${m.unidad}',
-                          '${m.stockMinimo}',
-                          '${m.stockMaximo}',
-                        ])
-                    .toList(),
-              ),
-            ],
-          ),
+        final bytes = await ReportePdfService.generar(
+          titulo: 'Inventario',
+          subtitulo: '${_materiales.length} materiales en inventario',
+          headers: const ['Material', 'Categoría', 'Stock', 'Mínimo', 'Máximo'],
+          filas: _materiales
+              .map((m) => [
+                    m.nombre,
+                    m.categoria,
+                    '${m.stockActual} ${m.unidad}',
+                    '${m.stockMinimo}',
+                    '${m.stockMaximo}',
+                  ])
+              .toList(),
         );
-        await Printing.layoutPdf(onLayout: (_) => doc.save());
+        await Printing.layoutPdf(onLayout: (_) => bytes, name: 'reporte_inventario.pdf');
       });
 
   Future<void> _exportarCsvInventario() => _runExport(() async {
-        final buffer = StringBuffer('Material,Categoria,Stock,Unidad,Minimo,Maximo\n');
-        for (final m in _materiales) {
-          buffer.writeln(
-              '${_csvSafe(m.nombre)},${m.categoria},${m.stockActual},${m.unidad},${m.stockMinimo},${m.stockMaximo}');
-        }
-        await _compartirCsv(buffer.toString(), 'reporte_inventario.csv');
+        final bytes = ExcelReporteService.generar(
+          titulo: 'Inventario',
+          headers: const ['Material', 'Categoría', 'Stock', 'Mínimo', 'Máximo'],
+          filas: _materiales
+              .map((m) => [
+                    m.nombre,
+                    m.categoria,
+                    '${m.stockActual} ${m.unidad}',
+                    '${m.stockMinimo}',
+                    '${m.stockMaximo}',
+                  ])
+              .toList(),
+        );
+        await _compartirBytes(bytes, 'reporte_inventario.xlsx');
       });
 
-  String _csvSafe(String v) => '"${v.replaceAll('"', '""')}"';
-
-  Future<void> _compartirCsv(String contenido, String nombreArchivo) async {
+  // Ya no exportamos CSV — un .xlsx real permite el mismo estilo
+  // (encabezado navy, filas zebra) que el resto de la app usa en PDF.
+  Future<void> _compartirBytes(List<int> bytes, String nombreArchivo) async {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/$nombreArchivo');
-    await file.writeAsString(contenido);
+    await file.writeAsBytes(bytes);
     await Share.shareXFiles([XFile(file.path)], text: 'Reporte Texticode');
   }
 }
