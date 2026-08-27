@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/routing/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../admin/data/models/orden_model.dart';
 import '../../../admin/data/repositories/orden_repository.dart';
@@ -45,7 +47,7 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
     try {
       final authUser = await _authRepo.getUsuarioGuardado();
       if (authUser == null) {
-        if (mounted) Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        if (mounted) context.go(AppRoutes.login);
         return;
       }
       final todas = await _ordenRepo.getOrdenes();
@@ -61,7 +63,7 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
   }
 
   void _logout() {
-    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+    context.go(AppRoutes.login);
   }
 
   @override
