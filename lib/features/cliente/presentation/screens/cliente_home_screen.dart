@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/app_dock.dart';
 import '../../../admin/data/models/orden_model.dart';
 import '../../../admin/data/repositories/orden_repository.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
@@ -92,50 +93,10 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
         bottom: false,
         child: IndexedStack(index: _tab, children: pages),
       ),
-      bottomNavigationBar: _buildDock(),
-    );
-  }
-
-  Widget _buildDock() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-      child: Container(
-        height: 62,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: AppColors.cardBorder),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(_icons.length, (i) {
-            final selected = i == _tab;
-            return GestureDetector(
-              onTap: () => setState(() => _tab = i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: selected ? AppColors.navy : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  _icons[i],
-                  size: 20,
-                  color: selected ? Colors.white : AppColors.textFaint,
-                ),
-              ),
-            );
-          }),
-        ),
+      bottomNavigationBar: AppDock(
+        icons: _icons,
+        selectedIndex: _tab,
+        onSelected: (i) => setState(() => _tab = i),
       ),
     );
   }
