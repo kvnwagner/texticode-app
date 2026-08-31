@@ -8,7 +8,7 @@ import '../../data/models/eficiencia_operario_model.dart';
 import '../../data/repositories/usuario_repository.dart';
 import '../../data/repositories/orden_repository.dart';
 import '../../data/repositories/eficiencia_repository.dart';
-import '../widgets/reassign_orders_sheet.dart';
+import '../widgets/reassign_orders_view.dart';
 import '../widgets/eficiencia_ranking_card.dart';
 import '../widgets/eficiencia_detail_sheet.dart';
 
@@ -35,6 +35,10 @@ class _OperariosScreenState extends State<OperariosScreen> {
 
   // 0 = Rendimiento & Eficiencia · 1 = Carga Laboral (el diseño abre en Carga Laboral)
   int _tab = 1;
+
+  // Si es true, el body completo de la pestaña se reemplaza por la vista
+  // de "Reasignación de Órdenes" (ya no es un sheet emergente).
+  bool _mostrarReasignacion = false;
 
   // ── Eficiencia (NUEVO) ──
   final _eficienciaRepo = EficienciaRepository();
@@ -142,6 +146,20 @@ class _OperariosScreenState extends State<OperariosScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_mostrarReasignacion) {
+      final cargas = _cargas;
+      return Container(
+        color: AppColors.pageBg,
+        child: ReassignOrdersView(
+          sobrecargados: cargas.where((c) => c.isSobrecargado).map((c) => c.usuario).toList(),
+          disponibles: cargas.where((c) => !c.isSobrecargado).map((c) => c.usuario).toList(),
+          ordenes: _ordenes,
+          onChanged: _cargar,
+          onBack: () => setState(() => _mostrarReasignacion = false),
+        ),
+      );
+    }
+
     return Container(
       color: AppColors.pageBg,
       child: _tab == 0 ? _buildEficienciaBody() : _buildCargaBody(),
@@ -487,24 +505,13 @@ class _OperariosScreenState extends State<OperariosScreen> {
 
   Widget _buildReasignarButton(List<_CargaOperario> cargas) {
     final sobrecargados = cargas.where((c) => c.isSobrecargado).toList();
-    final disponibles = cargas.where((c) => !c.isSobrecargado).toList();
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
         onPressed: sobrecargados.isEmpty
             ? null
-            : () => showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => ReassignOrdersSheet(
-                    sobrecargados: sobrecargados.map((c) => c.usuario).toList(),
-                    disponibles: disponibles.map((c) => c.usuario).toList(),
-                    ordenes: _ordenes,
-                    onChanged: _cargar,
-                  ),
-                ),
+            : () => setState(() => _mostrarReasignacion = true),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.navy,
           disabledBackgroundColor: AppColors.navy.withValues(alpha: 0.4),

@@ -6,13 +6,14 @@ import '../../../auth/data/repositories/google_auth_repository.dart';
 import '../../../admin/data/repositories/calendar_repository.dart';
 import '../../../admin/data/repositories/usuario_repository.dart';
 
-/// Pantalla "Mi Perfil" del rol Cliente — mismo diseño exacto que
-/// PerfilScreen de Admin/Operario: header blanco, tarjeta con gradiente
-/// navy, info tiles, botones de acción y botón de cerrar sesión al
-/// final (ya NO en el header de las demás pantallas).
+/// Pantalla "Mi Perfil" del rol Cliente.
 class ClientePerfilScreen extends StatefulWidget {
   final VoidCallback onLogout;
-  const ClientePerfilScreen({super.key, required this.onLogout});
+
+  const ClientePerfilScreen({
+    super.key,
+    required this.onLogout,
+  });
 
   @override
   State<ClientePerfilScreen> createState() => _ClientePerfilScreenState();
@@ -31,6 +32,7 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
   int? _idUsuario;
   int? _idRol;
   String _estado = 'activo';
+
   bool _loading = true;
   bool _sincronizando = false;
   bool _vinculandoGoogle = false;
@@ -45,8 +47,11 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
 
   Future<void> _cargarPerfil({bool mostrarFeedback = false}) async {
     final authUser = await _authRepo.getUsuarioGuardado();
+
     if (authUser == null) {
-      if (mounted) widget.onLogout();
+      if (mounted) {
+        widget.onLogout();
+      }
       return;
     }
 
@@ -64,53 +69,129 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
 
     try {
       final usuarios = await _usuarioRepo.getUsuarios();
-      final match = usuarios.where((u) => u.idUsuario == authUser.idUsuario);
+      final match = usuarios.where(
+        (u) => u.idUsuario == authUser.idUsuario,
+      );
+
       if (match.isNotEmpty && mounted) {
-        setState(() => _telefono = match.first.telefono ?? '—');
+        setState(() {
+          _telefono = match.first.telefono ?? '—';
+        });
       }
+
       if (mostrarFeedback && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Perfil sincronizado con el servidor.')),
+          const SnackBar(
+            content: Text('Perfil sincronizado con el servidor.'),
+          ),
         );
       }
     } catch (e) {
-      // Al cargar por primera vez es silencioso a propósito (el teléfono
-      // es complementario). Pero si el usuario pidió sincronizar
-      // explícitamente, sí le avisamos del error.
       if (mostrarFeedback && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo sincronizar: ${e.toString().replaceFirst('Exception: ', '')}')),
+          SnackBar(
+            content: Text(
+              'No se pudo sincronizar: '
+              '${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
         );
       }
     }
   }
 
+  /// Sincroniza las órdenes del usuario con Google Calendar.
   Future<void> _sincronizar() async {
     if (_sincronizando) return;
-    setState(() => _sincronizando = true);
-    await _cargarPerfil(mostrarFeedback: true);
-    if (mounted) setState(() => _sincronizando = false);
+
+    setState(() {
+      _sincronizando = true;
+    });
+
+    try {
+      final result = await _calendarRepo.syncAllOrdenes();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Órdenes sincronizadas: ${result.total} '
+            '(${result.creados} nuevas, '
+            '${result.actualizados} actualizadas).',
+          ),
+        ),
+      );
+
+      await _cargarEstadoGoogle();
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _sincronizando = false;
+        });
+      }
+    }
   }
 
-  void _vincularGoogle() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Próximamente'),
-        content: const Text(
-            'Vincular tu cuenta con Google todavía no está disponible en esta versión. '
-            'Lo habilitaremos en una futura actualización.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Entendido')),
-        ],
-      ),
-    );
+  /// Vincula la cuenta del usuario con Google Calendar.
+  Future<void> _vincularGoogle() async {
+    if (_vinculandoGoogle) return;
+
+    setState(() {
+      _vinculandoGoogle = true;
+    });
+
+    try {
+      final code =
+          await _googleAuthRepo.requestCalendarServerAuthCode();
+
+      await _calendarRepo.connect(code);
+
+      await _cargarEstadoGoogle();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Google Calendar vinculado correctamente.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _vinculandoGoogle = false;
+        });
+      }
+    }
   }
 
   Future<void> _abrirEditarPerfil() async {
     if (_idUsuario == null || _idRol == null) return;
 
-    final actualizado = await showModalBottomSheet<Map<String, String>>(
+    final actualizado =
+        await showModalBottomSheet<Map<String, String>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -132,8 +213,11 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
         _correo = actualizado['correo']!;
         _telefono = actualizado['telefono']!;
       });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perfil actualizado correctamente.')),
+        const SnackBar(
+          content: Text('Perfil actualizado correctamente.'),
+        ),
       );
     }
   }
@@ -141,68 +225,32 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
   Future<void> _cargarEstadoGoogle() async {
     try {
       final status = await _calendarRepo.getStatus();
+
       if (!mounted) return;
+
       setState(() {
         _googleConectado = status.connected;
       });
     } catch (_) {
-      // Silencioso al abrir perfil; el botón mostrará el error si el usuario lo usa.
-    }
-  }
-
-  Future<void> _vincularGoogle() async {
-    if (_vinculandoGoogle) return;
-    setState(() => _vinculandoGoogle = true);
-    try {
-      final code = await _googleAuthRepo.requestCalendarServerAuthCode();
-      await _calendarRepo.connect(code);
-      await _cargarEstadoGoogle();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Google Calendar vinculado correctamente.')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
-    } finally {
-      if (mounted) setState(() => _vinculandoGoogle = false);
-    }
-  }
-
-  Future<void> _sincronizar() async {
-    if (_sincronizando) return;
-    setState(() => _sincronizando = true);
-    try {
-      final result = await _calendarRepo.syncAllOrdenes();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Órdenes sincronizadas: ${result.total} '
-            '(${result.creados} nuevas, ${result.actualizados} actualizadas).',
-          ),
-        ),
-      );
-      await _cargarEstadoGoogle();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
-    } finally {
-      if (mounted) setState(() => _sincronizando = false);
+      // Silencioso al abrir perfil.
     }
   }
 
   String get _initials {
     final parts = _nombre.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '??';
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts[1].substring(0, 1))
-        .toUpperCase();
+
+    if (parts.isEmpty || parts.first.isEmpty) {
+      return '??';
+    }
+
+    if (parts.length == 1) {
+      return parts.first.substring(0, 1).toUpperCase();
+    }
+
+    return (
+      parts.first.substring(0, 1) +
+      parts[1].substring(0, 1)
+    ).toUpperCase();
   }
 
   Future<void> _logout() async {
@@ -220,11 +268,20 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
           Expanded(
             child: _loading
                 ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.navy))
+                    child: CircularProgressIndicator(
+                      color: AppColors.navy,
+                    ),
+                  )
                 : SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    padding: const EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      24,
+                    ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.stretch,
                       children: [
                         _ProfileCard(
                           nombre: _nombre,
@@ -234,7 +291,9 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
                           initials: _initials,
                           onEditar: _abrirEditarPerfil,
                         ),
+
                         const SizedBox(height: 16),
+
                         _ActionButton(
                           icon: const _GoogleIcon(),
                           label: _vinculandoGoogle
@@ -244,26 +303,43 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
                                   : 'Vincular con Google'),
                           onTap: _vincularGoogle,
                         ),
+
                         const SizedBox(height: 10),
+
                         _ActionButton(
                           icon: _sincronizando
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white),
+                                  child:
+                                      CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
                                 )
-                              : const Icon(Icons.sync_rounded,
-                                  size: 18, color: Colors.white),
+                              : const Icon(
+                                  Icons.sync_rounded,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
                           label: _sincronizando
                               ? 'Sincronizando...'
                               : 'Sincronizar Ahora',
                           onTap: _sincronizar,
                         ),
+
                         const SizedBox(height: 28),
-                        const Divider(height: 1, color: AppColors.cardBorder),
+
+                        const Divider(
+                          height: 1,
+                          color: AppColors.cardBorder,
+                        ),
+
                         const SizedBox(height: 20),
-                        _LogoutButton(onTap: _logout),
+
+                        _LogoutButton(
+                          onTap: _logout,
+                        ),
                       ],
                     ),
                   ),
@@ -275,10 +351,17 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.cardBorder,
+          ),
+        ),
       ),
       child: Row(
         children: [
@@ -292,34 +375,52 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
                 width: 38,
                 height: 38,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.navy,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(_initials,
+                errorBuilder:
+                    (context, error, stackTrace) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.navy,
+                      borderRadius:
+                          BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      _initials,
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13)),
-                ),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
+
           const SizedBox(width: 10),
+
           const Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Mi Perfil',
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary)),
-                Text('Cliente',
-                    style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                Text(
+                  'Mi Perfil',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  'Cliente',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textMuted,
+                  ),
+                ),
               ],
             ),
           ),
@@ -359,72 +460,120 @@ class _ProfileCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: AppColors.navy.withValues(alpha: 0.25),
+            color: AppColors.navy.withValues(
+              alpha: 0.25,
+            ),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
             children: [
               Container(
                 width: 52,
                 height: 52,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.14),
+                  color: Colors.white.withValues(
+                    alpha: 0.14,
+                  ),
                   shape: BoxShape.circle,
-                  border:
-                      Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  border: Border.all(
+                    color: Colors.white.withValues(
+                      alpha: 0.2,
+                    ),
+                  ),
                 ),
-                child: Text(initials,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18)),
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
               ),
+
               const SizedBox(width: 12),
+
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
-                    Text(nombre,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16)),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.badgeClientBg,
-                        borderRadius: BorderRadius.circular(20),
+                    Text(
+                      nombre,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
                       ),
-                      child: const Text('Cliente',
-                          style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.badgeClientText)),
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            AppColors.badgeClientBg,
+                        borderRadius:
+                            BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Cliente',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              AppColors.badgeClientText,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-              _EditButton(onTap: onEditar),
+
+              _EditButton(
+                onTap: onEditar,
+              ),
             ],
           ),
+
           const SizedBox(height: 18),
-          _InfoTile(icon: Icons.mail_outline, label: 'EMAIL', value: correo),
-          const SizedBox(height: 10),
+
           _InfoTile(
-              icon: Icons.phone_outlined, label: 'TELÉFONO', value: telefono),
+            icon: Icons.mail_outline,
+            label: 'EMAIL',
+            value: correo,
+          ),
+
           const SizedBox(height: 10),
+
           _InfoTile(
-              icon: Icons.alternate_email, label: 'USUARIO', value: usuario),
+            icon: Icons.phone_outlined,
+            label: 'TELÉFONO',
+            value: telefono,
+          ),
+
+          const SizedBox(height: 10),
+
+          _InfoTile(
+            icon: Icons.alternate_email,
+            label: 'USUARIO',
+            value: usuario,
+          ),
         ],
       ),
     );
@@ -433,29 +582,49 @@ class _ProfileCard extends StatelessWidget {
 
 class _EditButton extends StatelessWidget {
   final VoidCallback onTap;
-  const _EditButton({required this.onTap});
+
+  const _EditButton({
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 8,
+        ),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+          color: Colors.white.withValues(
+            alpha: 0.1,
+          ),
+          borderRadius:
+              BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.white.withValues(
+              alpha: 0.18,
+            ),
+          ),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.edit_outlined, size: 13, color: Colors.white),
+            Icon(
+              Icons.edit_outlined,
+              size: 13,
+              color: Colors.white,
+            ),
             SizedBox(width: 5),
-            Text('Editar',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12)),
+            Text(
+              'Editar',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
           ],
         ),
       ),
@@ -468,39 +637,71 @@ class _InfoTile extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoTile(
-      {required this.icon, required this.label, required this.value});
+  const _InfoTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 12,
+      ),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        color: Colors.white.withValues(
+          alpha: 0.08,
+        ),
+        borderRadius:
+            BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.white.withValues(
+            alpha: 0.08,
+          ),
+        ),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Colors.white.withValues(alpha: 0.7)),
+          Icon(
+            icon,
+            size: 16,
+            color: Colors.white.withValues(
+              alpha: 0.7,
+            ),
+          ),
+
           const SizedBox(width: 10),
+
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.6,
-                        color: Colors.white.withValues(alpha: 0.55))),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.6,
+                    color: Colors.white.withValues(
+                      alpha: 0.55,
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 2),
-                Text(value,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white)),
+
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
               ],
             ),
           ),
@@ -515,8 +716,11 @@ class _ActionButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _ActionButton(
-      {required this.icon, required this.label, required this.onTap});
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -528,17 +732,24 @@ class _ActionButton extends StatelessWidget {
           backgroundColor: AppColors.navy,
           foregroundColor: Colors.white,
           elevation: 0,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.circular(16),
+          ),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+              MainAxisAlignment.center,
           children: [
             icon,
             const SizedBox(width: 10),
-            Text(label,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
           ],
         ),
       ),
@@ -556,20 +767,32 @@ class _GoogleIcon extends StatelessWidget {
       height: 20,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        gradient:
-            LinearGradient(colors: [Color(0xFF4285F4), Color(0xFF34A853)]),
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFF4285F4),
+            Color(0xFF34A853),
+          ],
+        ),
       ),
       alignment: Alignment.center,
-      child: const Text('G',
-          style: TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10)),
+      child: const Text(
+        'G',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+          fontSize: 10,
+        ),
+      ),
     );
   }
 }
 
 class _LogoutButton extends StatelessWidget {
   final VoidCallback onTap;
-  const _LogoutButton({required this.onTap});
+
+  const _LogoutButton({
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -578,24 +801,38 @@ class _LogoutButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
-          backgroundColor: AppColors.errorBg,
-          side: const BorderSide(color: AppColors.errorBorder),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor:
+              AppColors.errorBg,
+          side: const BorderSide(
+            color: AppColors.errorBorder,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.circular(16),
+          ),
         ),
         child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+              MainAxisAlignment.center,
           children: [
-            Icon(Icons.close, size: 15, color: AppColors.errorText),
+            Icon(
+              Icons.close,
+              size: 15,
+              color: AppColors.errorText,
+            ),
             SizedBox(width: 8),
-            Text('Cerrar sesión',
-                style: TextStyle(
-                    color: AppColors.errorText,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14)),
+            Text(
+              'Cerrar sesión',
+              style: TextStyle(
+                color: AppColors.errorText,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 }
+

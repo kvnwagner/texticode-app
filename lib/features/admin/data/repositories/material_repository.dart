@@ -21,6 +21,21 @@ class MaterialRepository {
     throw Exception('MaterialItem no encontrado.');
   }
 
+  /// Materiales asignados a un cliente específico (columna Id_Cliente
+  /// de la tabla material). Usado por NewOrderSheet: al elegir un
+  /// cliente en el formulario, solo deben ofrecerse SUS materiales,
+  /// no el catálogo completo. Pega contra
+  /// GET /api/practica/clientes/:Id_Cliente/materiales.
+  Future<List<MaterialItem>> getMaterialesPorCliente(int idCliente) async {
+    final res =
+        await http.get(Uri.parse('${ApiConstants.practica}/clientes/$idCliente/materiales'));
+    if (res.statusCode == 200) {
+      final List data = jsonDecode(res.body);
+      return data.map((e) => MaterialItem.fromJson(e)).toList();
+    }
+    throw Exception('No se pudieron cargar los materiales del cliente (${res.statusCode}).');
+  }
+
   /// Usa el endpoint dedicado de alertas del backend en vez de filtrar
   /// en el cliente, para que la regla de negocio (Stock_Actual <=
   /// Stock_Minimo) viva en un solo lugar.
