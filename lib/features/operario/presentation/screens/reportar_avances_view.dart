@@ -392,9 +392,17 @@ class _TimelineRow extends StatelessWidget {
 /// Bottom sheet para reportar el avance de una orden. Se abre desde
 /// [OperarioHomeScreen] (necesita `Navigator`/`ScaffoldMessenger` del árbol
 /// de la screen padre).
+///
+/// Sigue la misma estructura del prototipo web: resumen de
+/// prendas hechas / progreso actual / restantes, seguido del campo
+/// "Unidades completadas en esta sesión" (incremental — NO es el total
+/// acumulado, es lo que el operario avanzó ahora) y una nota opcional.
 class ReportProgressSheet extends StatefulWidget {
   final Orden orden;
-  final Future<void> Function(int cantidad) onSubmit;
+
+  /// [unidadesSesion] son las unidades avanzadas EN ESTA SESIÓN (se
+  /// suman al avance ya registrado). [nota] es el comentario opcional.
+  final Future<void> Function(int unidadesSesion, String? nota) onSubmit;
 
   const ReportProgressSheet({
     super.key,
@@ -407,39 +415,32 @@ class ReportProgressSheet extends StatefulWidget {
 }
 
 class _ReportProgressSheetState extends State<ReportProgressSheet> {
-  late final TextEditingController _cantidadController;
-  final _observacionesController = TextEditingController();
+  final _unidadesController = TextEditingController(text: '0');
+  final _notaController = TextEditingController();
   bool _saving = false;
   String? _error;
 
-  @override
-  void initState() {
-    super.initState();
-    _cantidadController =
-        TextEditingController(text: '${widget.orden.cantidadActual}');
-  }
+  int get _restantes =>
+      (widget.orden.cantidadTotal - widget.orden.cantidadActual)
+          .clamp(0, widget.orden.cantidadTotal);
 
   @override
   void dispose() {
-    _cantidadController.dispose();
-    _observacionesController.dispose();
+    _unidadesController.dispose();
+    _notaController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (_saving) return;
-    final cantidad = int.tryParse(_cantidadController.text.trim());
-    if (cantidad == null) {
-      setState(() => _error = 'Ingresa una cantidad valida.');
+    final unidades = int.tryParse(_unidadesController.text.trim());
+    if (unidades == null || unidades <= 0) {
+      setState(() => _error = 'Ingresa una cantidad mayor a 0.');
       return;
     }
-    if (cantidad < widget.orden.cantidadActual) {
-      setState(() => _error = 'El avance no puede ser menor al registrado.');
-      return;
-    }
-    if (cantidad > widget.orden.cantidadTotal) {
-      setState(() =>
-          _error = 'La cantidad no puede superar el total de la orden.');
+    if (unidades > _restantes) {
+      setState(() => _error =
+          'No puedes reportar más de las $_restantes prendas que quedan.');
       return;
     }
 
@@ -448,7 +449,12 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
       _error = null;
     });
     try {
-      await widget.onSubmit(cantidad);
+      await widget.onSubmit(
+        unidades,
+        _notaController.text.trim().isEmpty
+            ? null
+            : _notaController.text.trim(),
+      );
       if (!mounted) return;
       Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -466,6 +472,8 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final orden = widget.orden;
+
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: Container(
@@ -479,6 +487,7 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // ── Header ──
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 14, 14, 12),
                 child: Row(
@@ -497,7 +506,9 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            widget.orden.codigoOrden,
+                            '${orden.codigoOrden} — ${orden.producto}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                                 fontSize: 11, color: AppColors.textFaint),
                           ),
@@ -518,27 +529,56 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                 ),
               ),
               const Divider(height: 1, color: AppColors.cardBorder),
+
+              // ── Resumen: prendas hechas / progreso / quedan ──
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _SummaryItem(
+                        label: 'PRENDAS HECHAS',
+                        value:
+                            '${orden.cantidadActual} / ${orden.cantidadTotal}',
+                      ),
+                    ),
+                    Expanded(
+                      child: _SummaryItem(
+                        label: 'PROGRESO ACTUAL',
+                        value: '${orden.progresoPorcentaje}%',
+                      ),
+                    ),
+                    Expanded(
+                      child: _SummaryItem(
+                        label: 'QUEDAN',
+                        value: '$_restantes',
+                        valueColor: AppColors.errorText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const _InputLabel('Prendas completadas'),
+                    const _InputLabel('Unidades completadas en esta sesión *'),
                     const SizedBox(height: 6),
                     TextField(
-                      controller: _cantidadController,
+                      controller: _unidadesController,
                       keyboardType: TextInputType.number,
                       decoration: _inputDecoration('0'),
                     ),
                     const SizedBox(height: 14),
-                    const _InputLabel('Observaciones'),
+                    const _InputLabel('Nota (opcional)'),
                     const SizedBox(height: 6),
                     TextField(
-                      controller: _observacionesController,
-                      minLines: 4,
-                      maxLines: 4,
-                      decoration: _inputDecoration(
-                          'Describe el avance, dificultades o novedades...'),
+                      controller: _notaController,
+                      minLines: 3,
+                      maxLines: 3,
+                      decoration: _inputDecoration('Describe el avance...'),
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 10),
@@ -600,11 +640,20 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                                         color: Colors.white,
                                       ),
                                     )
-                                  : const Text(
-                                      'Enviar Reporte',
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w800),
+                                  : const Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.send_rounded, size: 14),
+                                        SizedBox(width: 6),
+                                        Text(
+                                          'Enviar Reporte',
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w800),
+                                        ),
+                                      ],
                                     ),
                             ),
                           ),
@@ -637,6 +686,45 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.navy),
       ),
+    );
+  }
+}
+
+class _SummaryItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _SummaryItem({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.3,
+            color: AppColors.textFaint,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: valueColor ?? AppColors.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 }

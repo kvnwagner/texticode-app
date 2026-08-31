@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "texticode_mobile (dev)",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define=GOOGLE_WEB_CLIENT_ID=TU_ID_AQUI.apps.googleusercontent.com"
+      ]
+    }
+  ]
+}

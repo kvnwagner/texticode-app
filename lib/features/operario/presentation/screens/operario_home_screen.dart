@@ -1,8 +1,10 @@
+// lib/features/operario/presentation/screens/operario_home_screen.dart
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_dock.dart';
 import '../../../admin/data/models/orden_model.dart';
 import '../../../admin/data/repositories/orden_repository.dart';
+import '../../../auth/data/repositories/auth_repository.dart';
 import 'perfil_screen.dart';
 import 'tareas_asignadas_view.dart';
 import 'reportar_avances_view.dart';
@@ -16,6 +18,7 @@ class OperarioHomeScreen extends StatefulWidget {
 
 class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
   final _repo = OrdenRepository();
+  final _authRepo = AuthRepository();
   int _bottomIndex = 1;
   List<Orden> _ordenes = [];
   bool _loading = true;
@@ -39,9 +42,15 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
       _error = null;
     });
     try {
+      final authUser = await _authRepo.getUsuarioGuardado();
       final data = await _repo.getOrdenes();
       if (!mounted) return;
-      setState(() => _ordenes = data);
+      setState(() {
+        // Solo las órdenes asignadas a este operario.
+        _ordenes = authUser == null
+            ? data
+            : data.where((o) => o.idOperario == authUser.idUsuario).toList();
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -57,9 +66,9 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => ReportProgressSheet(
         orden: orden,
-        onSubmit: (cantidad) => _repo.reportarAvance(
+        onSubmit: (unidadesSesion, nota) => _repo.reportarAvanceIncremental(
           orden: orden,
-          cantidadActual: cantidad,
+          unidadesSesion: unidadesSesion,
         ),
       ),
     );
@@ -86,10 +95,7 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBg,
-      body: SafeArea(
-        bottom: false,
-        child: _buildBody(),
-      ),
+      body: SafeArea(bottom: false, child: _buildBody()),
       bottomNavigationBar: AppDock(
         icons: _bottomIcons,
         selectedIndex: _bottomIndex,

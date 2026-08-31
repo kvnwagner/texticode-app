@@ -36,12 +36,25 @@ class AuthRepository {
     }
 
     final token = body!['token'] as String;
-    final usuario = AuthUser.fromJson(body['usuario'] as Map<String, dynamic>);
+    final usuarioJson = body['usuario'] as Map<String, dynamic>;
+    final usuario = AuthUser.fromJson(usuarioJson);
 
-    await _storage.write(key: _keyToken, value: token);
-    await _storage.write(key: _keyUsuarioJson, value: jsonEncode(body['usuario']));
+    await guardarSesion(token: token, usuarioJson: usuarioJson);
 
     return usuario;
+  }
+
+  /// Guarda token + usuario en almacenamiento seguro. Se usa desde
+  /// login() normal Y desde GoogleAuthRepository.signIn(), así ambos
+  /// métodos de login dejan la sesión exactamente en el mismo estado
+  /// (mismo formato de "usuario guardado", mismo token Bearer para
+  /// las demás llamadas autenticadas de la app).
+  Future<void> guardarSesion({
+    required String token,
+    required Map<String, dynamic> usuarioJson,
+  }) async {
+    await _storage.write(key: _keyToken, value: token);
+    await _storage.write(key: _keyUsuarioJson, value: jsonEncode(usuarioJson));
   }
 
   /// Recupera la sesión guardada (por ejemplo al abrir la app de nuevo),
@@ -61,6 +74,9 @@ class AuthRepository {
   Future<bool> get isLoggedIn async => (await getToken()) != null;
 
   /// Cierra sesión: borra el token y el usuario guardados.
+  /// Nota: si el usuario inició sesión con Google, además hay que
+  /// llamar a GoogleAuthRepository.signOutGoogle() para cerrar también
+  /// la sesión del SDK nativo (ver ejemplo en el README).
   Future<void> logout() async {
     await _storage.delete(key: _keyToken);
     await _storage.delete(key: _keyUsuarioJson);
