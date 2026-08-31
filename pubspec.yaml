@@ -17,6 +17,9 @@ dependencies:
   google_fonts: ^6.2.1
   http: ^1.2.0
 
+  # Login con Google
+  google_sign_in: ^6.2.1
+
   # Navegación con rutas nombradas / declarativas
   go_router: ^14.8.1
 

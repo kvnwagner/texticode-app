@@ -4,6 +4,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/google_auth_repository.dart';
 import '../../domain/models/user_role.dart';
 import '../widgets/forgot_password_sheet.dart';
 
@@ -18,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authRepo = AuthRepository();
+  final _googleAuthRepo = GoogleAuthRepository();
 
   bool _obscurePassword = true;
   bool _loading = false;
@@ -47,6 +49,27 @@ class _LoginScreenState extends State<LoginScreen> {
       // Login real contra POST /api/auth/login — valida con bcrypt en
       // el backend y guarda el JWT en almacenamiento seguro del cel.
       final usuario = await _authRepo.login(correo, contrasena);
+      if (!mounted) return;
+      setState(() => _loading = false);
+      _navigateToRoleHome(usuario.role);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    if (_loading) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final usuario = await _googleAuthRepo.signIn();
       if (!mounted) return;
       setState(() => _loading = false);
       _navigateToRoleHome(usuario.role);
@@ -94,7 +117,8 @@ class _LoginScreenState extends State<LoginScreen> {
             SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                   child: _LoginCard(
                     usernameController: _usernameController,
                     passwordController: _passwordController,
@@ -104,6 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     loading: _loading,
                     error: _error,
                     onSubmit: _handleLogin,
+                    onGoogleSubmit: _handleGoogleLogin,
                     onForgotPassword: () => showForgotPasswordSheet(context),
                   ),
                 ),
@@ -132,6 +157,7 @@ class _LoginCard extends StatelessWidget {
   final bool loading;
   final String? error;
   final VoidCallback onSubmit;
+  final VoidCallback onGoogleSubmit;
   final VoidCallback onForgotPassword;
 
   const _LoginCard({
@@ -142,6 +168,7 @@ class _LoginCard extends StatelessWidget {
     required this.loading,
     required this.error,
     required this.onSubmit,
+    required this.onGoogleSubmit,
     required this.onForgotPassword,
   });
 
@@ -204,11 +231,15 @@ class _LoginCard extends StatelessWidget {
                     hintText: 'Tu nombre de usuario',
                     prefixIcon: Icon(Icons.person_outline,
                         size: 18,
-                        color: error != null ? AppColors.errorText : AppColors.iconDefault),
+                        color: error != null
+                            ? AppColors.errorText
+                            : AppColors.iconDefault),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: error != null ? AppColors.errorText : AppColors.inputBorder,
+                        color: error != null
+                            ? AppColors.errorText
+                            : AppColors.inputBorder,
                         width: 1.5,
                       ),
                     ),
@@ -227,10 +258,14 @@ class _LoginCard extends StatelessWidget {
                     hintText: '••••••••',
                     prefixIcon: Icon(Icons.lock_outline,
                         size: 18,
-                        color: error != null ? AppColors.errorText : AppColors.iconDefault),
+                        color: error != null
+                            ? AppColors.errorText
+                            : AppColors.iconDefault),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
                         size: 18,
                         color: AppColors.iconDefault,
                       ),
@@ -239,7 +274,9 @@ class _LoginCard extends StatelessWidget {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: error != null ? AppColors.errorText : AppColors.inputBorder,
+                        color: error != null
+                            ? AppColors.errorText
+                            : AppColors.inputBorder,
                         width: 1.5,
                       ),
                     ),
@@ -250,7 +287,8 @@ class _LoginCard extends StatelessWidget {
                 if (error != null) ...[
                   const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       color: AppColors.errorBg,
                       borderRadius: BorderRadius.circular(12),
@@ -258,7 +296,8 @@ class _LoginCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.close, size: 14, color: AppColors.errorText),
+                        const Icon(Icons.close,
+                            size: 14, color: AppColors.errorText),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -297,17 +336,16 @@ class _LoginCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Google button (solo UI por ahora — el backend ya tiene
-                // getGoogleAuthUrl en la web, pero conectarlo en Flutter
-                // es aparte, avísame cuando quieras hacerlo).
                 SizedBox(
                   height: 44,
                   child: OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: loading ? null : onGoogleSubmit,
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      side: const BorderSide(color: AppColors.googleBorder, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: const BorderSide(
+                          color: AppColors.googleBorder, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     icon: Container(
                       width: 22,
@@ -321,12 +359,16 @@ class _LoginCard extends StatelessWidget {
                       alignment: Alignment.center,
                       child: const Text('G',
                           style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11)),
                     ),
                     label: const Text(
                       'Continuar con Google',
                       style: TextStyle(
-                          color: AppColors.googleText, fontWeight: FontWeight.w600, fontSize: 13),
+                          color: AppColors.googleText,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13),
                     ),
                   ),
                 ),
@@ -339,7 +381,8 @@ class _LoginCard extends StatelessWidget {
                       padding: EdgeInsets.symmetric(horizontal: 10),
                       child: Text(
                         'o ingresa con contraseña',
-                        style: TextStyle(fontSize: 11, color: AppColors.iconDefault),
+                        style: TextStyle(
+                            fontSize: 11, color: AppColors.iconDefault),
                       ),
                     ),
                     Expanded(child: Divider(color: AppColors.inputBorder)),
@@ -357,7 +400,8 @@ class _LoginCard extends StatelessWidget {
                       backgroundColor: AppColors.navy,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ).copyWith(
                       backgroundColor: WidgetStateProperty.resolveWith(
                         (states) => AppColors.navy,
@@ -365,7 +409,8 @@ class _LoginCard extends StatelessWidget {
                     ),
                     child: Ink(
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: AppColors.primaryGradient),
+                        gradient: const LinearGradient(
+                            colors: AppColors.primaryGradient),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Container(
@@ -386,7 +431,9 @@ class _LoginCard extends StatelessWidget {
                                   SizedBox(width: 10),
                                   Text('Verificando...',
                                       style: TextStyle(
-                                          fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white)),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: Colors.white)),
                                 ],
                               )
                             : const Row(
@@ -395,9 +442,12 @@ class _LoginCard extends StatelessWidget {
                                 children: [
                                   Text('Iniciar Sesión',
                                       style: TextStyle(
-                                          fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white)),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: Colors.white)),
                                   SizedBox(width: 8),
-                                  Icon(Icons.arrow_forward, size: 16, color: Colors.white),
+                                  Icon(Icons.arrow_forward,
+                                      size: 16, color: Colors.white),
                                 ],
                               ),
                       ),
@@ -429,7 +479,8 @@ class _Logo extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: const Color(0xFFF8FAFC),
-        border: Border.all(color: AppColors.navy.withValues(alpha: 0.12), width: 2),
+        border:
+            Border.all(color: AppColors.navy.withValues(alpha: 0.12), width: 2),
       ),
       alignment: Alignment.center,
       child: ClipOval(

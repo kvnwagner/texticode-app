@@ -4,13 +4,14 @@ import '../../../admin/data/models/orden_model.dart';
 import 'operario_shared_widgets.dart';
 import 'task_card.dart';
 
-enum EstadoFiltro { todos, enProceso, pendiente, retrasada }
+enum EstadoFiltro { todos, enProceso, pendiente, completada, retrasada }
 
 enum PrioridadFiltro { todas, alta, media, baja }
 
-/// Pantalla "Tareas Asignadas": lista de tareas activas del operario con
-/// búsqueda y filtros de estado/prioridad. No incluye el botón de reportar
-/// progreso (esa acción vive en ReportarAvancesView).
+/// Pantalla "Tareas Asignadas": lista de TODAS las tareas del operario
+/// (en proceso, pendientes/pausadas, completadas y retrasadas), con
+/// búsqueda y filtros de estado/prioridad. No incluye el botón de
+/// reportar progreso (esa acción vive en ReportarAvancesView).
 class TareasAsignadasView extends StatefulWidget {
   final List<Orden> ordenes;
   final bool loading;
@@ -42,6 +43,8 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
         return o.isEnProceso;
       case EstadoFiltro.pendiente:
         return o.isPendiente;
+      case EstadoFiltro.completada:
+        return o.isCompletada;
       case EstadoFiltro.retrasada:
         return o.isRetrasada;
     }
@@ -69,14 +72,18 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
 
   @override
   Widget build(BuildContext context) {
-    final activas = widget.ordenes.where((o) => !o.isCompletada).toList();
-    final filtradas = activas
+    // Ya NO se excluyen las completadas: esta vista debe mostrar TODAS
+    // las tareas asignadas al operario (en proceso, pendientes,
+    // completadas y retrasadas). El filtro de estado es lo que decide
+    // qué subconjunto ver, no un recorte fijo por defecto.
+    final todas = widget.ordenes;
+    final filtradas = todas
         .where((o) => _matchEstado(o) && _matchPrioridad(o) && _matchQuery(o))
         .toList();
 
-    final enProceso = activas.where((o) => o.isEnProceso).length;
-    final completadas = widget.ordenes.where((o) => o.isCompletada).length;
-    final pausadas = activas.where((o) => o.isPendiente).length;
+    final enProceso = todas.where((o) => o.isEnProceso).length;
+    final completadas = todas.where((o) => o.isCompletada).length;
+    final pausadas = todas.where((o) => o.isPendiente).length;
 
     return Column(
       children: [
@@ -112,6 +119,7 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
                                     EstadoFiltro.todos: 'Todos los estados',
                                     EstadoFiltro.enProceso: 'En proceso',
                                     EstadoFiltro.pendiente: 'Pendiente',
+                                    EstadoFiltro.completada: 'Completada',
                                     EstadoFiltro.retrasada: 'Retrasada',
                                   },
                                   onChanged: (v) =>
@@ -140,7 +148,7 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
                             enProceso: enProceso,
                             completadas: completadas,
                             pausadas: pausadas,
-                            total: widget.ordenes.length,
+                            total: todas.length,
                           ),
                           const SizedBox(height: 14),
                           SectionTitle(
@@ -152,8 +160,8 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
                           const SizedBox(height: 8),
                           if (filtradas.isEmpty)
                             EmptyState(
-                              label: activas.isEmpty
-                                  ? 'No tienes tareas activas'
+                              label: todas.isEmpty
+                                  ? 'No tienes tareas asignadas'
                                   : 'Ningun resultado con estos filtros',
                             ),
                           ...filtradas.map(

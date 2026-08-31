@@ -1,7 +1,10 @@
+// lib/features/operario/presentation/screens/operario_home_screen.dart
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/app_dock.dart';
 import '../../../admin/data/models/orden_model.dart';
 import '../../../admin/data/repositories/orden_repository.dart';
+import '../../../auth/data/repositories/auth_repository.dart';
 import 'perfil_screen.dart';
 import 'tareas_asignadas_view.dart';
 import 'reportar_avances_view.dart';
@@ -15,6 +18,7 @@ class OperarioHomeScreen extends StatefulWidget {
 
 class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
   final _repo = OrdenRepository();
+  final _authRepo = AuthRepository();
   int _bottomIndex = 1;
   List<Orden> _ordenes = [];
   bool _loading = true;
@@ -38,9 +42,15 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
       _error = null;
     });
     try {
+      final authUser = await _authRepo.getUsuarioGuardado();
       final data = await _repo.getOrdenes();
       if (!mounted) return;
-      setState(() => _ordenes = data);
+      setState(() {
+        // Solo las órdenes asignadas a este operario.
+        _ordenes = authUser == null
+            ? data
+            : data.where((o) => o.idOperario == authUser.idUsuario).toList();
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -56,9 +66,9 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => ReportProgressSheet(
         orden: orden,
-        onSubmit: (cantidad) => _repo.reportarAvance(
+        onSubmit: (unidadesSesion, nota) => _repo.reportarAvanceIncremental(
           orden: orden,
-          cantidadActual: cantidad,
+          unidadesSesion: unidadesSesion,
         ),
       ),
     );
@@ -85,11 +95,12 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBg,
-      body: SafeArea(
-        bottom: false,
-        child: _buildBody(),
+      body: SafeArea(bottom: false, child: _buildBody()),
+      bottomNavigationBar: AppDock(
+        icons: _bottomIcons,
+        selectedIndex: _bottomIndex,
+        onSelected: (i) => setState(() => _bottomIndex = i),
       ),
-      bottomNavigationBar: _buildDock(),
     );
   }
 
@@ -115,49 +126,5 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
           onPause: _pausar,
         );
     }
-  }
-
-  Widget _buildDock() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-      child: Container(
-        height: 62,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: AppColors.cardBorder),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(_bottomIcons.length, (i) {
-            final selected = i == _bottomIndex;
-            return GestureDetector(
-              onTap: () => setState(() => _bottomIndex = i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: selected ? AppColors.navy : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  _bottomIcons[i],
-                  size: 20,
-                  color: selected ? Colors.white : AppColors.textFaint,
-                ),
-              ),
-            );
-          }),
-        ),
-      ),
-    );
   }
 }

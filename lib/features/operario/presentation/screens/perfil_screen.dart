@@ -5,6 +5,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import '../../../../shared/widgets/editar_perfil_sheet.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
+import '../../../auth/data/repositories/google_auth_repository.dart';
+import '../../../admin/data/repositories/calendar_repository.dart';
 import '../../../admin/data/repositories/usuario_repository.dart';
 
 /// Pantalla "Mi Perfil" del rol operario.
@@ -23,6 +25,8 @@ class PerfilScreen extends StatefulWidget {
 class _PerfilScreenState extends State<PerfilScreen> {
   final _authRepo = AuthRepository();
   final _usuarioRepo = UsuarioRepository();
+  final _calendarRepo = CalendarRepository();
+  final _googleAuthRepo = GoogleAuthRepository();
 
   String _nombre = '...';
   String _correo = '...';
@@ -33,11 +37,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
   String _estado = 'activo';
   bool _loading = true;
   bool _sincronizando = false;
+  bool _vinculandoGoogle = false;
+  bool _googleConectado = false;
 
   @override
   void initState() {
     super.initState();
     _cargarPerfil();
+    _cargarEstadoGoogle();
   }
 
   Future<void> _cargarPerfil({bool mostrarFeedback = false}) async {
@@ -81,7 +88,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
       // usuario pidió sincronizar explícitamente, sí le avisamos del error.
       if (mostrarFeedback && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo sincronizar: ${e.toString().replaceFirst('Exception: ', '')}')),
+          SnackBar(
+              content: Text(
+                  'No se pudo sincronizar: ${e.toString().replaceFirst('Exception: ', '')}')),
         );
       }
     }
@@ -90,23 +99,60 @@ class _PerfilScreenState extends State<PerfilScreen> {
   Future<void> _sincronizar() async {
     if (_sincronizando) return;
     setState(() => _sincronizando = true);
-    await _cargarPerfil(mostrarFeedback: true);
-    if (mounted) setState(() => _sincronizando = false);
+    try {
+      final result = await _calendarRepo.syncAllOrdenes();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Órdenes sincronizadas: ${result.total} '
+            '(${result.creados} nuevas, ${result.actualizados} actualizadas).',
+          ),
+        ),
+      );
+      await _cargarEstadoGoogle();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _sincronizando = false);
+    }
   }
 
-  void _vincularGoogle() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Próximamente'),
-        content: const Text(
-            'Vincular tu cuenta con Google todavía no está disponible en esta versión. '
-            'Lo habilitaremos en una futura actualización.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Entendido')),
-        ],
-      ),
-    );
+  Future<void> _cargarEstadoGoogle() async {
+    try {
+      final status = await _calendarRepo.getStatus();
+      if (!mounted) return;
+      setState(() {
+        _googleConectado = status.connected;
+      });
+    } catch (_) {
+      // Silencioso: si el backend aún no expone Calendar, los botones mostrarán el error al usarlos.
+    }
+  }
+
+  Future<void> _vincularGoogle() async {
+    if (_vinculandoGoogle) return;
+    setState(() => _vinculandoGoogle = true);
+    try {
+      final code = await _googleAuthRepo.requestCalendarServerAuthCode();
+      await _calendarRepo.connect(code);
+      await _cargarEstadoGoogle();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Google Calendar vinculado correctamente.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _vinculandoGoogle = false);
+    }
   }
 
   Future<void> _abrirEditarPerfil() async {
@@ -144,7 +190,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final parts = _nombre.trim().split(RegExp(r'\s+'));
     if (parts.isEmpty || parts.first.isEmpty) return '??';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
+    return (parts.first.substring(0, 1) + parts[1].substring(0, 1))
+        .toUpperCase();
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -163,7 +210,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
           _buildHeader(),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.navy))
                 : SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                     child: Column(
@@ -179,7 +227,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         const SizedBox(height: 16),
                         _ActionButton(
                           icon: _GoogleIcon(),
-                          label: 'Vincular con Google',
+                          label: _vinculandoGoogle
+                              ? 'Vinculando...'
+                              : (_googleConectado
+                                  ? 'Google Calendar vinculado'
+                                  : 'Vincular con Google'),
                           onTap: _vincularGoogle,
                         ),
                         const SizedBox(height: 10),
@@ -191,8 +243,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                   child: CircularProgressIndicator(
                                       strokeWidth: 2, color: Colors.white),
                                 )
-                              : const Icon(Icons.sync_rounded, size: 18, color: Colors.white),
-                          label: _sincronizando ? 'Sincronizando...' : 'Sincronizar Ahora',
+                              : const Icon(Icons.sync_rounded,
+                                  size: 18, color: Colors.white),
+                          label: _sincronizando
+                              ? 'Sincronizando...'
+                              : 'Sincronizar Ahora',
                           onTap: _sincronizar,
                         ),
                         const SizedBox(height: 28),
@@ -244,7 +299,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
               children: [
                 Text('Mi Perfil',
                     style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary)),
                 Text('Operario',
                     style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
               ],
@@ -305,11 +362,14 @@ class _ProfileCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.14),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.2)),
                 ),
                 child: Text(initials,
                     style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -318,10 +378,13 @@ class _ProfileCard extends StatelessWidget {
                   children: [
                     Text(nombre,
                         style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16)),
                     const SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 3),
                       decoration: BoxDecoration(
                         color: AppColors.badgeOpBlueBg,
                         borderRadius: BorderRadius.circular(20),
@@ -341,9 +404,11 @@ class _ProfileCard extends StatelessWidget {
           const SizedBox(height: 18),
           _InfoTile(icon: Icons.mail_outline, label: 'EMAIL', value: correo),
           const SizedBox(height: 10),
-          _InfoTile(icon: Icons.phone_outlined, label: 'TELÉFONO', value: telefono),
+          _InfoTile(
+              icon: Icons.phone_outlined, label: 'TELÉFONO', value: telefono),
           const SizedBox(height: 10),
-          _InfoTile(icon: Icons.alternate_email, label: 'USUARIO', value: usuario),
+          _InfoTile(
+              icon: Icons.alternate_email, label: 'USUARIO', value: usuario),
         ],
       ),
     );
@@ -371,7 +436,10 @@ class _EditButton extends StatelessWidget {
             Icon(Icons.edit_outlined, size: 13, color: Colors.white),
             SizedBox(width: 5),
             Text('Editar',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12)),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12)),
           ],
         ),
       ),
@@ -384,7 +452,8 @@ class _InfoTile extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoTile({required this.icon, required this.label, required this.value});
+  const _InfoTile(
+      {required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -413,7 +482,9 @@ class _InfoTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(value,
                     style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white)),
               ],
             ),
           ),
@@ -428,7 +499,8 @@ class _ActionButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _ActionButton({required this.icon, required this.label, required this.onTap});
+  const _ActionButton(
+      {required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -440,14 +512,17 @@ class _ActionButton extends StatelessWidget {
           backgroundColor: AppColors.navy,
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             icon,
             const SizedBox(width: 10),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+            Text(label,
+                style:
+                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
           ],
         ),
       ),
@@ -463,11 +538,13 @@ class _GoogleIcon extends StatelessWidget {
       height: 20,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(colors: [Color(0xFF4285F4), Color(0xFF34A853)]),
+        gradient:
+            LinearGradient(colors: [Color(0xFF4285F4), Color(0xFF34A853)]),
       ),
       alignment: Alignment.center,
       child: const Text('G',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10)),
+          style: TextStyle(
+              color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10)),
     );
   }
 }
@@ -485,7 +562,8 @@ class _LogoutButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           backgroundColor: AppColors.errorBg,
           side: const BorderSide(color: AppColors.errorBorder),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -493,7 +571,10 @@ class _LogoutButton extends StatelessWidget {
             Icon(Icons.close, size: 15, color: AppColors.errorText),
             SizedBox(width: 8),
             Text('Cerrar sesión',
-                style: TextStyle(color: AppColors.errorText, fontWeight: FontWeight.w700, fontSize: 14)),
+                style: TextStyle(
+                    color: AppColors.errorText,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14)),
           ],
         ),
       ),
