@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'http://192.168.0.6:3001/api';
+  static const String baseUrl = 'http://192.168.10.24:3001/api';
 
   static const String usuarios = '$baseUrl/usuarios';
   static const String auth = '$baseUrl/auth';
@@ -7,6 +7,15 @@ class ApiConstants {
   static const String comprobantes = '$baseUrl/comprobantes';
   static const String materiales = '$baseUrl/materiales';
   static const String eficiencia = '$baseUrl/eficiencia';
+
+  // Rutas de práctica/consulta (usuarios.js "extra" — ordenes.js/:Id_Orden/materiales,
+  // clientes/:Id_Cliente/materiales, etc.). Usada por MaterialRepository para
+  // traer solo los materiales asignados a un cliente en concreto.
+  static const String practica = '$baseUrl/practica';
+
+  // Tabla intermedia orden_material: permite asociar varios materiales
+  // a una misma orden (Id_Orden, Id_Producto, Cantidad_Usada).
+  static const String ordenMaterial = '$baseUrl/orden-material';
 
   // ============================================================
   // GOOGLE AUTH (móvil)
