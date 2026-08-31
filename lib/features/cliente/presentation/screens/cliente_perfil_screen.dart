@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/editar_perfil_sheet.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import '../../../auth/data/repositories/google_auth_repository.dart';
 import '../../../admin/data/repositories/calendar_repository.dart';
@@ -27,6 +28,9 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
   String _correo = '...';
   String _telefono = '—';
   String _usuario = '...';
+  int? _idUsuario;
+  int? _idRol;
+  String _estado = 'activo';
   bool _loading = true;
   bool _sincronizando = false;
   bool _vinculandoGoogle = false;
@@ -39,7 +43,7 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
     _cargarEstadoGoogle();
   }
 
-  Future<void> _cargarPerfil() async {
+  Future<void> _cargarPerfil({bool mostrarFeedback = false}) async {
     final authUser = await _authRepo.getUsuarioGuardado();
     if (authUser == null) {
       if (mounted) widget.onLogout();
@@ -51,6 +55,9 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
         _nombre = authUser.nombreCompleto;
         _correo = authUser.correo;
         _usuario = authUser.nombreUsuario;
+        _idUsuario = authUser.idUsuario;
+        _idRol = authUser.idRol;
+        _estado = authUser.estado;
         _loading = false;
       });
     }
@@ -61,8 +68,73 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
       if (match.isNotEmpty && mounted) {
         setState(() => _telefono = match.first.telefono ?? '—');
       }
-    } catch (_) {
-      // Silencioso: el teléfono es complementario.
+      if (mostrarFeedback && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Perfil sincronizado con el servidor.')),
+        );
+      }
+    } catch (e) {
+      // Al cargar por primera vez es silencioso a propósito (el teléfono
+      // es complementario). Pero si el usuario pidió sincronizar
+      // explícitamente, sí le avisamos del error.
+      if (mostrarFeedback && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo sincronizar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _sincronizar() async {
+    if (_sincronizando) return;
+    setState(() => _sincronizando = true);
+    await _cargarPerfil(mostrarFeedback: true);
+    if (mounted) setState(() => _sincronizando = false);
+  }
+
+  void _vincularGoogle() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Próximamente'),
+        content: const Text(
+            'Vincular tu cuenta con Google todavía no está disponible en esta versión. '
+            'Lo habilitaremos en una futura actualización.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Entendido')),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _abrirEditarPerfil() async {
+    if (_idUsuario == null || _idRol == null) return;
+
+    final actualizado = await showModalBottomSheet<Map<String, String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => EditarPerfilSheet(
+        idUsuario: _idUsuario!,
+        idRol: _idRol!,
+        estado: _estado,
+        nombreCompleto: _nombre,
+        nombreUsuario: _usuario,
+        correo: _correo,
+        telefono: _telefono,
+      ),
+    );
+
+    if (actualizado != null && mounted) {
+      setState(() {
+        _nombre = actualizado['nombreCompleto']!;
+        _usuario = actualizado['nombreUsuario']!;
+        _correo = actualizado['correo']!;
+        _telefono = actualizado['telefono']!;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Perfil actualizado correctamente.')),
+      );
     }
   }
 
@@ -160,6 +232,7 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
                           telefono: _telefono,
                           usuario: _usuario,
                           initials: _initials,
+                          onEditar: _abrirEditarPerfil,
                         ),
                         const SizedBox(height: 16),
                         _ActionButton(
@@ -262,6 +335,7 @@ class _ProfileCard extends StatelessWidget {
   final String telefono;
   final String usuario;
   final String initials;
+  final VoidCallback onEditar;
 
   const _ProfileCard({
     required this.nombre,
@@ -269,6 +343,7 @@ class _ProfileCard extends StatelessWidget {
     required this.telefono,
     required this.usuario,
     required this.initials,
+    required this.onEditar,
   });
 
   @override
@@ -339,7 +414,7 @@ class _ProfileCard extends StatelessWidget {
                   ],
                 ),
               ),
-              _EditButton(onTap: () {}),
+              _EditButton(onTap: onEditar),
             ],
           ),
           const SizedBox(height: 18),
