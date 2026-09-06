@@ -5,7 +5,7 @@ import 'operario_shared_widgets.dart';
 
 /// Card de una orden/tarea. Usada tanto en "Tareas Asignadas" (compact, sin
 /// acciones) como en "Reportar Avances" (completa, con botón Reportar y
-/// opcionalmente Pausar).
+/// con botón Reportar).
 ///
 /// El slot [actions] reemplaza los antiguos flags booleanos: cada vista
 /// decide qué acciones mostrar (o ninguna) sin que la card conozca los
@@ -16,7 +16,7 @@ class TaskCard extends StatelessWidget {
   final bool showMateriales;
   final bool showScale;
 
-  /// Acción mostrada arriba a la derecha, junto a los badges (p. ej. Pausar).
+  /// Acción mostrada arriba a la derecha, junto a los badges.
   final Widget? topRightAction;
 
   /// Acción de ancho completo mostrada al final de la card (p. ej. Reportar).
@@ -36,9 +36,8 @@ class TaskCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = statusColors(orden);
     final priority = priorityColors(orden);
-    final progressColor =
-        orden.isCompletada ? AppColors.iconActive : AppColors.purple;
-    final stripeColor = status.$2;
+    final progressColor = progresoColor(orden);
+    final stripeColor = progressColor;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
@@ -215,7 +214,7 @@ class TaskCard extends StatelessWidget {
   }
 }
 
-/// Botón "+ Reportar Progreso" listo para pasar como `actions` a [TaskCard].
+/// Botón "Reportar Progreso" listo para pasar como `actions` a [TaskCard].
 class ReportButton extends StatelessWidget {
   final VoidCallback onPressed;
 
@@ -232,50 +231,13 @@ class ReportButton extends StatelessWidget {
           backgroundColor: AppColors.navy,
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         icon: const Icon(Icons.trending_up_rounded, size: 15),
         label: const Text(
-          '+ Reportar Progreso',
+          'Reportar Progreso',
           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-        ),
-      ),
-    );
-  }
-}
-
-/// Botón "Pausar" listo para pasar dentro de un `Row` de acciones.
-class PauseButton extends StatelessWidget {
-  final VoidCallback onPressed;
-
-  const PauseButton({super.key, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        height: 26,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.iconClient),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.pause, size: 11, color: AppColors.iconClient),
-            SizedBox(width: 4),
-            Text(
-              'Pausar',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: AppColors.iconClient,
-              ),
-            ),
-          ],
         ),
       ),
     );
