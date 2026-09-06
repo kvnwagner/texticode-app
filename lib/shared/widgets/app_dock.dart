@@ -168,7 +168,9 @@ class _AppDockState extends State<AppDock> {
                                 widget.icons[i],
                                 key: ValueKey(selected),
                                 size: 20,
-                                color: selected ? Colors.white : AppColors.textFaint,
+                                color: selected
+                                    ? Colors.white
+                                    : AppColors.textFaint,
                               ),
                             ),
                           ),

@@ -234,17 +234,26 @@ class Orden {
       _estadoLower == 'en proceso' || _estadoLower.contains('proceso');
   bool get isCompletada =>
       _estadoLower == 'completada' || _estadoLower.contains('completad');
-  bool get isPausado => _estadoLower == 'pausado' || _estadoLower.contains('paus');
+  bool get isPausado =>
+      _estadoLower == 'pausado' || _estadoLower.contains('paus');
   bool get isPendiente =>
       _estadoLower == 'pendiente' || _estadoLower.contains('pendient');
-  bool get isRetrasada =>
-      _estadoLower == 'retrasada' || _estadoLower.contains('retrasad');
+  bool get isRetrasada {
+    if (_estadoLower == 'retrasada' || _estadoLower.contains('retrasad')) {
+      return true;
+    }
+    if (isCompletada || fechaLimite == null || fechaLimite!.trim().isEmpty) {
+      return false;
+    }
+    final limite = DateTime.tryParse(fechaLimite!);
+    return limite != null && limite.isBefore(DateTime.now());
+  }
 
   String get estadoLabel {
+    if (isRetrasada) return 'Retrasada';
     if (isEnProceso) return 'En proceso';
     if (isCompletada) return 'Completada';
     if (isPausado) return 'Pausado';
-    if (isRetrasada) return 'Retrasada';
     if (isPendiente) return 'Pendiente';
     return estado;
   }
@@ -254,7 +263,8 @@ class Orden {
     if (nombre.isEmpty) return '??';
     final parts = nombre.split(RegExp(r'\s+'));
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
+    return (parts.first.substring(0, 1) + parts[1].substring(0, 1))
+        .toUpperCase();
   }
 
   String get fechaCorta {

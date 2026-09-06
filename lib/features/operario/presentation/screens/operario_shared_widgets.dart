@@ -6,12 +6,10 @@ import '../../../admin/data/models/orden_model.dart';
 /// Header reutilizado por ambas vistas (Tareas Asignadas / Reportar Avances).
 class OperarioHeader extends StatelessWidget {
   final String title;
-  final String subtitle;
 
   const OperarioHeader({
     super.key,
     required this.title,
-    required this.subtitle,
   });
 
   @override
@@ -25,14 +23,14 @@ class OperarioHeader extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 38,
-            height: 38,
+            width: 50,
+            height: 50,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.asset(
                 AppConstants.logoAssetPath,
-                width: 38,
-                height: 38,
+                width: 50,
+                height: 50,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   decoration: BoxDecoration(
@@ -41,7 +39,7 @@ class OperarioHeader extends StatelessWidget {
                   ),
                   alignment: Alignment.center,
                   child: const Icon(Icons.checkroom,
-                      color: Colors.white, size: 18),
+                      color: Colors.white, size: 24),
                 ),
               ),
             ),
@@ -57,17 +55,10 @@ class OperarioHeader extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
-                ),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontSize: 10, color: AppColors.textMuted),
                 ),
               ],
             ),
@@ -259,8 +250,7 @@ class EmptyState extends StatelessWidget {
               size: 34, color: AppColors.textFaint),
           const SizedBox(height: 8),
           Text(label,
-              style:
-                  const TextStyle(fontSize: 12, color: AppColors.textFaint)),
+              style: const TextStyle(fontSize: 12, color: AppColors.textFaint)),
         ],
       ),
     );
@@ -292,8 +282,7 @@ class ErrorState extends StatelessWidget {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: onRetry,
-              style:
-                  ElevatedButton.styleFrom(backgroundColor: AppColors.navy),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.navy),
               child: const Text('Reintentar',
                   style: TextStyle(color: Colors.white)),
             ),
@@ -316,11 +305,17 @@ class ErrorState extends StatelessWidget {
   if (o.isCompletada) {
     return (AppColors.statusCompletedBg, AppColors.statusCompletedText);
   }
-  if (o.isEnProceso) {
-    return (AppColors.statusInProgressBg, AppColors.statusInProgressText);
-  }
   if (o.isRetrasada) {
     return (AppColors.statusDelayedBg, AppColors.statusDelayedText);
   }
+  if (o.isEnProceso) {
+    return (AppColors.badgeOpBlueBg, AppColors.iconOp);
+  }
   return (AppColors.statusPendingBg, AppColors.statusPendingText);
+}
+
+Color progresoColor(Orden o) {
+  if (o.isCompletada) return AppColors.iconActive;
+  if (o.isRetrasada) return AppColors.errorText;
+  return AppColors.iconOp;
 }

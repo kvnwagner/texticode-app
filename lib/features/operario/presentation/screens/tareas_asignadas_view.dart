@@ -83,13 +83,12 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
 
     final enProceso = todas.where((o) => o.isEnProceso).length;
     final completadas = todas.where((o) => o.isCompletada).length;
-    final pausadas = todas.where((o) => o.isPendiente).length;
+    final retrasadas = todas.where((o) => o.isRetrasada).length;
 
     return Column(
       children: [
         const OperarioHeader(
           title: 'Tareas Asignadas',
-          subtitle: 'Gestiona y haz seguimiento a tus ordenes',
         ),
         Expanded(
           child: widget.loading
@@ -122,8 +121,7 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
                                     EstadoFiltro.completada: 'Completada',
                                     EstadoFiltro.retrasada: 'Retrasada',
                                   },
-                                  onChanged: (v) =>
-                                      setState(() => _estado = v),
+                                  onChanged: (v) => setState(() => _estado = v),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -147,7 +145,7 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
                           _StatsGrid(
                             enProceso: enProceso,
                             completadas: completadas,
-                            pausadas: pausadas,
+                            retrasadas: retrasadas,
                             total: todas.length,
                           ),
                           const SizedBox(height: 14),
@@ -185,27 +183,27 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
 class _StatsGrid extends StatelessWidget {
   final int enProceso;
   final int completadas;
-  final int pausadas;
+  final int retrasadas;
   final int total;
 
   const _StatsGrid({
     required this.enProceso,
     required this.completadas,
-    required this.pausadas,
+    required this.retrasadas,
     required this.total,
   });
 
   @override
   Widget build(BuildContext context) {
     final stats = [
-      _StatItem('En Proceso', enProceso, Icons.assignment_outlined,
-          AppColors.iconOp),
+      _StatItem(
+          'En Proceso', enProceso, Icons.assignment_outlined, AppColors.iconOp),
       _StatItem('Completadas', completadas, Icons.check_circle_outline,
           AppColors.iconActive),
-      _StatItem('Pausadas', pausadas, Icons.pause_circle_outline,
-          AppColors.iconClient),
-      _StatItem('Total', total, Icons.assignment_turned_in_outlined,
-          AppColors.navy),
+      _StatItem('Retrasadas', retrasadas, Icons.warning_amber_rounded,
+          AppColors.errorText),
+      _StatItem(
+          'Total', total, Icons.assignment_turned_in_outlined, AppColors.navy),
     ];
     return GridView.builder(
       itemCount: stats.length,

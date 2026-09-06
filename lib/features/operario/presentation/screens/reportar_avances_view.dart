@@ -4,15 +4,29 @@ import '../../../admin/data/models/orden_model.dart';
 import 'operario_shared_widgets.dart';
 import 'task_card.dart';
 
+class AvanceReporte {
+  final DateTime fecha;
+  final int unidades;
+  final int acumulado;
+  final String? nota;
+
+  const AvanceReporte({
+    required this.fecha,
+    required this.unidades,
+    required this.acumulado,
+    this.nota,
+  });
+}
+
 /// Pantalla "Reportar Avances": tabs de Ordenes Activas / Historial, con
-/// acciones de Reportar progreso y Pausar por cada orden activa.
+/// acción de Reportar progreso por cada orden activa.
 class ReportarAvancesView extends StatefulWidget {
   final List<Orden> ordenes;
   final bool loading;
   final String? error;
   final Future<void> Function() onRefresh;
   final ValueChanged<Orden> onReport;
-  final ValueChanged<Orden> onPause;
+  final Map<int, List<AvanceReporte>> reportes;
 
   const ReportarAvancesView({
     super.key,
@@ -21,7 +35,7 @@ class ReportarAvancesView extends StatefulWidget {
     required this.error,
     required this.onRefresh,
     required this.onReport,
-    required this.onPause,
+    this.reportes = const {},
   });
 
   @override
@@ -34,14 +48,17 @@ class _ReportarAvancesViewState extends State<ReportarAvancesView> {
   @override
   Widget build(BuildContext context) {
     final activas = widget.ordenes.where((o) => !o.isCompletada).toList();
-    final historial = widget.ordenes.where((o) => o.isCompletada).toList();
+    // El historial representa reportes existentes, por lo que también debe
+    // mostrar órdenes con avance parcial, no solo las ya completadas.
+    final historial = widget.ordenes
+        .where((o) => o.cantidadActual > 0 || o.isCompletada)
+        .toList();
     final selectedList = _tabIndex == 0 ? activas : historial;
 
     return Column(
       children: [
         const OperarioHeader(
           title: 'Reportar Avances',
-          subtitle: 'Actualiza el progreso de tus ordenes asignadas',
         ),
         Expanded(
           child: widget.loading
@@ -74,14 +91,16 @@ class _ReportarAvancesViewState extends State<ReportarAvancesView> {
                             (o) => _tabIndex == 0
                                 ? TaskCard(
                                     orden: o,
-                                    topRightAction: PauseButton(
-                                      onPressed: () => widget.onPause(o),
-                                    ),
+                                    showScale: false,
                                     bottomAction: ReportButton(
                                       onPressed: () => widget.onReport(o),
                                     ),
                                   )
-                                : _HistoryCard(orden: o),
+                                : _HistoryCard(
+                                    orden: o,
+                                    reportes:
+                                        widget.reportes[o.idOrden] ?? const [],
+                                  ),
                           ),
                         ],
                       ),
@@ -218,12 +237,15 @@ class _TinyBadge extends StatelessWidget {
 
 class _HistoryCard extends StatelessWidget {
   final Orden orden;
+  final List<AvanceReporte> reportes;
 
-  const _HistoryCard({required this.orden});
+  const _HistoryCard({required this.orden, required this.reportes});
 
   @override
   Widget build(BuildContext context) {
     final priority = priorityColors(orden);
+    final status = statusColors(orden);
+    final progressColor = progresoColor(orden);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -246,10 +268,10 @@ class _HistoryCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const StatusBadge(
-                label: 'Completado',
-                bg: AppColors.statusCompletedBg,
-                text: AppColors.statusCompletedText,
+              StatusBadge(
+                label: orden.estadoLabel,
+                bg: status.$1,
+                text: status.$2,
               ),
               const SizedBox(width: 6),
               StatusBadge(
@@ -268,37 +290,38 @@ class _HistoryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
+          Text(
+            'Prendas: ${orden.cantidadActual}/${orden.cantidadTotal}',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
-                child: Text(
-                  'Prendas: ${orden.cantidadActual}/${orden.cantidadTotal}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: orden.progreso,
+                    minHeight: 6,
+                    backgroundColor: AppColors.cardBorder,
+                    valueColor: AlwaysStoppedAnimation(progressColor),
                   ),
                 ),
               ),
-              const Text(
-                '100%',
+              const SizedBox(width: 8),
+              Text(
+                '${orden.progresoPorcentaje}%',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.iconActive,
+                  color: progressColor,
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: const LinearProgressIndicator(
-              value: 1,
-              minHeight: 6,
-              backgroundColor: AppColors.cardBorder,
-              valueColor: AlwaysStoppedAnimation(AppColors.iconActive),
-            ),
           ),
           const SizedBox(height: 14),
           const Text(
@@ -310,27 +333,41 @@ class _HistoryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          _TimelineRow(
-            date: orden.fechaCorta.isEmpty
-                ? 'Fecha no disponible'
-                : orden.fechaCorta,
-            percent: '100%',
-            text: 'Produccion finalizada y guardada en la base de datos.',
-          ),
+          if (reportes.isEmpty)
+            const _TimelineRow(
+              date: 'Sin reportes detallados disponibles',
+              text: 'El avance actual proviene del registro de la orden.',
+            )
+          else
+            ...reportes.reversed.map(
+              (reporte) => _TimelineRow(
+                date: _formatDate(reporte.fecha),
+                text: '${reporte.unidades} prendas reportadas '
+                    '(acumulado: ${reporte.acumulado}).'
+                    '${reporte.nota == null ? '' : ' ${reporte.nota}'}',
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  static String _formatDate(DateTime date) {
+    final local = date.toLocal();
+    final day = local.day.toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$day/$month/${local.year} $hour:$minute';
   }
 }
 
 class _TimelineRow extends StatelessWidget {
   final String date;
-  final String percent;
   final String text;
 
   const _TimelineRow({
     required this.date,
-    required this.percent,
     required this.text,
   });
 
@@ -353,27 +390,13 @@ class _TimelineRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      date,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    percent,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.iconActive,
-                    ),
-                  ),
-                ],
+              Text(
+                date,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -676,8 +699,7 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
       hintStyle: const TextStyle(fontSize: 12, color: AppColors.textFaint),
       filled: true,
       fillColor: AppColors.searchBg,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.cardBorder),
