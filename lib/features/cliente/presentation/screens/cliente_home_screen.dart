@@ -52,7 +52,8 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
         return;
       }
       final todas = await _ordenRepo.getOrdenes();
-      final propias = todas.where((o) => o.idCliente == authUser.idUsuario).toList();
+      final propias =
+          todas.where((o) => o.idCliente == authUser.idUsuario).toList();
       if (!mounted) return;
       setState(() => _ordenes = propias);
     } catch (e) {

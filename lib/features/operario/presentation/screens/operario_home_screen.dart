@@ -23,6 +23,7 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
   List<Orden> _ordenes = [];
   bool _loading = true;
   String? _error;
+  final Map<int, List<AvanceReporte>> _reportes = {};
 
   static const _bottomIcons = [
     Icons.assignment_outlined,
@@ -60,34 +61,37 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
   }
 
   Future<void> _reportarAvance(Orden orden) async {
+    int? unidadesReportadas;
+    String? notaReportada;
     final updated = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => ReportProgressSheet(
         orden: orden,
-        onSubmit: (unidadesSesion, nota) => _repo.reportarAvanceIncremental(
-          orden: orden,
-          unidadesSesion: unidadesSesion,
-        ),
+        onSubmit: (unidadesSesion, nota) async {
+          unidadesReportadas = unidadesSesion;
+          notaReportada = nota;
+          await _repo.reportarAvanceIncremental(
+            orden: orden,
+            unidadesSesion: unidadesSesion,
+          );
+        },
       ),
     );
-    if (updated == true) _cargar();
-  }
-
-  Future<void> _pausar(Orden orden) async {
-    try {
-      await _repo.actualizarEstado(orden.idOrden, 'Pendiente');
+    if (updated == true) {
+      final unidades = unidadesReportadas;
+      if (unidades != null) {
+        _reportes.putIfAbsent(orden.idOrden, () => []).add(
+              AvanceReporte(
+                fecha: DateTime.now(),
+                unidades: unidades,
+                acumulado: orden.cantidadActual + unidades,
+                nota: notaReportada,
+              ),
+            );
+      }
       await _cargar();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Orden pausada.')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
     }
   }
 
@@ -123,7 +127,7 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
           error: _error,
           onRefresh: _cargar,
           onReport: _reportarAvance,
-          onPause: _pausar,
+          reportes: _reportes,
         );
     }
   }

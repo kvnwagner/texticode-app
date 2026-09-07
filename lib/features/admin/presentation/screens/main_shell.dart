@@ -20,8 +20,10 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  int _bottomIndex = 0; // 0 Usuarios/Clientes/Operarios · 1 Producción · 2 Estadísticas · 3 Inventario · 4 Perfil
-  int _topIndex = 0; // 0 Usuarios · 1 Clientes · 2 Operarios (solo aplica si _bottomIndex == 0)
+  int _bottomIndex =
+      0; // 0 Usuarios/Clientes/Operarios · 1 Producción · 2 Estadísticas · 3 Inventario · 4 Perfil
+  int _topIndex =
+      0; // 0 Usuarios · 1 Clientes · 2 Operarios (solo aplica si _bottomIndex == 0)
 
   static const _bottomIcons = [
     Icons.people_alt_rounded,
