@@ -81,19 +81,19 @@ class _MainShellState extends State<MainShell> {
       child: Row(
         children: [
           SizedBox(
-            width: 38,
-            height: 38,
+            width: 55,
+            height: 55,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               child: Image.asset(
                 'assets/images/logo_texticode.png',
-                width: 38,
-                height: 38,
+                width: 46,
+                height: 46,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    const AvatarWidget(
+                filterQuality: FilterQuality.high,
+                errorBuilder: (context, error, stackTrace) => const AvatarWidget(
                   initials: 'TC',
-                  size: 38,
+                  size: 46,
                   bg: AppColors.navy,
                   text: Colors.white,
                 ),
@@ -102,23 +102,13 @@ class _MainShellState extends State<MainShell> {
           ),
           const SizedBox(width: 10),
           const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Gestión de Usuarios',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary)),
-                Text('Administración y control de accesos',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
-              ],
-            ),
+            child: Text('Gestión de Usuarios',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary)),
           ),
         ],
       ),

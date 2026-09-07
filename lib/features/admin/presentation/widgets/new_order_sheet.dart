@@ -20,8 +20,8 @@ class NewOrderSheet extends StatefulWidget {
 /// cada uno se registra vía OrdenMaterialRepository.agregarMaterial.
 class _MaterialSeleccionado {
   final MaterialItem material;
-  int cantidad;
-  _MaterialSeleccionado({required this.material, this.cantidad = 1});
+  int cantidad = 1;
+  _MaterialSeleccionado({required this.material});
 }
 
 class _NewOrderSheetState extends State<NewOrderSheet> {

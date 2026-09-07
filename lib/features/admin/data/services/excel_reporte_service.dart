@@ -11,10 +11,15 @@ class ExcelReporteService {
 
   /// [titulo] se usa como nombre de la hoja (ej. "Pedidos").
   /// [headers]/[filas] arman la tabla — todo texto, tal como llega.
+  /// [columnWidths] permite dar más espacio a columnas de texto largo
+  /// (ej. "Producto"/"Cliente") y menos a columnas cortas (ej.
+  /// "Progreso"/"Stock"). Si no se pasa, o su largo no coincide con
+  /// [headers], se usa 22 para todas como antes.
   static List<int> generar({
     required String titulo,
     required List<String> headers,
     required List<List<String>> filas,
+    List<double>? columnWidths,
   }) {
     final excel = Excel.createExcel();
 
@@ -56,9 +61,11 @@ class ExcelReporteService {
       }
     }
 
-    // Ancho de columna generoso para que el texto no quede cortado.
+    // Ancho de columna: usa el valor dado por columna si viene, si no
+    // cae al 22 genérico de antes.
+    final anchosValidos = columnWidths != null && columnWidths.length == headers.length;
     for (var col = 0; col < headers.length; col++) {
-      sheet.setColumnWidth(col, 22);
+      sheet.setColumnWidth(col, anchosValidos ? columnWidths[col] : 22);
     }
 
     if (sheetPorDefectoExiste) {
