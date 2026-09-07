@@ -35,6 +35,12 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
   // Id de la orden cuyo PDF se está generando (para el spinner del botón).
   int? _descargandoOrdenId;
 
+  // ── Stats (antes vivían solo en el dashboard eliminado) ──
+  int get _total => widget.ordenes.length;
+  int get _enProceso => widget.ordenes.where((o) => o.isEnProceso).length;
+  int get _completadas => widget.ordenes.where((o) => o.isCompletada).length;
+  int get _pendientes => widget.ordenes.where((o) => o.isPendiente).length;
+
   bool _matchFiltro(Orden o) {
     switch (_filter) {
       case _EstadoFiltro.todos:
@@ -107,6 +113,33 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
     }
   }
 
+  Widget _buildStats() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 4,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          mainAxisExtent: 78,
+        ),
+        itemBuilder: (context, i) {
+          final items = [
+            (Icons.shopping_bag_outlined, '$_total', 'Total pedidos', AppColors.navy),
+            (Icons.autorenew_rounded, '$_enProceso', 'En proceso', AppColors.purple),
+            (Icons.check_circle_outline, '$_completadas', 'Completados', AppColors.iconActive),
+            (Icons.hourglass_empty_rounded, '$_pendientes', 'Pendientes', AppColors.textFaint),
+          ];
+          final (icon, value, label, color) = items[i];
+          return ClienteStatCard(icon: icon, value: value, label: label, color: color);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final filtered = widget.ordenes.where((o) {
@@ -123,8 +156,10 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
           title: 'Mis Pedidos',
           subtitle: 'Seguimiento y estado',
         ),
+        // ⬅️ nuevo — stat cards que antes solo estaban en el dashboard eliminado.
+        if (!widget.loading && widget.error == null) _buildStats(),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: Container(
             height: 42,
             padding: const EdgeInsets.symmetric(horizontal: 12),
