@@ -6,7 +6,6 @@ import '../../../../shared/widgets/app_dock.dart';
 import '../../../admin/data/models/orden_model.dart';
 import '../../../admin/data/repositories/orden_repository.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
-import 'cliente_dashboard_screen.dart';
 import 'cliente_pedidos_screen.dart';
 import 'cliente_soporte_screen.dart';
 import 'cliente_perfil_screen.dart';
@@ -22,13 +21,15 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
   final _authRepo = AuthRepository();
   final _ordenRepo = OrdenRepository();
 
+  // ⬅️ Ya no hay pestaña "Comprobantes" (dashboard). La app de cliente
+  // ahora abre directo en "Mis Pedidos", que además ya incluye las
+  // stat cards que antes vivían solo en el dashboard.
   int _tab = 0;
   List<Orden> _ordenes = [];
   bool _loading = true;
   String? _error;
 
   static const _icons = [
-    Icons.home_outlined,
     Icons.shopping_bag_outlined,
     Icons.support_agent_outlined,
     Icons.person_outline_rounded,
@@ -70,13 +71,6 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      ClienteDashboardScreen(
-        ordenes: _ordenes,
-        loading: _loading,
-        error: _error,
-        onRefresh: _cargar,
-        onGoOrders: () => setState(() => _tab = 1),
-      ),
       ClientePedidosScreen(
         ordenes: _ordenes,
         loading: _loading,

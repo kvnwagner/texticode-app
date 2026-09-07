@@ -182,6 +182,11 @@ class ClienteStatCard extends StatelessWidget {
 /// más organizada (materiales completos, descripción completa, fechas
 /// detalladas) y aparece el botón "Descargar PDF" ([onDownloadPdf]),
 /// que solo se muestra en este estado.
+///
+/// El botón de descarga solo está DISPONIBLE (habilitado, color sólido)
+/// cuando la orden está completada. Si no lo está, se muestra
+/// deshabilitado y semi-transparente para comunicar que la descarga
+/// aún no está disponible.
 class ClienteOrderCard extends StatelessWidget {
   final Orden orden;
   final bool expanded;
@@ -406,14 +411,29 @@ class ClienteOrderCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 14),
+                            // ⬅️ El botón solo se habilita (color sólido, tocable)
+                            // cuando la orden ya está completada. Si no lo está,
+                            // se muestra deshabilitado y semi-transparente para
+                            // comunicar que la descarga todavía no está disponible.
                             SizedBox(
                               width: double.infinity,
                               height: 46,
                               child: ElevatedButton.icon(
-                                onPressed: downloading ? null : onDownloadPdf,
+                                onPressed: (!orden.isCompletada || downloading)
+                                    ? null
+                                    : onDownloadPdf,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.navy,
-                                  foregroundColor: Colors.white,
+                                  backgroundColor: orden.isCompletada
+                                      ? AppColors.navy
+                                      : AppColors.navy.withValues(alpha: 0.12),
+                                  disabledBackgroundColor: orden.isCompletada
+                                      ? AppColors.navy.withValues(alpha: 0.5)
+                                      : AppColors.navy.withValues(alpha: 0.12),
+                                  foregroundColor: orden.isCompletada
+                                      ? Colors.white
+                                      : AppColors.navy.withValues(alpha: 0.35),
+                                  disabledForegroundColor:
+                                      AppColors.navy.withValues(alpha: 0.35),
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14)),
@@ -425,9 +445,18 @@ class ClienteOrderCard extends StatelessWidget {
                                         child: CircularProgressIndicator(
                                             strokeWidth: 2, color: Colors.white),
                                       )
-                                    : const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                                    : Icon(
+                                        orden.isCompletada
+                                            ? Icons.picture_as_pdf_outlined
+                                            : Icons.lock_outline_rounded,
+                                        size: 18,
+                                      ),
                                 label: Text(
-                                  downloading ? 'Generando PDF...' : 'Descargar PDF',
+                                  downloading
+                                      ? 'Generando PDF...'
+                                      : (orden.isCompletada
+                                          ? 'Descargar PDF'
+                                          : 'Disponible al completar el pedido'),
                                   style: const TextStyle(
                                       fontSize: 13, fontWeight: FontWeight.w700),
                                 ),
