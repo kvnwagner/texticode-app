@@ -3,11 +3,13 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/orden_model.dart';
 import '../../data/repositories/orden_repository.dart';
+import '../../data/repositories/orden_material_repository.dart';
 import '../widgets/new_order_sheet.dart';
 
 /// Pantalla "Gestión de Producción" — sigue EXACTAMENTE los mismos tokens
 /// visuales que admin_home_screen.dart (Gestión de Usuarios): mismas cards
-/// de stats, mismos bordes, mismo FAB, mismos avatares circulares.
+/// de stats, mismos bordes, mismo FAB, mismos avatares circulares, y ahora
+/// también el mismo encabezado (logo 55x55, sin descripción).
 class ProduccionScreen extends StatefulWidget {
   const ProduccionScreen({super.key});
 
@@ -17,7 +19,14 @@ class ProduccionScreen extends StatefulWidget {
 
 class _ProduccionScreenState extends State<ProduccionScreen> {
   final _repo = OrdenRepository();
+  final _ordenMaterialRepo = OrdenMaterialRepository();
   List<Orden> _ordenes = [];
+
+  /// Materiales reales asignados a cada orden (Id_Orden -> lista de
+  /// nombres para mostrar en la card), obtenidos de la tabla intermedia
+  /// orden_material vía GET /api/orden-material/orden/:idOrden.
+  Map<int, List<String>> _materialesPorOrden = {};
+
   bool _loading = true;
   String? _error;
 
@@ -36,11 +45,43 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
       final data = await _repo.getOrdenes();
       if (!mounted) return;
       setState(() => _ordenes = data);
+      // No bloquea el loading principal: los materiales se pintan en
+      // cuanto llegan, la lista de órdenes ya se muestra antes.
+      _cargarMaterialesDeOrdenes(data);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  /// Trae los materiales reales de cada orden desde orden_material
+  /// (tabla intermedia que soporta varios materiales por orden).
+  /// Si el backend no puede resolver el nombre del material en algún
+  /// registro, se muestra un fallback con el Id_Producto para no dejar
+  /// la card vacía silenciosamente.
+  Future<void> _cargarMaterialesDeOrdenes(List<Orden> ordenes) async {
+    final mapa = <int, List<String>>{};
+    for (final o in ordenes) {
+      try {
+        final materiales =
+            await _ordenMaterialRepo.getMaterialesDeOrden(o.idOrden);
+        mapa[o.idOrden] = materiales.map((m) {
+          final nombre = m['Nombre_Material'] ??
+              m['nombre_material'] ??
+              m['Nombre_Producto'] ??
+              m['NombreMaterial'];
+          final cantidad = m['Cantidad_Usada'] ?? m['cantidad_usada'];
+          if (nombre != null) {
+            return cantidad != null ? '$nombre ($cantidad)' : '$nombre';
+          }
+          return 'Material #${m['Id_Producto'] ?? ''}';
+        }).where((s) => s.trim().isNotEmpty).toList();
+      } catch (_) {
+        mapa[o.idOrden] = const [];
+      }
+      if (mounted) setState(() => _materialesPorOrden = Map.of(mapa));
     }
   }
 
@@ -61,24 +102,24 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
               children: [
                 _loading
                     ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.navy))
+                        child: CircularProgressIndicator(color: AppColors.navy))
                     : _error != null
-                    ? _buildError()
-                    : RefreshIndicator(
-                  color: AppColors.navy,
-                  onRefresh: _cargar,
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    children: [
-                      _buildStats(total, enProceso, completadas, retrasadas),
-                      _buildSectionHeader(_ordenes.length),
-                      if (_ordenes.isEmpty) _buildEmpty(),
-                      ..._ordenes.map(_buildOrderCard),
-                      const SizedBox(height: 130),
-                    ],
-                  ),
-                ),
+                        ? _buildError()
+                        : RefreshIndicator(
+                            color: AppColors.navy,
+                            onRefresh: _cargar,
+                            child: ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: EdgeInsets.zero,
+                              children: [
+                                _buildStats(total, enProceso, completadas, retrasadas),
+                                _buildSectionHeader(_ordenes.length),
+                                if (_ordenes.isEmpty) _buildEmpty(),
+                                ..._ordenes.map(_buildOrderCard),
+                                const SizedBox(height: 130),
+                              ],
+                            ),
+                          ),
                 Positioned(
                   bottom: 20,
                   right: 16,
@@ -101,27 +142,27 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
     );
   }
 
-  // ⬅️ Campana de notificaciones ELIMINADA (sobraba, tal como pediste).
-  // Se mantiene el logo real en vez del avatar de iniciales.
+  /// Encabezado igual al de "Gestión de Usuarios" (main_shell.dart):
+  /// contenedor de logo 55x55, título único sin subtítulo/descripción.
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(
-        color: Colors.white,
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
         children: [
           SizedBox(
-            width: 38,
-            height: 38,
+            width: 55,
+            height: 55,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               child: Image.asset(
                 AppConstants.logoAssetPath,
-                width: 38,
-                height: 38,
+                width: 46,
+                height: 46,
                 fit: BoxFit.cover,
+                filterQuality: FilterQuality.high,
                 errorBuilder: (context, error, stackTrace) => Container(
                   decoration: BoxDecoration(
                     color: AppColors.navy,
@@ -135,22 +176,15 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
           ),
           const SizedBox(width: 10),
           const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Gestión de Producción',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary)),
-                Text('Órdenes activas',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
-              ],
+            child: Text(
+              'Gestión de Producción',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
         ],
@@ -273,10 +307,15 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
     return (AppColors.priorityMediumBg, AppColors.priorityMediumText);
   }
 
+  /// Orden de prioridad visual corregido: una orden vencida SIEMPRE se
+  /// muestra como "Retrasada" (badge rojo), sin importar que su Estado
+  /// en la base de datos siga siendo "En Proceso". Antes se evaluaba
+  /// isEnProceso primero, así que una orden vencida pero aún "En
+  /// Proceso" nunca llegaba a pintarse como retrasada.
   (Color, Color) _estadoColors(Orden o) {
-    if (o.isEnProceso) return (AppColors.statusInProgressBg, AppColors.statusInProgressText);
-    if (o.isCompletada) return (AppColors.statusCompletedBg, AppColors.statusCompletedText);
     if (o.isRetrasada) return (AppColors.statusDelayedBg, AppColors.statusDelayedText);
+    if (o.isCompletada) return (AppColors.statusCompletedBg, AppColors.statusCompletedText);
+    if (o.isEnProceso) return (AppColors.statusInProgressBg, AppColors.statusInProgressText);
     return (AppColors.statusPendingBg, AppColors.statusPendingText);
   }
 
@@ -291,6 +330,11 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
     final (prioBg, prioText) = _prioridadColors(o);
     final (estadoBg, estadoText) = _estadoColors(o);
     final progresoColor = _progresoColor(o);
+
+    // Prioriza los materiales reales cargados desde orden_material; si
+    // aún no llegaron (o fallaron), cae al campo o.materiales del GET
+    // de órdenes por si el backend algún día lo incluye ahí.
+    final materiales = _materialesPorOrden[o.idOrden] ?? o.materiales;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -334,28 +378,26 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                 style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
             const SizedBox(height: 10),
 
-            // ⬅️ nuevo — antes iba el avatar con iniciales del operario
-            // (mostraba "??" cuando el nombre venía vacío desde el
-            // backend). Ahora se muestran los MATERIALES seleccionados
-            // de la orden, en vez de ese avatar.
-            if (o.materiales.isNotEmpty)
+            // Materiales reales asignados a esta orden (orden_material),
+            // en vez del avatar de operario que iba antes en este lugar.
+            if (materiales.isNotEmpty)
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: o.materiales
+                children: materiales
                     .map((m) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.searchBg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.cardBorder),
-                  ),
-                  child: Text(m,
-                      style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary)),
-                ))
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.searchBg,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.cardBorder),
+                          ),
+                          child: Text(m,
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary)),
+                        ))
                     .toList(),
               )
             else
@@ -389,18 +431,12 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: LinearProgressIndicator(
-                // o.progreso ya viene calculado como
-                // cantidadActual / cantidadTotal (clampeado entre 0 y 1),
-                // así que la barra siempre refleja lo realmente producido
-                // por el operario contra el total pedido.
                 value: o.progreso,
                 minHeight: 6,
                 backgroundColor: AppColors.cardBorder,
                 valueColor: AlwaysStoppedAnimation(progresoColor),
               ),
             ),
-            // ⬅️ Selector de estado ELIMINADO (sobraba, tal como pediste).
-            // El estado ya se ve arriba en el badge de la card.
           ],
         ),
       ),

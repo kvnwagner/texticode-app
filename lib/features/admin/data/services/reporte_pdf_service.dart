@@ -14,11 +14,18 @@ class ReportePdfService {
   static const _grisLinea = PdfColor.fromInt(0xFFE5E7EB);
   static const _azulClaro = PdfColor.fromInt(0xFF93C5FD);
 
+  /// [columnFlex] son pesos relativos por columna (mismo largo que
+  /// [headers]), ej. [2, 3, 3, 3, 2, 2]. Sin esto, la tabla autoajusta
+  /// cada columna según su contenido y con reportes de varias columnas
+  /// (texto largo como "Producto"/"Cliente" junto a texto corto como
+  /// "Código"/"Progreso") el resultado queda desparejo. Si no se pasa,
+  /// se usa el mismo ancho para todas las columnas.
   static Future<Uint8List> generar({
     required String titulo,
     required String subtitulo,
     required List<String> headers,
     required List<List<String>> filas,
+    List<int>? columnFlex,
   }) async {
     final doc = pw.Document();
 
@@ -27,6 +34,13 @@ class ReportePdfService {
     final logo = pw.MemoryImage(logoBytes.buffer.asUint8List());
 
     final fechaHoy = _fechaLarga(DateTime.now());
+
+    final columnWidths = (columnFlex != null && columnFlex.length == headers.length)
+        ? <int, pw.TableColumnWidth>{
+            for (var i = 0; i < columnFlex.length; i++)
+              i: pw.FlexColumnWidth(columnFlex[i].toDouble()),
+          }
+        : null;
 
     doc.addPage(
       pw.MultiPage(
@@ -233,6 +247,8 @@ class ReportePdfService {
 
               border: null,
 
+              columnWidths: columnWidths,
+
               headerDecoration: const pw.BoxDecoration(
                 color: _azul,
               ),
@@ -248,6 +264,11 @@ class ReportePdfService {
                 horizontal: 10,
                 vertical: 8,
               ),
+
+              // Antes solo se definía cellAlignment: el header quedaba
+              // centrado por defecto mientras las celdas iban a la
+              // izquierda, lo que hacía ver la tabla desalineada.
+              headerAlignment: pw.Alignment.centerLeft,
 
               cellStyle: const pw.TextStyle(
                 fontSize: 9,

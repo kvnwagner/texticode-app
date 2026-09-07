@@ -17,11 +17,18 @@ class NewOrderSheet extends StatefulWidget {
 
 /// Un material elegido en el formulario + la cantidad que se va a usar
 /// de él. Solo vive en memoria mientras se arma la orden; al enviar,
-/// cada uno se registra vía OrdenMaterialRepository.agregarMaterial.
+/// cada uno se registra vía OrdenMaterialRepository.agregarMaterial y
+/// se descuenta del inventario real (MaterialRepository.actualizarMaterial).
+///
+/// [cantidadCtrl] permite mostrar/corregir en pantalla el valor cuando
+/// el usuario intenta escribir más unidades de las que hay en stock.
 class _MaterialSeleccionado {
   final MaterialItem material;
-  int cantidad;
-  _MaterialSeleccionado({required this.material, this.cantidad = 1});
+  int cantidad = 1;
+  final TextEditingController cantidadCtrl;
+
+  _MaterialSeleccionado({required this.material})
+      : cantidadCtrl = TextEditingController(text: '1');
 }
 
 class _NewOrderSheetState extends State<NewOrderSheet> {
@@ -81,6 +88,9 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
   /// (pertenecían al cliente anterior) y trae SOLO los materiales de
   /// este cliente (GET /api/practica/clientes/:id/materiales).
   Future<void> _onClienteChanged(Usuario? cliente) async {
+    for (final s in _materialesSeleccionados) {
+      s.cantidadCtrl.dispose();
+    }
     setState(() {
       _clienteSeleccionado = cliente;
       _materialParaAgregar = null;
@@ -104,8 +114,12 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
   }
 
   /// Materiales del cliente que aún no están en la lista de agregados.
+  /// Se excluyen además los que ya no tienen stock disponible, para no
+  /// ofrecer algo que no se puede usar.
   List<MaterialItem> get _materialesDisponiblesParaAgregar => _materialesCliente
-      .where((m) => !_materialesSeleccionados.any((s) => s.material.idMaterial == m.idMaterial))
+      .where((m) =>
+          m.stockActual > 0 &&
+          !_materialesSeleccionados.any((s) => s.material.idMaterial == m.idMaterial))
       .toList();
 
   void _agregarMaterial() {
@@ -117,11 +131,18 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
   }
 
   void _quitarMaterial(int idMaterial) {
-    setState(() => _materialesSeleccionados.removeWhere((s) => s.material.idMaterial == idMaterial));
+    final idx =
+        _materialesSeleccionados.indexWhere((s) => s.material.idMaterial == idMaterial);
+    if (idx == -1) return;
+    _materialesSeleccionados[idx].cantidadCtrl.dispose();
+    setState(() => _materialesSeleccionados.removeAt(idx));
   }
 
   @override
   void dispose() {
+    for (final s in _materialesSeleccionados) {
+      s.cantidadCtrl.dispose();
+    }
     _productoCtrl.dispose();
     _descripcionCtrl.dispose();
     _cantidadCtrl.dispose();
@@ -158,6 +179,17 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
       return;
     }
 
+    // ── Validación final de stock: por si el stock cambió entre que se
+    // cargó la lista y el momento de enviar, no se permite pasar del
+    // stock actual de ningún material seleccionado. ──
+    for (final s in _materialesSeleccionados) {
+      if (s.cantidad > s.material.stockActual) {
+        setState(() => _error =
+            'No hay suficiente stock de "${s.material.nombre}" (disponible: ${s.material.stockActual} ${s.material.unidad}).');
+        return;
+      }
+    }
+
     setState(() {
       _loading = true;
       _error = null;
@@ -187,6 +219,21 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
           idOrden: idOrden,
           idProducto: s.material.idMaterial,
           cantidadUsada: s.cantidad,
+        );
+
+        // Descuenta del inventario real lo que se usó en esta orden,
+        // tanto en la app como en Supabase (PUT /api/materiales/:id).
+        final nuevoStock =
+            (s.material.stockActual - s.cantidad).clamp(0, s.material.stockMaximo);
+        await _materialRepo.actualizarMaterial(
+          id: s.material.idMaterial,
+          nombre: s.material.nombre,
+          categoria: s.material.categoria,
+          stockActual: nuevoStock,
+          unidad: s.material.unidad,
+          stockMinimo: s.material.stockMinimo,
+          stockMaximo: s.material.stockMaximo,
+          idCliente: s.material.idCliente,
         );
       }
 
@@ -338,7 +385,8 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
 
                   // ── MATERIALES: filtrados por el cliente elegido + varios
                   // materiales por orden (dropdown "+ Agregar material..."
-                  // más botón "Agregar", como en la referencia). ──
+                  // más botón "Agregar", como en la referencia). Solo se
+                  // ofrecen materiales con stock disponible. ──
                   _fieldLabelWithHint('Materiales', '— selecciona uno o más'),
                   const SizedBox(height: 6),
                   Row(
@@ -356,7 +404,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                                     : (_materialesDisponiblesParaAgregar.isEmpty
                                         ? (_materialesCliente.isEmpty
                                             ? 'Este cliente no tiene materiales'
-                                            : 'Ya agregaste todos los materiales')
+                                            : 'Ya agregaste todos los materiales con stock')
                                         : '+ Agregar material...')),
                           ),
                           icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textFaint),
@@ -590,6 +638,10 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
     );
   }
 
+  /// Fila de un material ya agregado a la orden. El campo de cantidad
+  /// nunca deja escribir/guardar más unidades que el stock disponible
+  /// (s.material.stockActual): si el usuario escribe un número mayor,
+  /// se corrige automáticamente al máximo permitido.
   Widget _buildMaterialSeleccionadoRow(_MaterialSeleccionado s) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -609,7 +661,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                Text('Stock: ${s.material.stockActual} ${s.material.unidad}',
+                Text('Disponible: ${s.material.stockActual} ${s.material.unidad}',
                     style: const TextStyle(fontSize: 10.5, color: AppColors.textFaint)),
               ],
             ),
@@ -618,7 +670,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
           SizedBox(
             width: 64,
             child: TextFormField(
-              initialValue: '${s.cantidad}',
+              controller: s.cantidadCtrl,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 12.5, color: AppColors.inputText),
@@ -632,7 +684,22 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                   borderSide: const BorderSide(color: AppColors.inputBorder),
                 ),
               ),
-              onChanged: (v) => s.cantidad = int.tryParse(v) ?? s.cantidad,
+              onChanged: (v) {
+                final maxDisponible = s.material.stockActual;
+                var parsed = int.tryParse(v) ?? 1;
+                if (parsed < 1) parsed = 1;
+                if (parsed > maxDisponible) parsed = maxDisponible;
+                s.cantidad = parsed;
+                // Si el usuario escribió más de lo disponible, se
+                // corrige el texto visible al tope permitido.
+                if ('$parsed' != v) {
+                  s.cantidadCtrl.value = TextEditingValue(
+                    text: '$parsed',
+                    selection: TextSelection.collapsed(offset: '$parsed'.length),
+                  );
+                }
+                setState(() {});
+              },
             ),
           ),
           const SizedBox(width: 6),

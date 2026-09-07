@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/avatar_widget.dart';
 import '../../../../shared/widgets/editar_perfil_sheet.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import '../../../auth/data/repositories/google_auth_repository.dart';
@@ -152,8 +153,7 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
     });
 
     try {
-      final code =
-          await _googleAuthRepo.requestCalendarServerAuthCode();
+      final code = await _googleAuthRepo.requestCalendarServerAuthCode();
 
       await _calendarRepo.connect(code);
 
@@ -190,8 +190,7 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
   Future<void> _abrirEditarPerfil() async {
     if (_idUsuario == null || _idRol == null) return;
 
-    final actualizado =
-        await showModalBottomSheet<Map<String, String>>(
+    final actualizado = await showModalBottomSheet<Map<String, String>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -247,10 +246,8 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
       return parts.first.substring(0, 1).toUpperCase();
     }
 
-    return (
-      parts.first.substring(0, 1) +
-      parts[1].substring(0, 1)
-    ).toUpperCase();
+    return (parts.first.substring(0, 1) + parts[1].substring(0, 1))
+        .toUpperCase();
   }
 
   Future<void> _logout() async {
@@ -280,8 +277,7 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
                       24,
                     ),
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.stretch,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _ProfileCard(
                           nombre: _nombre,
@@ -291,9 +287,7 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
                           initials: _initials,
                           onEditar: _abrirEditarPerfil,
                         ),
-
                         const SizedBox(height: 16),
-
                         _ActionButton(
                           icon: const _GoogleIcon(),
                           label: _vinculandoGoogle
@@ -303,16 +297,13 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
                                   : 'Vincular con Google'),
                           onTap: _vincularGoogle,
                         ),
-
                         const SizedBox(height: 10),
-
                         _ActionButton(
                           icon: _sincronizando
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child:
-                                      CircularProgressIndicator(
+                                  child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     color: Colors.white,
                                   ),
@@ -327,16 +318,12 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
                               : 'Sincronizar Ahora',
                           onTap: _sincronizar,
                         ),
-
                         const SizedBox(height: 28),
-
                         const Divider(
                           height: 1,
                           color: AppColors.cardBorder,
                         ),
-
                         const SizedBox(height: 20),
-
                         _LogoutButton(
                           onTap: _logout,
                         ),
@@ -349,6 +336,8 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
     );
   }
 
+  // Encabezado agrandado (mismo tamaño que "Gestión de Usuarios" en
+  // MainShell: caja de 55x55, imagen de 46x46) y sin descripción/subtítulo.
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -358,70 +347,42 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.cardBorder,
-          ),
+          bottom: BorderSide(color: AppColors.cardBorder),
         ),
       ),
       child: Row(
         children: [
           SizedBox(
-            width: 38,
-            height: 38,
+            width: 55,
+            height: 55,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               child: Image.asset(
                 'assets/images/logo_texticode.png',
-                width: 38,
-                height: 38,
+                width: 46,
+                height: 46,
                 fit: BoxFit.cover,
-                errorBuilder:
-                    (context, error, stackTrace) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.navy,
-                      borderRadius:
-                          BorderRadius.circular(10),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      _initials,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  );
-                },
+                filterQuality: FilterQuality.high,
+                errorBuilder: (context, error, stackTrace) => AvatarWidget(
+                  initials: _initials,
+                  size: 46,
+                  bg: AppColors.navy,
+                  text: Colors.white,
+                ),
               ),
             ),
           ),
-
           const SizedBox(width: 10),
-
           const Expanded(
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Mi Perfil',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  'Cliente',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ],
+            child: Text(
+              'Mi Perfil',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
         ],
@@ -469,12 +430,10 @@ class _ProfileCard extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 52,
@@ -500,13 +459,10 @@ class _ProfileCard extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(width: 12),
-
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       nombre,
@@ -516,59 +472,46 @@ class _ProfileCard extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-
                     const SizedBox(height: 6),
-
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            AppColors.badgeClientBg,
-                        borderRadius:
-                            BorderRadius.circular(20),
+                        color: AppColors.badgeClientBg,
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Text(
                         'Cliente',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color:
-                              AppColors.badgeClientText,
+                          color: AppColors.badgeClientText,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-
               _EditButton(
                 onTap: onEditar,
               ),
             ],
           ),
-
           const SizedBox(height: 18),
-
           _InfoTile(
             icon: Icons.mail_outline,
             label: 'EMAIL',
             value: correo,
           ),
-
           const SizedBox(height: 10),
-
           _InfoTile(
             icon: Icons.phone_outlined,
             label: 'TELÉFONO',
             value: telefono,
           ),
-
           const SizedBox(height: 10),
-
           _InfoTile(
             icon: Icons.alternate_email,
             label: 'USUARIO',
@@ -600,8 +543,7 @@ class _EditButton extends StatelessWidget {
           color: Colors.white.withValues(
             alpha: 0.1,
           ),
-          borderRadius:
-              BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: Colors.white.withValues(
               alpha: 0.18,
@@ -655,8 +597,7 @@ class _InfoTile extends StatelessWidget {
         color: Colors.white.withValues(
           alpha: 0.08,
         ),
-        borderRadius:
-            BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: Colors.white.withValues(
             alpha: 0.08,
@@ -672,13 +613,10 @@ class _InfoTile extends StatelessWidget {
               alpha: 0.7,
             ),
           ),
-
           const SizedBox(width: 10),
-
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
@@ -691,9 +629,7 @@ class _InfoTile extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 2),
-
                 Text(
                   value,
                   style: const TextStyle(
@@ -733,13 +669,11 @@ class _ActionButton extends StatelessWidget {
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
         child: Row(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             icon,
             const SizedBox(width: 10),
@@ -757,30 +691,37 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
+/// Ícono real de Google (mismo asset que usa el login), con degradado
+/// de respaldo por si el asset no está disponible.
 class _GoogleIcon extends StatelessWidget {
   const _GoogleIcon();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Image.asset(
+      'assets/images/google_logo.png',
       width: 20,
       height: 20,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFF4285F4),
-            Color(0xFF34A853),
-          ],
+      errorBuilder: (_, __, ___) => Container(
+        width: 20,
+        height: 20,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF4285F4),
+              Color(0xFF34A853),
+            ],
+          ),
         ),
-      ),
-      alignment: Alignment.center,
-      child: const Text(
-        'G',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w900,
-          fontSize: 10,
+        alignment: Alignment.center,
+        child: const Text(
+          'G',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 10,
+          ),
         ),
       ),
     );
@@ -801,19 +742,16 @@ class _LogoutButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
-          backgroundColor:
-              AppColors.errorBg,
+          backgroundColor: AppColors.errorBg,
           side: const BorderSide(
             color: AppColors.errorBorder,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
         child: const Row(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.close,
@@ -835,4 +773,3 @@ class _LogoutButton extends StatelessWidget {
     );
   }
 }
-
