@@ -263,6 +263,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
+  // Encabezado agrandado (mismo tamaño que "Gestión de Usuarios" en
+  // MainShell: caja de 55x55, imagen de 46x46) y sin descripción/subtítulo.
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -273,18 +275,19 @@ class _PerfilScreenState extends State<PerfilScreen> {
       child: Row(
         children: [
           SizedBox(
-            width: 38,
-            height: 38,
+            width: 55,
+            height: 55,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               child: Image.asset(
                 'assets/images/logo_texticode.png',
-                width: 38,
-                height: 38,
+                width: 46,
+                height: 46,
                 fit: BoxFit.cover,
+                filterQuality: FilterQuality.high,
                 errorBuilder: (context, error, stackTrace) => AvatarWidget(
                   initials: _initials,
-                  size: 38,
+                  size: 46,
                   bg: AppColors.navy,
                   text: Colors.white,
                 ),
@@ -293,19 +296,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ),
           const SizedBox(width: 10),
           const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Mi Perfil',
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary)),
-                Text('Operario',
-                    style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
-              ],
-            ),
+            child: Text('Mi Perfil',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary)),
           ),
         ],
       ),
@@ -530,21 +527,30 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
+/// Ícono real de Google (mismo asset que usa el login), con degradado
+/// de respaldo por si el asset no está disponible.
 class _GoogleIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Image.asset(
+      'assets/images/google_logo.png',
       width: 20,
       height: 20,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        gradient:
-            LinearGradient(colors: [Color(0xFF4285F4), Color(0xFF34A853)]),
+      errorBuilder: (_, __, ___) => Container(
+        width: 20,
+        height: 20,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient:
+              LinearGradient(colors: [Color(0xFF4285F4), Color(0xFF34A853)]),
+        ),
+        alignment: Alignment.center,
+        child: const Text('G',
+            style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 10)),
       ),
-      alignment: Alignment.center,
-      child: const Text('G',
-          style: TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10)),
     );
   }
 }
