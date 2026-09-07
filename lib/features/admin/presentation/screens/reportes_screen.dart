@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
@@ -15,16 +16,55 @@ import '../../data/services/excel_reporte_service.dart';
 const _tiposFiltro = ['Todos los tipos', 'Pedidos', 'Eficiencia', 'Inventario'];
 
 /// Pantalla "Reportes" — sigue los mismos tokens visuales del resto del
-/// panel admin. Los 4 KPI se calculan en tiempo real a partir de las
-/// órdenes reales (OrdenRepository). Los botones "Descargar" y
-/// "Exportar Excel" generan un PDF/CSV real con los datos actuales
-/// (no hay backend de reportes todavía, así que la generación ocurre
-/// en el dispositivo, igual que el comprobante de entrega).
+/// panel admin (mismo header y mismas cards de métrica que Clientes).
+///
+/// Los 4 KPI se calculan en tiempo real a partir de las órdenes reales
+/// (OrdenRepository). "Descargar" y "Exportar Excel" abren una vista
+/// previa real (PDF con PdfPreview, Excel con una tabla) antes de
+/// imprimir/compartir — igual patrón que el comprobante de entrega en
+/// ClientesScreen (_ComprobantePreviewSheet).
+///
+/// ⚠️ Nota sobre "Pendientes": el ENUM real de `Estado` en la base de
+/// datos es `En Proceso | Completada | Pausado` (ver comentario en
+/// orden_model.dart) — el valor 'Pendiente' NUNCA llega desde el backend.
+/// El cálculo anterior comparaba contra 'Pendiente' y por eso ese KPI y
+/// el reporte correspondiente siempre mostraban 0. Aquí se usa `Pausado`,
+/// el estado real más cercano a "pedido detenido / sin avanzar".
 class ReportesScreen extends StatefulWidget {
   const ReportesScreen({super.key});
 
   @override
   State<ReportesScreen> createState() => _ReportesScreenState();
+}
+
+/// Agrupa lo necesario para generar tanto la vista previa como el
+/// archivo final de un reporte, para no duplicar la lógica entre el
+/// botón "Descargar" y "Exportar Excel".
+class _TablaReporte {
+  final String titulo;
+  final String subtitulo;
+  final List<String> headers;
+  final List<List<String>> filas;
+
+  /// Pesos relativos de ancho por columna (mismo largo que headers).
+  /// Sin esto, PDF y Excel autoajustan cada columna a su contenido y
+  /// con columnas de texto largo mezcladas con columnas cortas el
+  /// resultado se ve desparejo/distorsionado.
+  final List<int> columnFlex;
+
+  const _TablaReporte({
+    required this.titulo,
+    required this.subtitulo,
+    required this.headers,
+    required this.filas,
+    required this.columnFlex,
+  });
+
+  /// Excel usa anchos absolutos, no pesos relativos — se escala el
+  /// mismo columnFlex a un rango razonable (16–34) en vez de duplicar
+  /// los números en dos lugares distintos.
+  List<double> get columnWidthsExcel =>
+      columnFlex.map((f) => 14.0 + (f * 6.0)).toList();
 }
 
 class _ReportesScreenState extends State<ReportesScreen> {
@@ -36,8 +76,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
   bool _loading = true;
   String? _error;
   String _filtro = 'Todos los tipos';
-  bool _showFilterDrop = false;
-  bool _exportando = false;
 
   @override
   void initState() {
@@ -74,115 +112,221 @@ class _ReportesScreenState extends State<ReportesScreen> {
   // ── KPIs reales ───────────────────────────────────────────────────────
   int get _total => _ordenes.length;
   int get _completados => _ordenes.where((o) => o.isCompletada).length;
-  int get _pendientes => _ordenes.where((o) => o.estado == 'Pendiente').length;
+
+  // Corregido: 'Pendiente' no existe en el ENUM real (En Proceso |
+  // Completada | Pausado). Se usa Pausado, el estado real más cercano.
+  int get _pendientes => _ordenes.where((o) => o.isPausado).length;
+
   double get _tasaCompletacion => _total == 0 ? 0 : (_completados / _total) * 100;
 
   bool _visible(String tipo) => _filtro == 'Todos los tipos' || _filtro == tipo;
+
+  // ── Datos de cada reporte (se usan tanto para el PDF como el Excel) ────
+
+  _TablaReporte _tablaPedidos() => _TablaReporte(
+        titulo: 'Pedidos',
+        subtitulo: _total == 0 ? 'Sin órdenes registradas' : '$_total órdenes registradas',
+        headers: const ['Código', 'Producto', 'Cliente', 'Operario', 'Estado', 'Progreso'],
+        filas: _ordenes
+            .map((o) => [
+                  o.codigoOrden,
+                  o.producto,
+                  o.cliente,
+                  o.operario,
+                  o.estadoLabel,
+                  '${o.progresoPorcentaje}%',
+                ])
+            .toList(),
+        columnFlex: const [2, 3, 3, 3, 2, 2],
+      );
+
+  _TablaReporte _tablaPedidosPendientes() {
+    final pendientes = _ordenes.where((o) => o.isPausado).toList();
+    return _TablaReporte(
+      titulo: 'Pedidos Pendientes',
+      subtitulo: pendientes.isEmpty ? 'Sin pedidos pendientes' : '${pendientes.length} pedidos pendientes',
+      headers: const ['Código', 'Producto', 'Cliente', 'Operario', 'Estado', 'Progreso'],
+      filas: pendientes
+          .map((o) => [
+                o.codigoOrden,
+                o.producto,
+                o.cliente,
+                o.operario,
+                o.estadoLabel,
+                '${o.progresoPorcentaje}%',
+              ])
+          .toList(),
+      columnFlex: const [2, 3, 3, 3, 2, 2],
+    );
+  }
+
+  _TablaReporte _tablaEficiencia() {
+    final porOperario = <String, List<Orden>>{};
+    for (final o in _ordenes) {
+      porOperario.putIfAbsent(o.operario, () => []).add(o);
+    }
+    return _TablaReporte(
+      titulo: 'Eficiencia Operaria',
+      subtitulo: porOperario.isEmpty
+          ? 'Sin datos de operarios'
+          : '${porOperario.length} operarios con órdenes asignadas',
+      headers: const ['Operario', 'Órdenes Asignadas', 'Completadas', '% Completación'],
+      filas: porOperario.entries.map((e) {
+        final totalOp = e.value.length;
+        final compOp = e.value.where((o) => o.isCompletada).length;
+        final pct = totalOp == 0 ? 0 : ((compOp / totalOp) * 100).round();
+        return [e.key, '$totalOp', '$compOp', '$pct%'];
+      }).toList(),
+      columnFlex: const [3, 2, 2, 2],
+    );
+  }
+
+  _TablaReporte _tablaInventario() => _TablaReporte(
+        titulo: 'Inventario',
+        subtitulo: _materiales.isEmpty
+            ? 'Sin materiales registrados'
+            : '${_materiales.length} materiales en inventario',
+        headers: const ['Material', 'Categoría', 'Stock', 'Mínimo', 'Máximo'],
+        filas: _materiales
+            .map((m) => [
+                  m.nombre,
+                  m.categoria,
+                  '${m.stockActual} ${m.unidad}',
+                  '${m.stockMinimo}',
+                  '${m.stockMaximo}',
+                ])
+            .toList(),
+        columnFlex: const [3, 2, 2, 1, 1],
+      );
+
+  // ── Vista previa PDF / Excel ─────────────────────────────────────────
+
+  void _verPdf(_TablaReporte t) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ReportePdfPreviewSheet(
+        titulo: t.titulo,
+        subtitulo: t.subtitulo,
+        headers: t.headers,
+        filas: t.filas,
+        columnFlex: t.columnFlex,
+      ),
+    );
+  }
+
+  void _verExcel(_TablaReporte t, String nombreArchivo) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ReporteExcelPreviewSheet(
+        titulo: t.titulo,
+        headers: t.headers,
+        filas: t.filas,
+        onExportar: () => _exportarExcel(t, nombreArchivo),
+      ),
+    );
+  }
+
+  Future<void> _exportarExcel(_TablaReporte t, String nombreArchivo) async {
+    final bytes = ExcelReporteService.generar(
+      titulo: t.titulo,
+      headers: t.headers,
+      filas: t.filas,
+      columnWidths: t.columnWidthsExcel,
+    );
+    await _compartirBytes(bytes, nombreArchivo);
+  }
+
+  Future<void> _compartirBytes(List<int> bytes, String nombreArchivo) async {
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/$nombreArchivo');
+    await file.writeAsBytes(bytes);
+    await Share.shareXFiles([XFile(file.path)], text: 'Reporte Texticode');
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.pageBg,
-      child: Stack(
+      child: Column(
         children: [
-          Column(
-            children: [
-              _buildHeader(),
-              _buildFilterButton(),
-              Expanded(
-                child: _loading
-                    ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
-                    : _error != null
-                        ? _buildError()
-                        : RefreshIndicator(
-                            color: AppColors.navy,
-                            onRefresh: _cargar,
-                            child: ListView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: EdgeInsets.zero,
-                              children: [
-                                _buildKpis(),
-                                _buildSectionHeader(),
-                                if (_visible('Pedidos')) _buildReportCard(
-                                  icon: Icons.description_outlined,
-                                  titulo: 'Reporte de Pedidos Mensuales',
-                                  subtitulo: _total == 0
-                                      ? 'Sin órdenes registradas'
-                                      : '$_total órdenes registradas',
-                                  onDescargar: () => _descargarPdfPedidos(),
-                                  onExportarExcel: () => _exportarCsvPedidos(),
-                                ),
-                                if (_visible('Eficiencia')) _buildReportCard(
-                                  icon: Icons.bar_chart_rounded,
-                                  titulo: 'Reporte de Eficiencia Operaria',
-                                  subtitulo: _total == 0
-                                      ? 'Sin datos de operarios'
-                                      : '${_ordenes.map((o) => o.operario).toSet().length} operarios con órdenes asignadas',
-                                  onDescargar: () => _descargarPdfEficiencia(),
-                                  onExportarExcel: () => _exportarCsvEficiencia(),
-                                ),
-                                if (_visible('Inventario')) _buildReportCard(
-                                  icon: Icons.table_chart_outlined,
-                                  titulo: 'Reporte de Inventario',
-                                  subtitulo: _materiales.isEmpty
-                                      ? 'Sin materiales registrados'
-                                      : '${_materiales.length} materiales en inventario',
-                                  onDescargar: () => _descargarPdfInventario(),
-                                  onExportarExcel: () => _exportarCsvInventario(),
-                                ),
-                                const SizedBox(height: 40),
-                              ],
+          _buildHeader(),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+                : _error != null
+                    ? _buildError()
+                    : RefreshIndicator(
+                        color: AppColors.navy,
+                        onRefresh: _cargar,
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          children: [
+                            _buildKpis(),
+                            _buildSectionHeader(),
+                            if (_visible('Pedidos')) _buildReportCard(
+                              icon: Icons.description_outlined,
+                              titulo: 'Reporte de Pedidos Mensuales',
+                              subtitulo: _tablaPedidos().subtitulo,
+                              onDescargar: () => _verPdf(_tablaPedidos()),
+                              onExportarExcel: () => _verExcel(_tablaPedidos(), 'reporte_pedidos.xlsx'),
                             ),
-                          ),
-              ),
-            ],
+                            if (_visible('Pedidos')) _buildReportCard(
+                              icon: Icons.pending_actions_outlined,
+                              titulo: 'Reporte de Pedidos Pendientes',
+                              subtitulo: _tablaPedidosPendientes().subtitulo,
+                              onDescargar: () => _verPdf(_tablaPedidosPendientes()),
+                              onExportarExcel: () =>
+                                  _verExcel(_tablaPedidosPendientes(), 'reporte_pedidos_pendientes.xlsx'),
+                            ),
+                            if (_visible('Eficiencia')) _buildReportCard(
+                              icon: Icons.bar_chart_rounded,
+                              titulo: 'Reporte de Eficiencia Operaria',
+                              subtitulo: _tablaEficiencia().subtitulo,
+                              onDescargar: () => _verPdf(_tablaEficiencia()),
+                              onExportarExcel: () => _verExcel(_tablaEficiencia(), 'reporte_eficiencia.xlsx'),
+                            ),
+                            if (_visible('Inventario')) _buildReportCard(
+                              icon: Icons.table_chart_outlined,
+                              titulo: 'Reporte de Inventario',
+                              subtitulo: _tablaInventario().subtitulo,
+                              onDescargar: () => _verPdf(_tablaInventario()),
+                              onExportarExcel: () => _verExcel(_tablaInventario(), 'reporte_inventario.xlsx'),
+                            ),
+                            const SizedBox(height: 40),
+                          ],
+                        ),
+                      ),
           ),
-          // Barrera invisible: al abrir el menú, tocar afuera lo cierra.
-          if (_showFilterDrop)
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () => setState(() => _showFilterDrop = false),
-              ),
-            ),
-          // El menú se agrega AL FINAL del Stack de toda la pantalla,
-          // así siempre se pinta por encima de las tarjetas de abajo
-          // (antes vivía dentro del ListView y las tarjetas siguientes
-          // lo tapaban aunque estuviera "encima" visualmente).
-          if (_showFilterDrop)
-            Positioned(
-              top: 106,
-              left: 16,
-              child: _buildFilterDropdownMenu(),
-            ),
-          if (_exportando)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.15),
-                child: const Center(
-                  child: CircularProgressIndicator(color: AppColors.navy),
-                ),
-              ),
-            ),
         ],
       ),
     );
   }
 
+  // ── Encabezado (mismo estilo que Clientes: sin descripción, logo
+  //    55x55, línea separadora en la parte inferior) ────────────────────
+
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
+      ),
       child: Row(
         children: [
           SizedBox(
-            width: 38,
-            height: 38,
+            width: 55,
+            height: 55,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(14),
               child: Image.asset(
                 AppConstants.logoAssetPath,
-                width: 38,
-                height: 38,
+                width: 55,
+                height: 55,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   decoration: BoxDecoration(
@@ -190,117 +334,35 @@ class _ReportesScreenState extends State<ReportesScreen> {
                         colors: [AppColors.navy, Color(0xFF2D5478)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   alignment: Alignment.center,
-                  child: const Icon(Icons.bar_chart_rounded, color: Colors.white, size: 18),
+                  child: const Icon(Icons.bar_chart_rounded, color: Colors.white, size: 26),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Reportes',
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                Text('Análisis y estadísticas',
-                    style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
-              ],
-            ),
+            child: Text('Reportes',
+                style: TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterButton() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: GestureDetector(
-          onTap: () => setState(() => _showFilterDrop = !_showFilterDrop),
-          child: Container(
-            height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: AppColors.searchBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.cardBorder),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.filter_alt_outlined, size: 14, color: AppColors.textMuted),
-                const SizedBox(width: 8),
-                Text(_filtro,
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-                const SizedBox(width: 8),
-                Icon(_showFilterDrop ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                    size: 16, color: AppColors.textFaint),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterDropdownMenu() {
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        width: 190,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.cardBorder),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 20, offset: const Offset(0, 8)),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: _tiposFiltro.map((t) {
-            final selected = t == _filtro;
-            return GestureDetector(
-              onTap: () => setState(() {
-                _filtro = t;
-                _showFilterDrop = false;
-              }),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: selected ? AppColors.navy.withValues(alpha: 0.06) : null,
-                  border: t != _tiposFiltro.last
-                      ? const Border(bottom: BorderSide(color: AppColors.cardBorder))
-                      : null,
-                ),
-                child: Text(t,
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                        color: selected ? AppColors.navy : AppColors.textSecondary)),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
+  // ── KPIs: mismo diseño que _buildMetricCard de Clientes (barra lateral
+  //    de color + icono circular), en grilla de 2x2 para las 4 métricas ──
 
   Widget _buildKpis() {
-    final items = [
-      ('Pedidos Totales', '$_total', AppColors.navy),
-      ('Completados', '$_completados', AppColors.iconActive),
-      ('Tasa Completación', '${_tasaCompletacion.toStringAsFixed(1)}%', AppColors.purple),
-      ('Pendientes', '$_pendientes', AppColors.iconClient),
+    final items = <_MetricItem>[
+      _MetricItem('Pedidos Totales', '$_total', Icons.description_outlined, AppColors.navy),
+      _MetricItem('Completados', '$_completados', Icons.verified_user_outlined, AppColors.iconActive),
+      _MetricItem('Tasa Completación', '${_tasaCompletacion.toStringAsFixed(1)}%', Icons.trending_up_rounded,
+          AppColors.purple),
+      _MetricItem('Pendientes', '$_pendientes', Icons.pause_circle_outline, AppColors.iconClient),
     ];
 
     return Padding(
@@ -313,59 +375,138 @@ class _ReportesScreenState extends State<ReportesScreen> {
           crossAxisCount: 2,
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
-          mainAxisExtent: 84,
+          mainAxisExtent: 128,
         ),
-        itemBuilder: (context, i) {
-          final (label, value, color) = items[i];
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.pageBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.cardBorder),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(value,
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
-                const SizedBox(height: 2),
-                Text(label,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
-              ],
-            ),
-          );
-        },
+        itemBuilder: (context, i) => _buildMetricCard(items[i]),
       ),
     );
   }
 
+  Widget _buildMetricCard(_MetricItem metric) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.pageBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(width: 3.5, color: metric.color),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: metric.color.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(metric.icon, size: 17, color: metric.color),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      metric.value,
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: metric.color),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      metric.label,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Encabezado de sección: el filtro conserva su estilo original
+  //    (fondo claro, borde, ícono + texto + flecha) pero vive aquí en
+  //    vez de en una fila propia arriba del todo. Se usa PopupMenuButton
+  //    en vez de un Positioned fijo porque este control ahora está
+  //    dentro del ListView con scroll — un Positioned con coordenadas
+  //    fijas se desalinearía apenas el usuario scrollea. PopupMenuButton
+  //    se ancla solo al botón sin importar el scroll. ─────────────────
+
   Widget _buildSectionHeader() {
-    final count = [
-      if (_visible('Pedidos')) 1,
-      if (_visible('Eficiencia')) 1,
-      if (_visible('Inventario')) 1,
-    ].length;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
       child: Row(
         children: [
           const Icon(Icons.description_outlined, size: 18, color: AppColors.navy),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text('Reportes Disponibles',
-                style: TextStyle(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
                     fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           ),
-          Container(
-            width: 22,
-            height: 22,
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(color: AppColors.navy, shape: BoxShape.circle),
-            child: Text('$count',
-                style: const TextStyle(
-                    fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(width: 8),
+          PopupMenuButton<String>(
+            color: Colors.white,
+            offset: const Offset(0, 32),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: AppColors.cardBorder),
+            ),
+            onSelected: (v) => setState(() => _filtro = v),
+            itemBuilder: (context) => _tiposFiltro.map((t) {
+              final selected = t == _filtro;
+              return PopupMenuItem<String>(
+                value: t,
+                child: Text(
+                  t,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                    color: selected ? AppColors.navy : AppColors.textSecondary,
+                  ),
+                ),
+              );
+            }).toList(),
+            child: Container(
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: AppColors.searchBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.filter_alt_outlined, size: 13, color: AppColors.textMuted),
+                  const SizedBox(width: 6),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 90),
+                    child: Text(
+                      _filtro,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.keyboard_arrow_down, size: 15, color: AppColors.textFaint),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -431,8 +572,8 @@ class _ReportesScreenState extends State<ReportesScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: onDescargar,
-                    icon: const Icon(Icons.download_outlined, size: 14),
-                    label: const Text('Descargar', style: TextStyle(fontSize: 11)),
+                    icon: const Icon(Icons.visibility_outlined, size: 14),
+                    label: const Text('Vista previa', style: TextStyle(fontSize: 11)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
                       side: const BorderSide(color: AppColors.cardBorder),
@@ -487,21 +628,160 @@ class _ReportesScreenState extends State<ReportesScreen> {
       ),
     );
   }
+}
 
-  // ══════════════════════════════════════════════════════════════════════
-  // EXPORTACIÓN REAL — genera PDF/CSV con los datos reales cargados.
-  // No hay backend de reportes: el archivo se arma en el dispositivo,
-  // igual que ya haces con el comprobante de entrega en clientes_screen.
-  // ══════════════════════════════════════════════════════════════════════
+class _MetricItem {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
 
-  Future<void> _runExport(Future<void> Function() task) async {
+  const _MetricItem(this.label, this.value, this.icon, this.color);
+}
+
+// ── Vista previa del PDF de un reporte (mismo patrón que
+//    _ComprobantePreviewSheet en clientes_screen.dart) ───────────────────
+
+class _ReportePdfPreviewSheet extends StatelessWidget {
+  final String titulo;
+  final String subtitulo;
+  final List<String> headers;
+  final List<List<String>> filas;
+  final List<int> columnFlex;
+
+  const _ReportePdfPreviewSheet({
+    required this.titulo,
+    required this.subtitulo,
+    required this.headers,
+    required this.filas,
+    required this.columnFlex,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Reporte de $titulo',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.textMuted),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: FutureBuilder<Uint8List>(
+                  future: ReportePdfService.generar(
+                    titulo: titulo,
+                    subtitulo: subtitulo,
+                    headers: headers,
+                    filas: filas,
+                    columnFlex: columnFlex,
+                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: AppColors.navy),
+                      );
+                    }
+
+                    if (snapshot.hasError || !snapshot.hasData) {
+                      return const Center(
+                        child: Text(
+                          'No se pudo generar la vista previa.',
+                          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                        ),
+                      );
+                    }
+
+                    return PdfPreview(
+                      build: (format) async => snapshot.data!,
+                      canChangeOrientation: false,
+                      canChangePageFormat: false,
+                      canDebug: false,
+                      allowSharing: true,
+                      allowPrinting: true,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Vista previa del Excel de un reporte: como un .xlsx no se puede
+//    renderizar visualmente igual que un PDF, se arma una tabla con los
+//    mismos datos y el mismo estilo (header navy, filas zebra) que va a
+//    tener el archivo real, con un botón para exportar/compartir. ───────
+
+class _ReporteExcelPreviewSheet extends StatefulWidget {
+  final String titulo;
+  final List<String> headers;
+  final List<List<String>> filas;
+  final Future<void> Function() onExportar;
+
+  const _ReporteExcelPreviewSheet({
+    required this.titulo,
+    required this.headers,
+    required this.filas,
+    required this.onExportar,
+  });
+
+  @override
+  State<_ReporteExcelPreviewSheet> createState() => _ReporteExcelPreviewSheetState();
+}
+
+class _ReporteExcelPreviewSheetState extends State<_ReporteExcelPreviewSheet> {
+  bool _exportando = false;
+
+  Future<void> _exportar() async {
     setState(() => _exportando = true);
     try {
-      await task();
+      await widget.onExportar();
+      if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo generar el reporte: $e')),
+          SnackBar(content: Text('No se pudo exportar el reporte: $e')),
         );
       }
     } finally {
@@ -509,121 +789,139 @@ class _ReportesScreenState extends State<ReportesScreen> {
     }
   }
 
-  Future<void> _descargarPdfPedidos() => _runExport(() async {
-        final bytes = await ReportePdfService.generar(
-          titulo: 'Pedidos',
-          subtitulo: '$_total órdenes registradas',
-          headers: const ['Código', 'Producto', 'Cliente', 'Operario', 'Estado', 'Progreso'],
-          filas: _ordenes
-              .map((o) => [
-                    o.codigoOrden,
-                    o.producto,
-                    o.cliente,
-                    o.operario,
-                    o.estadoLabel,
-                    '${o.progresoPorcentaje}%',
-                  ])
-              .toList(),
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.4,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Reporte de ${widget.titulo}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.textMuted),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: widget.filas.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No hay datos para exportar.',
+                          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: _buildTabla(),
+                        ),
+                      ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _exportando || widget.filas.isEmpty ? null : _exportar,
+                    icon: _exportando
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.ios_share, size: 18),
+                    label: Text(_exportando ? 'Exportando…' : 'Exportar y compartir'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.navy,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
-        await Printing.layoutPdf(onLayout: (_) => bytes, name: 'reporte_pedidos.pdf');
-      });
+      },
+    );
+  }
 
-  Future<void> _exportarCsvPedidos() => _runExport(() async {
-        final bytes = ExcelReporteService.generar(
-          titulo: 'Pedidos',
-          headers: const ['Código', 'Producto', 'Cliente', 'Operario', 'Estado', 'Progreso'],
-          filas: _ordenes
-              .map((o) => [
-                    o.codigoOrden,
-                    o.producto,
-                    o.cliente,
-                    o.operario,
-                    o.estadoLabel,
-                    '${o.progresoPorcentaje}%',
-                  ])
-              .toList(),
-        );
-        await _compartirBytes(bytes, 'reporte_pedidos.xlsx');
-      });
-
-  Future<void> _descargarPdfEficiencia() => _runExport(() async {
-        final porOperario = <String, List<Orden>>{};
-        for (final o in _ordenes) {
-          porOperario.putIfAbsent(o.operario, () => []).add(o);
-        }
-        final bytes = await ReportePdfService.generar(
-          titulo: 'Eficiencia Operaria',
-          subtitulo: '${porOperario.length} operarios con órdenes asignadas',
-          headers: const ['Operario', 'Órdenes Asignadas', 'Completadas', '% Completación'],
-          filas: porOperario.entries.map((e) {
-            final totalOp = e.value.length;
-            final compOp = e.value.where((o) => o.isCompletada).length;
-            final pct = totalOp == 0 ? 0 : ((compOp / totalOp) * 100).round();
-            return [e.key, '$totalOp', '$compOp', '$pct%'];
-          }).toList(),
-        );
-        await Printing.layoutPdf(onLayout: (_) => bytes, name: 'reporte_eficiencia.pdf');
-      });
-
-  Future<void> _exportarCsvEficiencia() => _runExport(() async {
-        final porOperario = <String, List<Orden>>{};
-        for (final o in _ordenes) {
-          porOperario.putIfAbsent(o.operario, () => []).add(o);
-        }
-        final bytes = ExcelReporteService.generar(
-          titulo: 'Eficiencia',
-          headers: const ['Operario', 'Órdenes Asignadas', 'Completadas', '% Completación'],
-          filas: porOperario.entries.map((e) {
-            final totalOp = e.value.length;
-            final compOp = e.value.where((o) => o.isCompletada).length;
-            final pct = totalOp == 0 ? 0 : ((compOp / totalOp) * 100).round();
-            return [e.key, '$totalOp', '$compOp', '$pct%'];
-          }).toList(),
-        );
-        await _compartirBytes(bytes, 'reporte_eficiencia.xlsx');
-      });
-
-  Future<void> _descargarPdfInventario() => _runExport(() async {
-        final bytes = await ReportePdfService.generar(
-          titulo: 'Inventario',
-          subtitulo: '${_materiales.length} materiales en inventario',
-          headers: const ['Material', 'Categoría', 'Stock', 'Mínimo', 'Máximo'],
-          filas: _materiales
-              .map((m) => [
-                    m.nombre,
-                    m.categoria,
-                    '${m.stockActual} ${m.unidad}',
-                    '${m.stockMinimo}',
-                    '${m.stockMaximo}',
-                  ])
-              .toList(),
-        );
-        await Printing.layoutPdf(onLayout: (_) => bytes, name: 'reporte_inventario.pdf');
-      });
-
-  Future<void> _exportarCsvInventario() => _runExport(() async {
-        final bytes = ExcelReporteService.generar(
-          titulo: 'Inventario',
-          headers: const ['Material', 'Categoría', 'Stock', 'Mínimo', 'Máximo'],
-          filas: _materiales
-              .map((m) => [
-                    m.nombre,
-                    m.categoria,
-                    '${m.stockActual} ${m.unidad}',
-                    '${m.stockMinimo}',
-                    '${m.stockMaximo}',
-                  ])
-              .toList(),
-        );
-        await _compartirBytes(bytes, 'reporte_inventario.xlsx');
-      });
-
-  // Ya no exportamos CSV — un .xlsx real permite el mismo estilo
-  // (encabezado navy, filas zebra) que el resto de la app usa en PDF.
-  Future<void> _compartirBytes(List<int> bytes, String nombreArchivo) async {
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/$nombreArchivo');
-    await file.writeAsBytes(bytes);
-    await Share.shareXFiles([XFile(file.path)], text: 'Reporte Texticode');
+  Widget _buildTabla() {
+    return ConstrainedBox(
+      constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 32),
+      child: Table(
+        border: TableBorder.symmetric(inside: const BorderSide(color: AppColors.cardBorder)),
+        defaultColumnWidth: const IntrinsicColumnWidth(),
+        children: [
+          TableRow(
+            decoration: const BoxDecoration(color: AppColors.navy),
+            children: widget.headers
+                .map((h) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      child: Text(
+                        h,
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ))
+                .toList(),
+          ),
+          ...widget.filas.asMap().entries.map((entry) {
+            final esImpar = entry.key.isOdd;
+            return TableRow(
+              decoration: BoxDecoration(color: esImpar ? AppColors.searchBg : Colors.white),
+              children: entry.value
+                  .map((v) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                        child: Text(
+                          v,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                        ),
+                      ))
+                  .toList(),
+            );
+          }),
+        ],
+      ),
+    );
   }
 }

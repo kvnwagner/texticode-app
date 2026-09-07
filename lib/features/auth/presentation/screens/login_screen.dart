@@ -336,60 +336,6 @@ class _LoginCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                SizedBox(
-                  height: 44,
-                  child: OutlinedButton.icon(
-                    onPressed: loading ? null : onGoogleSubmit,
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      side: const BorderSide(
-                          color: AppColors.googleBorder, width: 1.5),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF4285F4), Color(0xFF34A853)],
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text('G',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 11)),
-                    ),
-                    label: const Text(
-                      'Continuar con Google',
-                      style: TextStyle(
-                          color: AppColors.googleText,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                const Row(
-                  children: [
-                    Expanded(child: Divider(color: AppColors.inputBorder)),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Text(
-                        'o ingresa con contraseña',
-                        style: TextStyle(
-                            fontSize: 11, color: AppColors.iconDefault),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: AppColors.inputBorder)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
                 // Login button
                 SizedBox(
                   height: 48,
@@ -454,6 +400,67 @@ class _LoginCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+
+                const Row(
+                  children: [
+                    Expanded(child: Divider(color: AppColors.inputBorder)),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        'o continúa con',
+                        style: TextStyle(
+                            fontSize: 11, color: AppColors.iconDefault),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: AppColors.inputBorder)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                SizedBox(
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: loading ? null : onGoogleSubmit,
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(
+                          color: AppColors.googleBorder, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: Image.asset(
+                      'assets/images/google_logo.png',
+                      width: 22,
+                      height: 22,
+                      // Si el asset todavía no está en el proyecto, este
+                      // builder evita que la UI se rompa mientras tanto.
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 22,
+                        height: 22,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF4285F4), Color(0xFF34A853)],
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text('G',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 11)),
+                      ),
+                    ),
+                    label: const Text(
+                      'Continuar con Google',
+                      style: TextStyle(
+                          color: AppColors.googleText,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 14),
 
                 const Text(
@@ -489,6 +496,7 @@ class _Logo extends StatelessWidget {
           width: 72,
           height: 72,
           fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
           // Si aún no tienes el logo en assets/images/, este builder
           // muestra un placeholder para que la UI no se rompa.
           errorBuilder: (_, __, ___) => const Icon(

@@ -5,6 +5,7 @@ import 'package:printing/printing.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
+
 import '../../data/models/comprobante_model.dart';
 import '../../data/models/usuario_model.dart';
 import '../../data/repositories/comprobante_repository.dart';
@@ -101,6 +102,16 @@ class _ClientesScreenState extends State<ClientesScreen> {
     return null;
   }
 
+  // Solo se cuentan/muestran los comprobantes cuya orden esté "Completada".
+  List<Comprobante> _comprobantesCompletados(Usuario cliente) {
+    return _comprobantes.where((comprobante) {
+      if (comprobante.idCliente != cliente.idUsuario) return false;
+
+      final estado = _obtenerEstadoComprobante(comprobante).toLowerCase();
+      return estado == 'completada' || estado == 'completado';
+    }).toList();
+  }
+
   // Genera el PDF real y abre la vista previa nativa.
   Future<void> _descargarComprobante(Comprobante comprobante) async {
     if (_descargando != null) return;
@@ -178,17 +189,10 @@ class _ClientesScreenState extends State<ClientesScreen> {
                         'Lista de Clientes',
                         _clientesFiltrados.length,
                       ),
-                      if (_clientesFiltrados.isEmpty)
-                        _buildEmptyClientes(),
+                      if (_clientesFiltrados.isEmpty) _buildEmptyClientes(),
+
                       ..._clientesFiltrados.map(_buildClienteTile),
-                      const SizedBox(height: 8),
-                      _buildSectionHeader(
-                        'Comprobantes de Entrega',
-                        _comprobantes.length,
-                      ),
-                      if (_comprobantes.isEmpty)
-                        _buildEmptyComprobantes(),
-                      ..._comprobantes.map(_buildComprobanteTile),
+
                       const SizedBox(height: 130),
                     ],
                   ),
@@ -242,6 +246,8 @@ class _ClientesScreenState extends State<ClientesScreen> {
     );
   }
 
+  // ── Métricas ──────────────────────────────────────────────────────────
+
   Widget _buildMetrics(
     int total,
     int activos,
@@ -270,19 +276,17 @@ class _ClientesScreenState extends State<ClientesScreen> {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: items.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          mainAxisExtent: 78,
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            for (int i = 0; i < items.length; i++) ...[
+              if (i > 0) const SizedBox(width: 10),
+              Expanded(
+                child: _buildMetricCard(items[i]),
+              ),
+            ],
+          ],
         ),
-        itemBuilder: (context, index) {
-          return _buildMetricCard(items[index]);
-        },
       ),
     );
   }
@@ -299,6 +303,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
           ),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
               width: 3.5,
@@ -307,50 +312,43 @@ class _ClientesScreenState extends State<ClientesScreen> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
+                  vertical: 14,
+                  horizontal: 8,
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${metric.value}',
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                              color: metric.color,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            metric.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                     Container(
-                      width: 32,
-                      height: 32,
+                      width: 34,
+                      height: 34,
                       decoration: BoxDecoration(
-                        color: metric.color.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
+                        color: metric.color.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
                       ),
+                      alignment: Alignment.center,
                       child: Icon(
                         metric.icon,
-                        size: 16,
+                        size: 17,
                         color: metric.color,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${metric.value}',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: metric.color,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      metric.label,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textMuted,
                       ),
                     ),
                   ],
@@ -400,276 +398,338 @@ class _ClientesScreenState extends State<ClientesScreen> {
     );
   }
 
+  // ── Tarjeta desplegable del cliente ───────────────────────────────────
+
   Widget _buildClienteTile(Usuario cliente) {
-    final av = AppColors.avatarPalette[
-        cliente.idUsuario % AppColors.avatarPalette.length];
+    final comprobantesCliente = _comprobantesCompletados(cliente);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: Container(
-        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.pageBg,
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: AppColors.cardBorder,
           ),
-          borderRadius: BorderRadius.circular(18),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AvatarWidget(
-              initials: cliente.initials,
-              size: 38,
-              bg: av['bg']!,
-              text: av['text']!,
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            dividerColor: Colors.transparent,
+          ),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 4,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            childrenPadding: const EdgeInsets.fromLTRB(
+              12,
+              0,
+              12,
+              12,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            collapsedShape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            iconColor: AppColors.navy,
+            collapsedIconColor: AppColors.textMuted,
+            title: Row(
+              children: [
+                AvatarWidget(
+                  initials: cliente.initials,
+                  size: 38,
+                  bg: AppColors
+                      .avatarPalette[cliente.idUsuario %
+                          AppColors.avatarPalette.length]['bg']!,
+                  text: AppColors
+                      .avatarPalette[cliente.idUsuario %
+                          AppColors.avatarPalette.length]['text']!,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          cliente.nombreCompleto,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              cliente.nombreCompleto,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: cliente.isActivo
-                              ? AppColors.badgeOpGreenBg
-                              : AppColors.searchBg,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          cliente.isActivo ? 'Activo' : 'Inactivo',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: cliente.isActivo
-                                ? AppColors.badgeOpGreenText
-                                : AppColors.textFaint,
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: cliente.isActivo
+                                  ? AppColors.iconActive.withValues(
+                                      alpha: 0.10,
+                                    )
+                                  : AppColors.iconClient.withValues(
+                                      alpha: 0.10,
+                                    ),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              cliente.isActivo ? 'Activo' : 'Inactivo',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                color: cliente.isActivo
+                                    ? AppColors.iconActive
+                                    : AppColors.iconClient,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    cliente.correo ?? '',
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.call_outlined,
-                        size: 10,
-                        color: AppColors.textFaint,
-                      ),
-                      const SizedBox(width: 4),
+                      const SizedBox(height: 4),
                       Text(
-                        cliente.telefono ?? '',
+                        cliente.correo ?? 'Sin correo registrado',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        cliente.telefono ?? 'Sin teléfono registrado',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 10,
-                          color: AppColors.textSecondary,
+                          color: AppColors.textFaint,
                         ),
                       ),
                     ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildComprobanteTile(Comprobante comprobante) {
-    final estado = comprobante.estado.toLowerCase();
-
-    final entregado =
-        estado.contains('entregado') || estado.contains('completado');
-
-    final st = entregado
-        ? (
-            bg: AppColors.badgeOpGreenBg,
-            text: AppColors.badgeOpGreenText,
-          )
-        : (
-            bg: AppColors.badgeClientBg,
-            text: AppColors.badgeClientText,
-          );
-
-    final descargando = _descargando == comprobante.idComprobante;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 5,
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.pageBg,
-          border: Border.all(
-            color: AppColors.cardBorder,
-          ),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.navy.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '#${comprobante.idComprobante.toString().padLeft(4, '0')}',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.navy,
-                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
-                    vertical: 2,
+                    vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: st.bg,
+                    color: AppColors.navy.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
-                    comprobante.estado,
-                    style: TextStyle(
-                      fontSize: 9,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.receipt_long_outlined,
+                        size: 13,
+                        color: AppColors.navy,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${comprobantesCliente.length}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.navy,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            children: [
+              if (comprobantesCliente.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.searchBg,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.receipt_long_outlined,
+                        size: 20,
+                        color: AppColors.textFaint,
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Este cliente no tiene comprobantes registrados.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ...comprobantesCliente.map(
+                  (comprobante) => _buildComprobanteTile(
+                    comprobante,
+                    insideCliente: true,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Comprobantes de entrega ───────────────────────────────────────────
+
+  Widget _buildComprobanteTile(
+    Comprobante comprobante, {
+    bool insideCliente = false,
+  }) {
+    final descargando = _descargando == comprobante.idComprobante;
+
+    return Container(
+      margin: EdgeInsets.only(
+        bottom: 8,
+        left: insideCliente ? 0 : 16,
+        right: insideCliente ? 0 : 16,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.pageBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.cardBorder,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.navy.withValues(
+                  alpha: 0.08,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.receipt_long_outlined,
+                size: 19,
+                color: AppColors.navy,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Comprobante #${comprobante.idComprobante.toString().padLeft(4, '0')}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: st.text,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                ),
-                const Spacer(),
-
-                // Ver comprobante.
-                GestureDetector(
-                  onTap: () => _verComprobante(comprobante),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppColors.navy,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.visibility_outlined,
-                      size: 16,
-                      color: Colors.white,
+                  const SizedBox(height: 4),
+                  Text(
+                    _textoFechaComprobante(comprobante),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textMuted,
                     ),
                   ),
+                  const SizedBox(height: 5),
+                  _buildEstadoComprobante(comprobante),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+
+            // ── Botón VER ──────────────────────────────────────────────
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () => _verComprobante(comprobante),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppColors.navy,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.visibility_outlined,
+                    size: 19,
+                    color: Colors.white,
+                  ),
                 ),
+              ),
+            ),
+            const SizedBox(width: 6),
 
-                const SizedBox(width: 8),
-
-                // Descargar PDF.
-                GestureDetector(
-                  onTap: descargando
-                      ? null
-                      : () => _descargarComprobante(comprobante),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppColors.navy,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: descargando
-                        ? const Padding(
-                            padding: EdgeInsets.all(8),
+            // ── Botón DESCARGAR ────────────────────────────────────────
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: descargando
+                    ? null
+                    : () => _descargarComprobante(
+                          comprobante,
+                        ),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppColors.navy,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: descargando
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: Center(
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
                               color: Colors.white,
                             ),
-                          )
-                        : const Icon(
-                            Icons.download_outlined,
-                            size: 16,
-                            color: Colors.white,
                           ),
-                  ),
+                        )
+                      : const Icon(
+                          Icons.download_outlined,
+                          size: 19,
+                          color: Colors.white,
+                        ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              comprobante.usuario,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
               ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Text(
-                  'Vence: ${comprobante.fechaCorta}',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textFaint,
-                  ),
-                ),
-                if (comprobante.ordenDescripcion != null) ...[
-                  const SizedBox(width: 6),
-                  const Text(
-                    '·',
-                    style: TextStyle(
-                      color: AppColors.cardBorder,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      comprobante.ordenDescripcion!,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textFaint,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
             ),
           ],
         ),
@@ -677,35 +737,123 @@ class _ClientesScreenState extends State<ClientesScreen> {
     );
   }
 
-  Widget _buildEmptyClientes() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 24),
-      child: Center(
-        child: Text(
-          'No se encontraron clientes',
-          style: TextStyle(
-            color: AppColors.textFaint,
-            fontSize: 13,
+  Widget _buildEstadoComprobante(
+    Comprobante comprobante,
+  ) {
+    // Estos tiles solo se renderizan para comprobantes cuya orden ya está
+    // completada (ver _comprobantesCompletados), así que el badge siempre
+    // refleja ese estado sin depender de qué campo trajo el backend.
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 7,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.iconActive.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.check_circle_outline,
+            size: 12,
+            color: AppColors.iconActive,
           ),
+          SizedBox(width: 4),
+          Text(
+            'Completada',
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              color: AppColors.iconActive,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _obtenerEstadoComprobante(Comprobante comprobante) {
+    final ordenEstado = comprobante.ordenEstado;
+    if (ordenEstado != null && ordenEstado.trim().isNotEmpty) {
+      return ordenEstado;
+    }
+    return comprobante.estado;
+  }
+
+  String _textoFechaComprobante(
+    Comprobante comprobante,
+  ) {
+    return 'Fecha: ${comprobante.fechaCorta}';
+  }
+
+  // ── Estados vacíos ────────────────────────────────────────────────────
+
+  Widget _buildEmptyClientes() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        8,
+        16,
+        20,
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 28,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.pageBg,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: AppColors.cardBorder,
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.navy.withValues(
+                  alpha: 0.08,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.people_outline,
+                size: 26,
+                color: AppColors.navy,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No hay clientes encontrados',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 5),
+            const Text(
+              'No existen clientes que coincidan con la búsqueda.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildEmptyComprobantes() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 24),
-      child: Center(
-        child: Text(
-          'No hay comprobantes registrados',
-          style: TextStyle(
-            color: AppColors.textFaint,
-            fontSize: 13,
-          ),
-        ),
-      ),
-    );
-  }
+  // ── Error ──────────────────────────────────────────────────────────────
 
   Widget _buildError() {
     return Center(
@@ -714,30 +862,58 @@ class _ClientesScreenState extends State<ClientesScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.wifi_off_rounded,
-              size: 40,
-              color: AppColors.textFaint,
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: AppColors.iconClient.withValues(
+                  alpha: 0.10,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline,
+                size: 30,
+                color: AppColors.iconClient,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            const Text(
+              'No se pudieron cargar los clientes',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
             Text(
-              _error!,
+              _error ?? 'Ocurrió un error inesperado.',
               textAlign: TextAlign.center,
               style: const TextStyle(
+                fontSize: 11,
                 color: AppColors.textMuted,
-                fontSize: 13,
               ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: _cargar,
+              icon: const Icon(
+                Icons.refresh,
+                size: 18,
+              ),
+              label: const Text('Reintentar'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.navy,
-              ),
-              child: const Text(
-                'Reintentar',
-                style: TextStyle(
-                  color: Colors.white,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 11,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
@@ -762,723 +938,104 @@ class _MetricItem {
   );
 }
 
-/// Vista previa del comprobante dentro de la aplicación.
-///
-/// Replica visualmente el diseño utilizado por
-/// ComprobantePdfService.
+// ── Vista previa del comprobante (bottom sheet con el PDF) ───────────────
+
 class _ComprobantePreviewSheet extends StatelessWidget {
   final Comprobante comprobante;
   final Usuario? cliente;
 
   const _ComprobantePreviewSheet({
     required this.comprobante,
-    this.cliente,
+    required this.cliente,
   });
-
-  bool get _entregado {
-    final estado = comprobante.estado.toLowerCase();
-
-    return estado.contains('entregado') ||
-        estado.contains('completado');
-  }
-
-  String _fechaHoy() {
-    const meses = [
-      'enero',
-      'febrero',
-      'marzo',
-      'abril',
-      'mayo',
-      'junio',
-      'julio',
-      'agosto',
-      'septiembre',
-      'octubre',
-      'noviembre',
-      'diciembre',
-    ];
-
-    final d = DateTime.now();
-
-    return '${d.day} de ${meses[d.month - 1]} de ${d.year}';
-  }
-
-  Widget _label(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textMuted,
-        letterSpacing: 0.5,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
-    final estadoBg = _entregado
-        ? AppColors.badgeOpGreenBg
-        : AppColors.badgeClientBg;
-
-    final estadoTexto = _entregado
-        ? AppColors.badgeOpGreenText
-        : AppColors.badgeClientText;
-
-    final estadoLabel = comprobante.estado;
-
-    final numero =
-        comprobante.idComprobante.toString().padLeft(4, '0');
-
-    final descripcion = comprobante.ordenDescripcion ?? '—';
-    final clienteEmail = cliente?.correo ?? '';
-    final clienteTel = cliente?.telefono ?? '';
-
     return DraggableScrollableSheet(
-      initialChildSize: 0.9,
+      initialChildSize: 0.85,
       minChildSize: 0.5,
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) {
-        return ClipRRect(
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(24),
-          ),
-          child: Container(
+        return Container(
+          decoration: const BoxDecoration(
             color: Colors.white,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(
-                    top: 10,
-                    bottom: 4,
-                  ),
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBorder,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: scrollController,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // CABECERA.
-                        Container(
-                          color: AppColors.navy,
-                          padding: const EdgeInsets.fromLTRB(
-                            20,
-                            12,
-                            20,
-                            20,
-                          ),
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 34,
-                                    height: 34,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: ClipOval(
-                                      child: Padding(
-                                        padding:
-                                            const EdgeInsets.all(5),
-                                        child: Image.asset(
-                                          'assets/images/logo_texticode.png',
-                                          fit: BoxFit.contain,
-                                          errorBuilder: (
-                                            context,
-                                            error,
-                                            stackTrace,
-                                          ) {
-                                            return const Icon(
-                                              Icons.qr_code_2,
-                                              color: AppColors.navy,
-                                              size: 18,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'TEXTICODE',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 15,
-                                            fontWeight:
-                                                FontWeight.bold,
-                                            letterSpacing: 1.2,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          'Bogotá, Colombia · '
-                                          'texticode@correo.com\n'
-                                          '+57 300 000 0000',
-                                          style: TextStyle(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.7),
-                                            fontSize: 9.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: Container(
-                                      width: 26,
-                                      height: 26,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.12),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        size: 14,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'COMPROBANTE DE ENTREGA',
-                                          style: TextStyle(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.7),
-                                            fontSize: 9.5,
-                                            letterSpacing: 1,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'N.° $numero',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 22,
-                                            fontWeight:
-                                                FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Container(
-                                    padding:
-                                        const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: estadoBg,
-                                      borderRadius:
-                                          BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      estadoLabel,
-                                      style: TextStyle(
-                                        color: estadoTexto,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Comprobante #${comprobante.idComprobante.toString().padLeft(4, '0')}',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
-
-                        // CLIENTE / FECHAS.
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: const BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: AppColors.cardBorder,
-                              ),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              _label('CLIENTE'),
-                              const SizedBox(height: 4),
-                              Text(
-                                comprobante.usuario,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              if (clienteEmail.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  clienteEmail,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textMuted,
-                                  ),
-                                ),
-                              ],
-                              if (clienteTel.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Tel: $clienteTel',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textMuted,
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        _label('FECHA DE EMISIÓN'),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          _fechaHoy(),
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            color:
-                                                AppColors.textPrimary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        _label('FECHA DE ENTREGA'),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          comprobante.fechaCorta,
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            color:
-                                                AppColors.textPrimary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // ESTADO / REFERENCIA.
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: const BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: AppColors.cardBorder,
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    _label('ESTADO DEL PEDIDO'),
-                                    const SizedBox(height: 6),
-                                    Container(
-                                      padding:
-                                          const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: estadoBg,
-                                        borderRadius:
-                                            BorderRadius.circular(20),
-                                      ),
-                                      child: Text(
-                                        estadoLabel,
-                                        style: TextStyle(
-                                          color: estadoTexto,
-                                          fontSize: 11,
-                                          fontWeight:
-                                              FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    _label('ORDEN DE REFERENCIA'),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      '#$numero',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color:
-                                            AppColors.textPrimary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // PRODUCTOS / SERVICIOS.
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            20,
-                            16,
-                            20,
-                            0,
-                          ),
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              _label('PRODUCTOS / SERVICIOS'),
-                              const SizedBox(height: 8),
-                              ClipRRect(
-                                borderRadius:
-                                    BorderRadius.circular(10),
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      color: AppColors.navy,
-                                      padding:
-                                          const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 10,
-                                      ),
-                                      child: const Row(
-                                        children: [
-                                          SizedBox(
-                                            width: 20,
-                                            child: Text(
-                                              '#',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight:
-                                                    FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 3,
-                                            child: Text(
-                                              'DESCRIPCIÓN',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight:
-                                                    FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Text(
-                                              'CANTIDAD',
-                                              textAlign:
-                                                  TextAlign.center,
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight:
-                                                    FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Text(
-                                              'ESTADO',
-                                              textAlign:
-                                                  TextAlign.right,
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight:
-                                                    FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Container(
-                                      color: AppColors.pageBg,
-                                      padding:
-                                          const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 12,
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const SizedBox(
-                                            width: 20,
-                                            child: Text(
-                                              '01',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color:
-                                                    AppColors.textFaint,
-                                              ),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 3,
-                                            child: Text(
-                                              descripcion,
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight:
-                                                    FontWeight.bold,
-                                                color: AppColors
-                                                    .textPrimary,
-                                              ),
-                                            ),
-                                          ),
-                                          const Expanded(
-                                            flex: 2,
-                                            child: Text(
-                                              '1',
-                                              textAlign:
-                                                  TextAlign.center,
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                color: AppColors
-                                                    .textPrimary,
-                                              ),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Align(
-                                              alignment:
-                                                  Alignment.centerRight,
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets
-                                                        .symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 3,
-                                                ),
-                                                decoration:
-                                                    BoxDecoration(
-                                                  color: estadoBg,
-                                                  borderRadius:
-                                                      BorderRadius
-                                                          .circular(20),
-                                                ),
-                                                child: Text(
-                                                  estadoLabel,
-                                                  style: TextStyle(
-                                                    color:
-                                                        estadoTexto,
-                                                    fontSize: 9,
-                                                    fontWeight:
-                                                        FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // OBSERVACIONES.
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            20,
-                            20,
-                            20,
-                            0,
-                          ),
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              _label('OBSERVACIONES'),
-                              const SizedBox(height: 6),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: AppColors.pageBg,
-                                  borderRadius:
-                                      BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: AppColors.cardBorder,
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Ninguna observación registrada '
-                                  'para este pedido.',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textMuted,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // FIRMAS.
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            20,
-                            20,
-                            20,
-                            0,
-                          ),
-                          child: Row(
-                            children: [
-                              const Expanded(
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      'ENTREGADO POR',
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        color:
-                                            AppColors.textMuted,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'TEXTICODE S.A.S.',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.navy,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    const Text(
-                                      'RECIBIDO POR',
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        color:
-                                            AppColors.textMuted,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      comprobante.usuario,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.navy,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // PIE DE PÁGINA.
-                        Container(
-                          width: double.infinity,
-                          color: AppColors.navy,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 14,
-                          ),
-                          child: Text(
-                            'Este documento es un comprobante oficial '
-                            'de entrega emitido por TEXTICODE. · '
-                            'Generado el ${_fechaHoy()}',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white.withValues(
-                                alpha: 0.7,
-                              ),
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppColors.textMuted,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              Expanded(
+                child: FutureBuilder<Uint8List>(
+                  future: ComprobantePdfService.generar(
+                    comprobante: comprobante,
+                    cliente: cliente,
+                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.navy,
+                        ),
+                      );
+                    }
+
+                    if (snapshot.hasError || !snapshot.hasData) {
+                      return const Center(
+                        child: Text(
+                          'No se pudo generar la vista previa.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return PdfPreview(
+                      build: (format) async => snapshot.data!,
+                      canChangeOrientation: false,
+                      canChangePageFormat: false,
+                      canDebug: false,
+                      allowSharing: true,
+                      allowPrinting: true,
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         );
       },

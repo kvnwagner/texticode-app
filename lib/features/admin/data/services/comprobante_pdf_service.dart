@@ -35,13 +35,17 @@ class ComprobantePdfService {
 
     final logo = pw.MemoryImage(logoBytes.buffer.asUint8List());
 
-    final entregado =
-        comprobante.estado.toLowerCase().contains('entregado') ||
-        comprobante.estado.toLowerCase().contains('completado');
+    // El estado que importa aquí es el de la ORDEN (ordenEstado), no el
+    // campo `estado` propio del comprobante (que por defecto llega como
+    // "Pendiente" y no refleja si la orden ya se completó).
+    final estadoOrden =
+        (comprobante.ordenEstado ?? comprobante.estado).toLowerCase();
 
-    final estadoBg = entregado ? _verdeBg : _amarilloBg;
-    final estadoTexto = entregado ? _verdeTexto : _amarilloTexto;
-    final estadoLabel = entregado ? 'Entregado' : 'Pendiente';
+    final completado = estadoOrden.contains('completad');
+
+    final estadoBg = completado ? _verdeBg : _amarilloBg;
+    final estadoTexto = completado ? _verdeTexto : _amarilloTexto;
+    final estadoLabel = completado ? 'Completada' : 'Pendiente';
 
     final numero =
         comprobante.idComprobante.toString().padLeft(4, '0');
