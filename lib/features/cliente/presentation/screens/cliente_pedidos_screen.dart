@@ -24,7 +24,7 @@ class ClientePedidosScreen extends StatefulWidget {
   State<ClientePedidosScreen> createState() => _ClientePedidosScreenState();
 }
 
-enum _EstadoFiltro { todos, pendiente, enProceso, completada, retrasada }
+enum _EstadoFiltro { todos, retrasada, enProceso, completada }
 
 class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
   String _query = '';
@@ -39,20 +39,18 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
   int get _total => widget.ordenes.length;
   int get _enProceso => widget.ordenes.where((o) => o.isEnProceso).length;
   int get _completadas => widget.ordenes.where((o) => o.isCompletada).length;
-  int get _pendientes => widget.ordenes.where((o) => o.isPendiente).length;
+  int get _retrasadas => widget.ordenes.where((o) => o.isRetrasada).length;
 
   bool _matchFiltro(Orden o) {
     switch (_filter) {
       case _EstadoFiltro.todos:
         return true;
-      case _EstadoFiltro.pendiente:
-        return o.isPendiente;
+      case _EstadoFiltro.retrasada:
+        return o.isRetrasada;
       case _EstadoFiltro.enProceso:
         return o.isEnProceso;
       case _EstadoFiltro.completada:
         return o.isCompletada;
-      case _EstadoFiltro.retrasada:
-        return o.isRetrasada;
     }
   }
 
@@ -60,14 +58,12 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
     switch (f) {
       case _EstadoFiltro.todos:
         return 'Todos';
-      case _EstadoFiltro.pendiente:
-        return 'Pendiente';
+      case _EstadoFiltro.retrasada:
+        return 'En retraso';
       case _EstadoFiltro.enProceso:
         return 'En proceso';
       case _EstadoFiltro.completada:
         return 'Completada';
-      case _EstadoFiltro.retrasada:
-        return 'Retrasada';
     }
   }
 
@@ -75,14 +71,12 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
     switch (f) {
       case _EstadoFiltro.todos:
         return AppColors.navy;
-      case _EstadoFiltro.pendiente:
-        return AppColors.textMuted;
+      case _EstadoFiltro.retrasada:
+        return AppColors.errorText;
       case _EstadoFiltro.enProceso:
         return AppColors.purple;
       case _EstadoFiltro.completada:
         return AppColors.iconActive;
-      case _EstadoFiltro.retrasada:
-        return AppColors.errorText;
     }
   }
 
@@ -131,7 +125,7 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
             (Icons.shopping_bag_outlined, '$_total', 'Total pedidos', AppColors.navy),
             (Icons.autorenew_rounded, '$_enProceso', 'En proceso', AppColors.purple),
             (Icons.check_circle_outline, '$_completadas', 'Completados', AppColors.iconActive),
-            (Icons.hourglass_empty_rounded, '$_pendientes', 'Pendientes', AppColors.textFaint),
+            (Icons.warning_amber_rounded, '$_retrasadas', 'En retraso', AppColors.errorText),
           ];
           final (icon, value, label, color) = items[i];
           return ClienteStatCard(icon: icon, value: value, label: label, color: color);
