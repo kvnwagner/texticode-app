@@ -51,20 +51,29 @@ class ReportePdfService {
         header: (context) {
           if (context.pageNumber == 1) return pw.SizedBox();
 
-          return pw.Container(
-            width: double.infinity,
-            color: _azul,
-            padding: const pw.EdgeInsets.symmetric(
-              horizontal: 32,
-              vertical: 10,
-            ),
-            child: pw.Text(
-              'TEXTICODE — $titulo (cont.)',
-              style: const pw.TextStyle(
-                color: PdfColors.white,
-                fontSize: 9,
+          // El Column agrega un SizedBox debajo de la barra navy para
+          // que el contenido que continúa en esta página (la tabla)
+          // no arranque pegado/encima del encabezado — antes no había
+          // ningún respiro entre ambos.
+          return pw.Column(
+            children: [
+              pw.Container(
+                width: double.infinity,
+                color: _azul,
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 10,
+                ),
+                child: pw.Text(
+                  'TEXTICODE — $titulo (cont.)',
+                  style: const pw.TextStyle(
+                    color: PdfColors.white,
+                    fontSize: 9,
+                  ),
+                ),
               ),
-            ),
+              pw.SizedBox(height: 16),
+            ],
           );
         },
 

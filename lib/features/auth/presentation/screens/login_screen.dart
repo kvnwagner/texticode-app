@@ -461,6 +461,49 @@ class _LoginCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 10),
+
+                // Apple Sign-In — placeholder honesto: el flujo real
+                // requiere cuenta de Apple Developer + configurar el
+                // capability "Sign in with Apple" en el proyecto iOS,
+                // y el backend para validar el token todavía no existe
+                // (queda como tarea pendiente, ver conversación).
+                SizedBox(
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Próximamente'),
+                          content: const Text(
+                              'Iniciar sesión con Apple todavía no está disponible en esta versión. '
+                              'Lo habilitaremos en una futura actualización.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Entendido'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      side: const BorderSide(color: Colors.black, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.apple, color: Colors.white, size: 22),
+                    label: const Text(
+                      'Continuar con Apple',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 14),
 
                 const Text(
