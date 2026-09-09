@@ -38,6 +38,8 @@ class _InventarioScreenState extends State<InventarioScreen> {
     });
     try {
       final data = await _repo.getMateriales();
+      // Los más nuevos (mayor id) van primero en la lista.
+      data.sort((a, b) => b.idMaterial.compareTo(a.idMaterial));
       if (!mounted) return;
       setState(() => _materiales = data);
     } catch (e) {
@@ -91,76 +93,100 @@ class _InventarioScreenState extends State<InventarioScreen> {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.pageBg,
-      child: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
-          : _error != null
-              ? _buildError()
-              : RefreshIndicator(
-                  color: AppColors.navy,
-                  onRefresh: _cargar,
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    children: [
-                      _buildHeader(),
-                      _buildSearchAndFilter(),
-                      _buildMetrics(),
-                      if (_alertas.isNotEmpty) _buildAlertBanner(),
-                      _buildSectionHeader('Inventario de Materiales', _filtrados.length),
-                      if (_filtrados.isEmpty) _buildEmpty(),
-                      ..._filtrados.map(_buildMaterialCard),
-                      const SizedBox(height: 40),
-                    ],
-                  ),
-                ),
+      child: Stack(
+        children: [
+          Column(
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+                    : _error != null
+                        ? _buildError()
+                        : RefreshIndicator(
+                            color: AppColors.navy,
+                            onRefresh: _cargar,
+                            child: ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: EdgeInsets.zero,
+                              children: [
+                                _buildSearchAndFilter(),
+                                _buildMetrics(),
+                                if (_alertas.isNotEmpty) _buildAlertBanner(),
+                                _buildSectionHeader('Inventario de Materiales', _filtrados.length),
+                                if (_filtrados.isEmpty) _buildEmpty(),
+                                ..._filtrados.map(_buildMaterialCard),
+                                const SizedBox(height: 130),
+                              ],
+                            ),
+                          ),
+              ),
+            ],
+          ),
+          Positioned(
+            bottom: 20,
+            right: 16,
+            child: FloatingActionButton(
+              backgroundColor: AppColors.navy,
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => NewMaterialSheet(onCreated: _cargar),
+              ),
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
+  // ── Encabezado (mismo tamaño y estilo que reportes_screen.dart: logo
+  //    55x55, texto 15px, línea separadora abajo) — fijo fuera del
+  //    ListView para que no se desplace al hacer scroll. ────────────────
+
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-            ),
+          SizedBox(
+            width: 55,
+            height: 55,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
               child: Image.asset(
                 AppConstants.logoAssetPath,
-                width: 42,
-                height: 42,
+                width: 46,
+                height: 46,
                 fit: BoxFit.cover,
+                filterQuality: FilterQuality.high,
                 errorBuilder: (context, error, stackTrace) => Container(
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                        colors: [AppColors.navy, Color(0xFF2D5478)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight),
-                    borderRadius: BorderRadius.circular(14),
+                    color: AppColors.navy,
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   alignment: Alignment.center,
-                  child: const Icon(Icons.inventory_2_outlined, color: Colors.white, size: 20),
+                  child: const Icon(Icons.inventory_2_outlined, color: Colors.white, size: 18),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Gestión de Inventario',
-                    style: TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                SizedBox(height: 2),
-                Text('Controla stock, niveles y alertas de materiales en tiempo real',
-                    style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
-              ],
+            child: Text(
+              'Gestión de Inventario',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
         ],
@@ -171,96 +197,64 @@ class _InventarioScreenState extends State<InventarioScreen> {
   Widget _buildSearchAndFilter() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Column(
+      child: Row(
         children: [
-          Container(
-            height: 40,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: AppColors.searchBg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.cardBorder),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.search, size: 16, color: AppColors.textFaint),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    onChanged: (v) => setState(() => _query = v),
-                    decoration: const InputDecoration(
-                      hintText: 'Buscar materiales...',
-                      border: InputBorder.none,
-                      isDense: true,
+          Expanded(
+            flex: 3,
+            child: Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: AppColors.searchBg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.search, size: 16, color: AppColors.textFaint),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      onChanged: (v) => setState(() => _query = v),
+                      decoration: const InputDecoration(
+                        hintText: 'Buscar materiales...',
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                      style: const TextStyle(fontSize: 13, color: AppColors.inputText),
                     ),
-                    style: const TextStyle(fontSize: 13, color: AppColors.inputText),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  height: 36,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: AppColors.searchBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.cardBorder),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _catFiltro,
-                      isExpanded: true,
-                      icon: const Icon(Icons.keyboard_arrow_down,
-                          size: 16, color: AppColors.textFaint),
-                      style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textSecondary),
-                      items: _categoriasFiltro
-                          .map((c) => DropdownMenuItem(
-                              value: c,
-                              child: Text(c == 'Todas' ? 'Todas las categorías' : c)))
-                          .toList(),
-                      onChanged: (v) => setState(() => _catFiltro = v ?? 'Todas'),
-                    ),
-                  ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 2,
+            child: Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: AppColors.searchBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _catFiltro,
+                  isExpanded: true,
+                  icon: const Icon(Icons.keyboard_arrow_down,
+                      size: 16, color: AppColors.textFaint),
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
+                  items: _categoriasFiltro
+                      .map((c) => DropdownMenuItem(
+                          value: c, child: Text(c == 'Todas' ? 'Todas' : c)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _catFiltro = v ?? 'Todas'),
                 ),
               ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () => showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => NewMaterialSheet(onCreated: _cargar),
-                ),
-                child: Container(
-                  height: 36,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                        colors: [AppColors.navy, Color(0xFF2D5478)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.add, size: 14, color: Colors.white),
-                      SizedBox(width: 4),
-                      Text('Agregar',
-                          style: TextStyle(
-                              fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -276,18 +270,16 @@ class _InventarioScreenState extends State<InventarioScreen> {
     ];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: items.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          mainAxisExtent: 78, // misma altura fija que Gestión de Usuarios
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            for (int i = 0; i < items.length; i++) ...[
+              if (i > 0) const SizedBox(width: 10),
+              Expanded(child: _buildStatCard(items[i])),
+            ],
+          ],
         ),
-        itemBuilder: (context, index) => _buildStatCard(items[index]),
       ),
     );
   }
@@ -302,42 +294,33 @@ class _InventarioScreenState extends State<InventarioScreen> {
           border: Border.all(color: AppColors.cardBorder),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(width: 3.5, color: s.color),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                child: Row(
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                child: Column(
                   children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('${s.value}',
-                              style: TextStyle(
-                                  fontSize: 26, fontWeight: FontWeight.bold, color: s.color)),
-                          const SizedBox(height: 3),
-                          Text(s.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textMuted)),
-                        ],
-                      ),
-                    ),
                     Container(
-                      width: 32,
-                      height: 32,
+                      width: 34,
+                      height: 34,
                       decoration: BoxDecoration(
-                        color: s.color.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
+                        color: s.color.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
                       ),
-                      child: Icon(s.icon, size: 16, color: s.color),
+                      alignment: Alignment.center,
+                      child: Icon(s.icon, size: 17, color: s.color),
                     ),
+                    const SizedBox(height: 8),
+                    Text('${s.value}',
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: s.color)),
+                    const SizedBox(height: 2),
+                    Text(s.label,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
                   ],
                 ),
               ),
@@ -355,7 +338,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
         borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.iconClient.withValues(alpha: 0.35), width: 1.5),
+            border: Border.all(color: AppColors.errorText.withValues(alpha: 0.35), width: 1.5),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -363,15 +346,15 @@ class _InventarioScreenState extends State<InventarioScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                color: AppColors.priorityMediumBg,
+                color: AppColors.errorBg,
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, size: 16, color: AppColors.iconClient),
+                    const Icon(Icons.error_outline, size: 16, color: AppColors.errorText),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text('Alertas de Inventario',
                           style: TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF92400E))),
+                              fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.errorText)),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -386,9 +369,9 @@ class _InventarioScreenState extends State<InventarioScreen> {
               ),
               ..._alertas.map((m) => Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: const BoxDecoration(
-                      color: AppColors.priorityMediumBg,
-                      border: Border(top: BorderSide(color: Color(0x30F59E0B))),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorBg,
+                      border: Border(top: BorderSide(color: AppColors.errorText.withValues(alpha: 0.18))),
                     ),
                     child: Row(
                       children: [
@@ -396,7 +379,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                           width: 6,
                           height: 6,
                           decoration: const BoxDecoration(
-                              color: AppColors.iconClient, shape: BoxShape.circle),
+                              color: AppColors.errorText, shape: BoxShape.circle),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -405,22 +388,22 @@ class _InventarioScreenState extends State<InventarioScreen> {
                               style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF78350F))),
+                                  color: AppColors.errorText)),
                         ),
                         Text('${m.stockActual} ${m.unidad}',
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF92400E))),
+                            style: TextStyle(fontSize: 11, color: AppColors.errorText.withValues(alpha: 0.85))),
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                              color: AppColors.priorityMediumBg,
+                              color: AppColors.errorBg,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: const Color(0x40F59E0B))),
+                              border: Border.all(color: AppColors.errorText.withValues(alpha: 0.25))),
                           child: const Text('Stock Bajo',
                               style: TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.iconClient)),
+                                  color: AppColors.errorText)),
                         ),
                       ],
                     ),

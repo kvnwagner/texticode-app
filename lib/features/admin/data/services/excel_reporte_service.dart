@@ -23,11 +23,19 @@ class ExcelReporteService {
   }) {
     final excel = Excel.createExcel();
 
-    // Excel.createExcel() ya trae una hoja "Sheet1" por defecto; creamos
-    // la nuestra con el nombre del reporte y luego borramos la
-    // sobrante para que quede una sola hoja limpia.
+    // ⚠️ Antes se creaba la hoja con excel[titulo] y al final se borraba
+    // la hoja por defecto 'Sheet1' con excel.delete('Sheet1'). El método
+    // delete() de este paquete tiene bugs conocidos que corrompen las
+    // referencias internas del archivo — el estilo del encabezado
+    // sobrevive (se guarda distinto) pero las filas de datos quedan
+    // vacías al abrir el .xlsx en Excel real. La forma segura de tener
+    // una sola hoja con el nombre del reporte es RENOMBRAR la hoja por
+    // defecto en vez de crear una nueva y borrar la sobrante.
+    final nombreHojaOriginal = excel.getDefaultSheet() ?? 'Sheet1';
+    if (nombreHojaOriginal != titulo) {
+      excel.rename(nombreHojaOriginal, titulo);
+    }
     final sheet = excel[titulo];
-    final sheetPorDefectoExiste = excel.sheets.containsKey('Sheet1') && titulo != 'Sheet1';
 
     final headerStyle = CellStyle(
       bold: true,
@@ -66,10 +74,6 @@ class ExcelReporteService {
     final anchosValidos = columnWidths != null && columnWidths.length == headers.length;
     for (var col = 0; col < headers.length; col++) {
       sheet.setColumnWidth(col, anchosValidos ? columnWidths[col] : 22);
-    }
-
-    if (sheetPorDefectoExiste) {
-      excel.delete('Sheet1');
     }
 
     return excel.encode()!;

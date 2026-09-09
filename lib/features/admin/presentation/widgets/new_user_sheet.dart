@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/repositories/usuario_repository.dart';
 
@@ -30,10 +31,103 @@ class _NewUserSheetState extends State<NewUserSheet> {
   };
 
   bool _loading = false;
+  bool _obscurePass = true;
   String? _error;
+
+  // ── Validación (mismos criterios que GestionUsuarios.vue) ─────────────
+
+  static final RegExp _emailRegex = RegExp(
+    r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$",
+  );
+  static final RegExp _telefonoRegex = RegExp(r'^\d{1,10}$');
+  static final RegExp _mayuscula = RegExp(r'[A-Z]');
+  static final RegExp _numero = RegExp(r'[0-9]');
+  static final RegExp _especial = RegExp(r'[^A-Za-z0-9]');
+
+  String? _validarNombre(String? v) {
+    final value = (v ?? '').trim();
+    if (value.isEmpty) return 'El nombre es requerido';
+    if (_numero.hasMatch(value)) return 'El nombre no puede contener números';
+    return null;
+  }
+
+  String? _validarUsuario(String? v) {
+    final value = (v ?? '').trim();
+    if (value.isEmpty) return 'El nombre de usuario es requerido';
+    if (value.contains(' ')) return 'No puede contener espacios';
+    if (RegExp(r'^\d+$').hasMatch(value)) return 'No puede contener solo números';
+    return null;
+  }
+
+  String? _validarCorreo(String? v) {
+    final value = (v ?? '').trim();
+    if (value.isEmpty) return 'El correo es requerido';
+    if (!_emailRegex.hasMatch(value)) {
+      return 'Ingresa un correo válido (ej: nombre@dominio.com)';
+    }
+    return null;
+  }
+
+  String? _validarTelefono(String? v) {
+    final value = (v ?? '').trim();
+    if (value.isEmpty) return null; // el teléfono es opcional
+    if (!_telefonoRegex.hasMatch(value)) {
+      return 'Teléfono inválido (solo números, máximo 10 dígitos)';
+    }
+    return null;
+  }
+
+  String? _validarContrasena(String? v) {
+    final value = v ?? '';
+    if (value.isEmpty) return 'La contraseña es requerida';
+    if (value.length < 8) return 'Mínimo 8 caracteres';
+    if (!_mayuscula.hasMatch(value)) return 'Debe tener al menos una mayúscula';
+    if (!_numero.hasMatch(value)) return 'Debe tener al menos un número';
+    if (!_especial.hasMatch(value)) {
+      return 'Debe tener al menos un carácter especial (@, #, \$, etc.)';
+    }
+    return null;
+  }
+
+  List<_PwdHint> get _passwordHints {
+    final pwd = _passCtrl.text;
+    return [
+      _PwdHint('Mínimo 8 caracteres', pwd.length >= 8),
+      _PwdHint('Una mayúscula', _mayuscula.hasMatch(pwd)),
+      _PwdHint('Un número', _numero.hasMatch(pwd)),
+      _PwdHint('Un carácter especial (@#\$…)', _especial.hasMatch(pwd)),
+    ];
+  }
+
+  // El botón "Crear Usuario" queda deshabilitado mientras algún campo
+  // no cumpla su validación — igual que `tieneErrores` en el Vue.
+  bool get _formValido =>
+      _validarNombre(_nombreCtrl.text) == null &&
+      _validarUsuario(_usuarioCtrl.text) == null &&
+      _validarCorreo(_correoCtrl.text) == null &&
+      _validarTelefono(_telefonoCtrl.text) == null &&
+      _validarContrasena(_passCtrl.text) == null &&
+      _rolSeleccionado != null;
+
+  @override
+  void initState() {
+    super.initState();
+    // Reconstruye en cada tecla para refrescar los hints de contraseña,
+    // los errores en vivo y el estado habilitado/deshabilitado del botón.
+    for (final c in [_nombreCtrl, _usuarioCtrl, _correoCtrl, _telefonoCtrl, _passCtrl]) {
+      c.addListener(_onFieldChanged);
+    }
+  }
+
+  void _onFieldChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void dispose() {
+    for (final c in [_nombreCtrl, _usuarioCtrl, _correoCtrl, _telefonoCtrl, _passCtrl]) {
+      c.removeListener(_onFieldChanged);
+    }
     _nombreCtrl.dispose();
     _usuarioCtrl.dispose();
     _correoCtrl.dispose();
@@ -78,11 +172,12 @@ class _NewUserSheetState extends State<NewUserSheet> {
     color: AppColors.textMuted,
   );
 
-  InputDecoration _dec(String hint) => InputDecoration(
+  InputDecoration _dec(String hint, {Widget? suffixIcon}) => InputDecoration(
     hintText: hint,
     hintStyle: const TextStyle(color: AppColors.inputPlaceholder, fontSize: 13),
     filled: true,
     fillColor: AppColors.inputBg,
+    suffixIcon: suffixIcon,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
@@ -96,6 +191,14 @@ class _NewUserSheetState extends State<NewUserSheet> {
       borderRadius: BorderRadius.circular(12),
       borderSide: const BorderSide(color: AppColors.navy, width: 1.5),
     ),
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: AppColors.errorText, width: 1),
+    ),
+    focusedErrorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: AppColors.errorText, width: 1.5),
+    ),
   );
 
   Widget _field({
@@ -105,6 +208,8 @@ class _NewUserSheetState extends State<NewUserSheet> {
     required String hint,
     bool obscure = false,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    Widget? suffixIcon,
     String? Function(String?)? validator,
   }) {
     return Column(
@@ -133,11 +238,40 @@ class _NewUserSheetState extends State<NewUserSheet> {
           controller: controller,
           obscureText: obscure,
           keyboardType: keyboardType,
-          decoration: _dec(hint),
+          inputFormatters: inputFormatters,
+          decoration: _dec(hint, suffixIcon: suffixIcon),
           style: const TextStyle(fontSize: 13, color: AppColors.inputText),
           validator: validator,
         ),
       ],
+    );
+  }
+
+  Widget _passwordHintsRow() {
+    if (_passCtrl.text.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 7),
+      child: Wrap(
+        spacing: 5,
+        runSpacing: 5,
+        children: _passwordHints.map((h) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: h.ok ? AppColors.badgeOpGreenBg : AppColors.searchBg,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '${h.ok ? '✓' : '✗'} ${h.label}',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: h.ok ? AppColors.badgeOpGreenText : AppColors.textFaint,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -179,6 +313,7 @@ class _NewUserSheetState extends State<NewUserSheet> {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
             child: Form(
               key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,8 +365,10 @@ class _NewUserSheetState extends State<NewUserSheet> {
                     label: 'Nombre completo',
                     controller: _nombreCtrl,
                     hint: 'Nombre completo',
-                    validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'El nombre es requerido' : null,
+                    // Impide teclear números directamente, igual que
+                    // @keypress="soloLetras" en el Vue.
+                    inputFormatters: [FilteringTextInputFormatter.deny(_numero)],
+                    validator: _validarNombre,
                   ),
                   const SizedBox(height: 14),
                   _field(
@@ -239,8 +376,8 @@ class _NewUserSheetState extends State<NewUserSheet> {
                     helper: '(para iniciar sesión)',
                     controller: _usuarioCtrl,
                     hint: 'Ej: juan.perez o juanito123',
-                    validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'El nombre de usuario es requerido' : null,
+                    inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
+                    validator: _validarUsuario,
                   ),
                   const SizedBox(height: 14),
                   _field(
@@ -248,15 +385,22 @@ class _NewUserSheetState extends State<NewUserSheet> {
                     controller: _correoCtrl,
                     hint: 'correo@ejemplo.com',
                     keyboardType: TextInputType.emailAddress,
-                    validator: (v) =>
-                    (v == null || !v.contains('@')) ? 'Correo inválido' : null,
+                    inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
+                    validator: _validarCorreo,
                   ),
                   const SizedBox(height: 14),
                   _field(
                     label: 'Teléfono',
+                    helper: '(opcional)',
                     controller: _telefonoCtrl,
-                    hint: '+57 300 000 0000',
+                    hint: '3001234567',
                     keyboardType: TextInputType.phone,
+                    // Solo dígitos, y no deja escribir más de 10.
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
+                    validator: _validarTelefono,
                   ),
                   const SizedBox(height: 14),
                   _roleDropdown(),
@@ -265,10 +409,19 @@ class _NewUserSheetState extends State<NewUserSheet> {
                     label: 'Contraseña',
                     controller: _passCtrl,
                     hint: '••••••••',
-                    obscure: true,
-                    validator: (v) =>
-                    (v == null || v.length < 8) ? 'Mínimo 8 caracteres' : null,
+                    obscure: _obscurePass,
+                    inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                      icon: Icon(
+                        _obscurePass ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        size: 18,
+                        color: AppColors.textFaint,
+                      ),
+                    ),
+                    validator: _validarContrasena,
                   ),
+                  _passwordHintsRow(),
                   if (_error != null) ...[
                     const SizedBox(height: 12),
                     Container(
@@ -309,9 +462,10 @@ class _NewUserSheetState extends State<NewUserSheet> {
                         child: SizedBox(
                           height: 46,
                           child: ElevatedButton(
-                            onPressed: _loading ? null : _submit,
+                            onPressed: (_loading || !_formValido) ? null : _submit,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.navy,
+                              disabledBackgroundColor: AppColors.navy.withValues(alpha: 0.35),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
                             ),
@@ -339,4 +493,10 @@ class _NewUserSheetState extends State<NewUserSheet> {
       ),
     );
   }
+}
+
+class _PwdHint {
+  final String label;
+  final bool ok;
+  const _PwdHint(this.label, this.ok);
 }
