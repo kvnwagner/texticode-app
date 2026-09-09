@@ -176,6 +176,14 @@ class ClienteStatCard extends StatelessWidget {
 /// Card de pedido — recibe un [Orden] REAL del backend (mismo modelo
 /// que usa Admin/Operario). Reutiliza statusColors()/priorityColors().
 ///
+/// [materiales] permite pasar la lista REAL de materiales de la orden
+/// (obtenida desde /api/orden-material, igual que en ProduccionScreen).
+/// `orden.materiales` casi siempre llega vacío porque el backend no
+/// incluye ese campo en el JSON de /api/ordenes — por eso antes esta
+/// card mostraba "Material: —" aunque la orden sí tuviera materiales
+/// asignados. Si no se pasa [materiales], cae a `orden.materiales`
+/// como respaldo.
+///
 /// Soporta un modo "expandido" tipo acordeón: al tocarla, [onTap] avisa
 /// al padre (quien decide cuál card queda expandida — solo una a la
 /// vez). Cuando [expanded] es true se muestra información adicional
@@ -193,6 +201,7 @@ class ClienteOrderCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onDownloadPdf;
   final bool downloading;
+  final List<String>? materiales;
 
   const ClienteOrderCard({
     super.key,
@@ -201,6 +210,7 @@ class ClienteOrderCard extends StatelessWidget {
     this.onTap,
     this.onDownloadPdf,
     this.downloading = false,
+    this.materiales,
   });
 
   @override
@@ -208,6 +218,9 @@ class ClienteOrderCard extends StatelessWidget {
     final status = statusColors(orden);
     final priority = priorityColors(orden);
     final progressColor = orden.isCompletada ? AppColors.iconActive : AppColors.purple;
+    // Lista real de materiales: si no se pasó explícitamente, cae a
+    // orden.materiales (que en la práctica suele venir vacío).
+    final materialesReales = materiales ?? orden.materiales;
 
     return GestureDetector(
       onTap: onTap,
@@ -288,12 +301,12 @@ class ClienteOrderCard extends StatelessWidget {
                           ),
 
                           // ── Vista compacta (colapsada) ──
-                          if (!expanded && orden.materiales.isNotEmpty) ...[
+                          if (!expanded && materialesReales.isNotEmpty) ...[
                             const SizedBox(height: 6),
                             Wrap(
                               spacing: 6,
                               runSpacing: 4,
-                              children: orden.materiales
+                              children: materialesReales
                                   .take(3)
                                   .map((m) => Container(
                                         padding: const EdgeInsets.symmetric(
@@ -357,18 +370,23 @@ class ClienteOrderCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 6),
+                          // ⬅️ Antes mostraba [0, 25, 50, 75, 100] sin "%" y en
+                          // AppColors.textFaint. Ahora solo marca los extremos
+                          // (0% y 100%) con el signo de porcentaje, y usa
+                          // AppColors.textSecondary como color base (más
+                          // visible que textFaint) en vez del anterior.
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [0, 25, 50, 75, 100]
-                                .map((m) => Text('$m',
+                            children: [0, 100]
+                                .map((m) => Text('$m%',
                                     style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: orden.progresoPorcentaje >= m
                                             ? FontWeight.w800
-                                            : FontWeight.w400,
+                                            : FontWeight.w600,
                                         color: orden.progresoPorcentaje >= m
                                             ? progressColor
-                                            : AppColors.textFaint)))
+                                            : AppColors.textSecondary)))
                                 .toList(),
                           ),
 
@@ -402,9 +420,9 @@ class ClienteOrderCard extends StatelessWidget {
                                   _DetailRow(
                                     icon: Icons.layers_outlined,
                                     label: 'Materiales',
-                                    value: orden.materiales.isEmpty
+                                    value: materialesReales.isEmpty
                                         ? 'Sin materiales asignados'
-                                        : orden.materiales.join(', '),
+                                        : materialesReales.join(', '),
                                     multiline: true,
                                   ),
                                 ],
@@ -473,8 +491,8 @@ class ClienteOrderCard extends StatelessWidget {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      orden.materiales.isNotEmpty
-                                          ? 'Material: ${orden.materiales.first}'
+                                      materialesReales.isNotEmpty
+                                          ? 'Material: ${materialesReales.first}'
                                           : 'Material: —',
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
