@@ -21,10 +21,10 @@ const _tiposFiltro = ['Todos los tipos', 'Pedidos', 'Eficiencia', 'Inventario'];
 /// panel admin (mismo header y mismas cards de métrica que Clientes).
 ///
 /// Los 4 KPI se calculan en tiempo real a partir de las órdenes reales
-/// (OrdenRepository). "PDF" abre una vista previa real (con PdfPreview)
-/// antes de imprimir/compartir — igual patrón que el comprobante de
-/// entrega en ClientesScreen (_ComprobantePreviewSheet). "Excel" ahora
-/// exporta y comparte directo, sin vista previa intermedia.
+/// (OrdenRepository). "PDF" abre una vista previa real (con zoom
+/// directo por imagen) antes de imprimir/compartir — igual patrón que
+/// el comprobante de entrega en ClientesScreen (_ComprobantePreviewSheet).
+/// "Excel" exporta y comparte directo, sin vista previa intermedia.
 ///
 /// ⚠️ Nota sobre "Pendientes": son todas las órdenes que NO están
 /// Completadas (En Proceso, Retrasada o Pausada). El cálculo anterior
@@ -47,10 +47,6 @@ class _TablaReporte {
   final List<String> headers;
   final List<List<String>> filas;
 
-  /// Pesos relativos de ancho por columna (mismo largo que headers).
-  /// Sin esto, PDF y Excel autoajustan cada columna a su contenido y
-  /// con columnas de texto largo mezcladas con columnas cortas el
-  /// resultado se ve desparejo/distorsionado.
   final List<int> columnFlex;
 
   const _TablaReporte({
@@ -61,9 +57,6 @@ class _TablaReporte {
     required this.columnFlex,
   });
 
-  /// Excel usa anchos absolutos, no pesos relativos — se escala el
-  /// mismo columnFlex a un rango razonable (16–34) en vez de duplicar
-  /// los números en dos lugares distintos.
   List<double> get columnWidthsExcel =>
       columnFlex.map((f) => 14.0 + (f * 6.0)).toList();
 }
@@ -97,18 +90,12 @@ class _ReportesScreenState extends State<ReportesScreen> {
       List<MaterialItem> materiales = [];
       try {
         materiales = await _materialRepo.getMateriales();
-      } catch (_) {
-        // Si falla materiales no bloqueamos toda la pantalla de reportes.
-      }
+      } catch (_) {}
       List<EficienciaOperario> operarios = [];
       String? errorOperarios;
       try {
         operarios = await _eficienciaRepo.getOperarios();
       } catch (e) {
-        // Antes esto se tragaba en silencio y la pantalla mostraba
-        // "Sin datos" igual que si el array hubiera llegado vacío de
-        // verdad — dos causas muy distintas (falla de red/endpoint vs.
-        // realmente no hay operarios) que ahora se distinguen.
         errorOperarios = e.toString().replaceFirst('Exception: ', '');
         // ignore: avoid_print
         print('EficienciaRepository.getOperarios() falló: $e');
@@ -128,21 +115,12 @@ class _ReportesScreenState extends State<ReportesScreen> {
     }
   }
 
-  // ── KPIs reales ───────────────────────────────────────────────────────
   int get _total => _ordenes.length;
   int get _completados => _ordenes.where((o) => o.isCompletada).length;
-
-  // Pendientes = toda orden que aún NO está completada (en proceso,
-  // retrasada o pausada). Antes solo se contaba 'Pausado', por lo que
-  // las órdenes 'En Proceso' y 'Retrasada' quedaban fuera del conteo
-  // aunque también son pedidos pendientes desde la perspectiva del admin.
   int get _pendientes => _ordenes.where((o) => !o.isCompletada).length;
-
   double get _tasaCompletacion => _total == 0 ? 0 : (_completados / _total) * 100;
 
   bool _visible(String tipo) => _filtro == 'Todos los tipos' || _filtro == tipo;
-
-  // ── Datos de cada reporte (se usan tanto para el PDF como el Excel) ────
 
   _TablaReporte _tablaPedidos() => _TablaReporte(
         titulo: 'Pedidos',
@@ -162,8 +140,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
       );
 
   _TablaReporte _tablaPedidosPendientes() {
-    // Misma definición que el KPI: todo lo que no está Completada
-    // (en proceso, retrasada o pausada) cuenta como pendiente.
     final pendientes = _ordenes.where((o) => !o.isCompletada).toList();
     return _TablaReporte(
       titulo: 'Pedidos Pendientes',
@@ -183,13 +159,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
     );
   }
 
-  // Antes esto agrupaba _ordenes en memoria por el nombre de texto del
-  // operario y calculaba un "% Completación" casero — no es una métrica
-  // real de eficiencia y, si el nombre venía vacío o mal mapeado desde
-  // el JOIN de /api/ordenes, mezclaba operarios distintos en una sola
-  // fila. Ahora usa /api/eficiencia/operarios (EficienciaRepository),
-  // que ya trae prendas/día, unidades producidas y el rendimiento
-  // calculado por el backend, por operario real (Id_Usuario).
   _TablaReporte _tablaEficiencia() => _TablaReporte(
         titulo: 'Eficiencia Operaria',
         subtitulo: _errorOperarios != null
@@ -236,8 +205,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
         columnFlex: const [3, 2, 2, 1, 1],
       );
 
-  // ── Vista previa PDF / Excel ─────────────────────────────────────────
-
   bool _exportando = false;
 
   void _verPdf(_TablaReporte t) {
@@ -255,10 +222,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
     );
   }
 
-  // Descarga directa: genera el PDF y abre de una vez el diálogo nativo
-  // de imprimir/compartir, sin pasar por ninguna pantalla intermedia —
-  // igual que el botón "Descargar" del comprobante en ClientesScreen.
-  // Es una acción aparte de "Ver" (la vista previa de arriba).
   Future<void> _descargarPdf(_TablaReporte t, String nombreArchivo) async {
     setState(() => _exportando = true);
     try {
@@ -281,9 +244,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
     }
   }
 
-  // Descarga directa: igual patrón que _descargarPdf — genera el
-  // archivo y lo comparte de una vez, sin pasar por ninguna vista
-  // previa intermedia.
   Future<void> _descargarExcel(_TablaReporte t, String nombreArchivo) async {
     setState(() => _exportando = true);
     try {
@@ -323,62 +283,71 @@ class _ReportesScreenState extends State<ReportesScreen> {
       child: Stack(
         children: [
           Column(
-        children: [
-          _buildHeader(),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
-                : _error != null
-                    ? _buildError()
-                    : RefreshIndicator(
-                        color: AppColors.navy,
-                        onRefresh: _cargar,
-                        child: ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: EdgeInsets.zero,
-                          children: [
-                            _buildKpis(),
-                            _buildSectionHeader(),
-                            if (_visible('Pedidos')) _buildReportCard(
-                              icon: Icons.description_outlined,
-                              titulo: 'Reporte de Pedidos Mensuales',
-                              subtitulo: _tablaPedidos().subtitulo,
-                              onVer: () => _verPdf(_tablaPedidos()),
-                              onDescargar: () => _descargarPdf(_tablaPedidos(), 'reporte_pedidos.pdf'),
-                              onExportarExcel: () => _descargarExcel(_tablaPedidos(), 'reporte_pedidos.xlsx'),
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+                    : _error != null
+                        ? _buildError()
+                        : RefreshIndicator(
+                            color: AppColors.navy,
+                            onRefresh: _cargar,
+                            child: ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: EdgeInsets.zero,
+                              children: [
+                                _buildKpis(),
+                                _buildSectionHeader(),
+                                if (_visible('Pedidos'))
+                                  _buildReportCard(
+                                    icon: Icons.description_outlined,
+                                    titulo: 'Reporte de Pedidos Mensuales',
+                                    subtitulo: _tablaPedidos().subtitulo,
+                                    onVer: () => _verPdf(_tablaPedidos()),
+                                    onDescargar: () => _descargarPdf(_tablaPedidos(), 'reporte_pedidos.pdf'),
+                                    onExportarExcel: () =>
+                                        _descargarExcel(_tablaPedidos(), 'reporte_pedidos.xlsx'),
+                                  ),
+                                if (_visible('Pedidos'))
+                                  _buildReportCard(
+                                    icon: Icons.pending_actions_outlined,
+                                    titulo: 'Reporte de Pedidos Pendientes',
+                                    subtitulo: _tablaPedidosPendientes().subtitulo,
+                                    onVer: () => _verPdf(_tablaPedidosPendientes()),
+                                    onDescargar: () => _descargarPdf(
+                                        _tablaPedidosPendientes(), 'reporte_pedidos_pendientes.pdf'),
+                                    onExportarExcel: () => _descargarExcel(
+                                        _tablaPedidosPendientes(), 'reporte_pedidos_pendientes.xlsx'),
+                                  ),
+                                if (_visible('Eficiencia'))
+                                  _buildReportCard(
+                                    icon: Icons.bar_chart_rounded,
+                                    titulo: 'Reporte de Eficiencia Operaria',
+                                    subtitulo: _tablaEficiencia().subtitulo,
+                                    onVer: () => _verPdf(_tablaEficiencia()),
+                                    onDescargar: () =>
+                                        _descargarPdf(_tablaEficiencia(), 'reporte_eficiencia.pdf'),
+                                    onExportarExcel: () =>
+                                        _descargarExcel(_tablaEficiencia(), 'reporte_eficiencia.xlsx'),
+                                  ),
+                                if (_visible('Inventario'))
+                                  _buildReportCard(
+                                    icon: Icons.table_chart_outlined,
+                                    titulo: 'Reporte de Inventario',
+                                    subtitulo: _tablaInventario().subtitulo,
+                                    onVer: () => _verPdf(_tablaInventario()),
+                                    onDescargar: () =>
+                                        _descargarPdf(_tablaInventario(), 'reporte_inventario.pdf'),
+                                    onExportarExcel: () =>
+                                        _descargarExcel(_tablaInventario(), 'reporte_inventario.xlsx'),
+                                  ),
+                                const SizedBox(height: 40),
+                              ],
                             ),
-                            if (_visible('Pedidos')) _buildReportCard(
-                              icon: Icons.pending_actions_outlined,
-                              titulo: 'Reporte de Pedidos Pendientes',
-                              subtitulo: _tablaPedidosPendientes().subtitulo,
-                              onVer: () => _verPdf(_tablaPedidosPendientes()),
-                              onDescargar: () =>
-                                  _descargarPdf(_tablaPedidosPendientes(), 'reporte_pedidos_pendientes.pdf'),
-                              onExportarExcel: () =>
-                                  _descargarExcel(_tablaPedidosPendientes(), 'reporte_pedidos_pendientes.xlsx'),
-                            ),
-                            if (_visible('Eficiencia')) _buildReportCard(
-                              icon: Icons.bar_chart_rounded,
-                              titulo: 'Reporte de Eficiencia Operaria',
-                              subtitulo: _tablaEficiencia().subtitulo,
-                              onVer: () => _verPdf(_tablaEficiencia()),
-                              onDescargar: () => _descargarPdf(_tablaEficiencia(), 'reporte_eficiencia.pdf'),
-                              onExportarExcel: () => _descargarExcel(_tablaEficiencia(), 'reporte_eficiencia.xlsx'),
-                            ),
-                            if (_visible('Inventario')) _buildReportCard(
-                              icon: Icons.table_chart_outlined,
-                              titulo: 'Reporte de Inventario',
-                              subtitulo: _tablaInventario().subtitulo,
-                              onVer: () => _verPdf(_tablaInventario()),
-                              onDescargar: () => _descargarPdf(_tablaInventario(), 'reporte_inventario.pdf'),
-                              onExportarExcel: () => _descargarExcel(_tablaInventario(), 'reporte_inventario.xlsx'),
-                            ),
-                            const SizedBox(height: 40),
-                          ],
-                        ),
-                      ),
-          ),
-        ],
+                          ),
+              ),
+            ],
           ),
           if (_exportando)
             Positioned.fill(
@@ -393,9 +362,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
       ),
     );
   }
-
-  // ── Encabezado (mismo estilo que Clientes: sin descripción, logo
-  //    55x55, línea separadora en la parte inferior) ────────────────────
 
   Widget _buildHeader() {
     return Container(
@@ -444,9 +410,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
       ),
     );
   }
-
-  // ── KPIs: mismo diseño que _buildStatCard de Home (número + label a
-  //    la izquierda, ícono cuadrado a la derecha), en grilla de 2x2 ─────
 
   Widget _buildKpis() {
     final items = <_MetricItem>[
@@ -505,9 +468,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textMuted)),
+                                  fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.textMuted)),
                         ],
                       ),
                     ),
@@ -530,14 +491,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
     );
   }
 
-  // ── Encabezado de sección: el filtro conserva su estilo original
-  //    (fondo claro, borde, ícono + texto + flecha) pero vive aquí en
-  //    vez de en una fila propia arriba del todo. Se usa PopupMenuButton
-  //    en vez de un Positioned fijo porque este control ahora está
-  //    dentro del ListView con scroll — un Positioned con coordenadas
-  //    fijas se desalinearía apenas el usuario scrollea. PopupMenuButton
-  //    se ancla solo al botón sin importar el scroll. ─────────────────
-
   Widget _buildSectionHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
@@ -549,8 +502,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
             child: Text('Reportes Disponibles',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           ),
           const SizedBox(width: 8),
           PopupMenuButton<String>(
@@ -635,8 +587,8 @@ class _ReportesScreenState extends State<ReportesScreen> {
                 Container(
                   width: 36,
                   height: 36,
-                  decoration: BoxDecoration(
-                      color: AppColors.searchBg, borderRadius: BorderRadius.circular(10)),
+                  decoration:
+                      BoxDecoration(color: AppColors.searchBg, borderRadius: BorderRadius.circular(10)),
                   child: Icon(icon, size: 17, color: AppColors.navy),
                 ),
                 const SizedBox(width: 10),
@@ -648,15 +600,14 @@ class _ReportesScreenState extends State<ReportesScreen> {
                           style: const TextStyle(
                               fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                       const SizedBox(height: 2),
-                      Text(subtitulo,
-                          style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                      Text(subtitulo, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
                     ],
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                      color: AppColors.badgeOpGreenBg, borderRadius: BorderRadius.circular(20)),
+                  decoration:
+                      BoxDecoration(color: AppColors.badgeOpGreenBg, borderRadius: BorderRadius.circular(20)),
                   child: const Text('Generado',
                       style: TextStyle(
                           fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.badgeOpGreenText)),
@@ -666,9 +617,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                // "Ver" — mismo navy sólido + ícono/texto blanco que usa
-                // el botón del ojito en ClientesScreen (_ComprobanteRow),
-                // en vez del outline gris genérico que tenía antes.
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: onVer,
@@ -683,9 +631,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                // "PDF" — insignia roja clara (mismo patrón que el
-                // botón de Excel en verde), como referencia visual a que
-                // el archivo es un PDF.
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: onDescargar,
@@ -757,10 +702,7 @@ class _MetricItem {
   const _MetricItem(this.label, this.value, this.icon, this.color);
 }
 
-// ── Vista previa del PDF de un reporte (mismo patrón que
-//    _ComprobantePreviewSheet en clientes_screen.dart) ───────────────────
-
-class _ReportePdfPreviewSheet extends StatelessWidget {
+class _ReportePdfPreviewSheet extends StatefulWidget {
   final String titulo;
   final String subtitulo;
   final List<String> headers;
@@ -774,6 +716,30 @@ class _ReportePdfPreviewSheet extends StatelessWidget {
     required this.filas,
     required this.columnFlex,
   });
+
+  @override
+  State<_ReportePdfPreviewSheet> createState() => _ReportePdfPreviewSheetState();
+}
+
+class _ReportePdfPreviewSheetState extends State<_ReportePdfPreviewSheet> {
+  // Generado UNA sola vez (en initState, no en build). Antes vivía
+  // directo en el `future:` de un FutureBuilder dentro de un
+  // StatelessWidget — cada vez que DraggableScrollableSheet reconstruía
+  // su contenido (al arrastrar o interactuar con el zoom), se disparaba
+  // una generación de PDF nueva, sintiéndose como una recarga al azar.
+  late final Future<Uint8List> _bytesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _bytesFuture = ReportePdfService.generar(
+      titulo: widget.titulo,
+      subtitulo: widget.subtitulo,
+      headers: widget.headers,
+      filas: widget.filas,
+      columnFlex: widget.columnFlex,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -805,7 +771,7 @@ class _ReportePdfPreviewSheet extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Reporte de $titulo',
+                        'Reporte de ${widget.titulo}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -822,15 +788,17 @@ class _ReportePdfPreviewSheet extends StatelessWidget {
                   ],
                 ),
               ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Text(
+                  'Pellizca con dos dedos para ampliar cualquier zona del reporte.',
+                  style: TextStyle(fontSize: 10.5, color: AppColors.textFaint),
+                ),
+              ),
+              const SizedBox(height: 4),
               Expanded(
                 child: FutureBuilder<Uint8List>(
-                  future: ReportePdfService.generar(
-                    titulo: titulo,
-                    subtitulo: subtitulo,
-                    headers: headers,
-                    filas: filas,
-                    columnFlex: columnFlex,
-                  ),
+                  future: _bytesFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState != ConnectionState.done) {
                       return const Center(
@@ -847,19 +815,123 @@ class _ReportePdfPreviewSheet extends StatelessWidget {
                       );
                     }
 
-                    return PdfPreview(
-                      build: (format) async => snapshot.data!,
-                      canChangeOrientation: false,
-                      canChangePageFormat: false,
-                      canDebug: false,
-                      allowSharing: true,
-                      allowPrinting: true,
+                    return _PdfZoomableView(
+                      bytes: snapshot.data!,
+                      scrollController: scrollController,
                     );
                   },
                 ),
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+}
+
+/// Renderiza cada página del PDF como una imagen y le da zoom directo
+/// con InteractiveViewer — pellizcar para ampliar de inmediato, sin
+/// tener que "seleccionar" la página primero (a diferencia de
+/// PdfPreview, cuyo comportamiento interno exige un toque previo antes
+/// de que el pellizco funcione, y no es algo ajustable desde afuera
+/// del paquete).
+class _PdfZoomableView extends StatefulWidget {
+  final Uint8List bytes;
+  final ScrollController scrollController;
+
+  const _PdfZoomableView({
+    required this.bytes,
+    required this.scrollController,
+  });
+
+  @override
+  State<_PdfZoomableView> createState() => _PdfZoomableViewState();
+}
+
+class _PdfZoomableViewState extends State<_PdfZoomableView> {
+  late final Future<List<Uint8List>> _pagesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _pagesFuture = _rasterizarPaginas();
+  }
+
+  Future<List<Uint8List>> _rasterizarPaginas() async {
+    final paginas = <Uint8List>[];
+    await for (final pagina in Printing.raster(widget.bytes, dpi: 130)) {
+      paginas.add(await pagina.toPng());
+    }
+    return paginas;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Uint8List>>(
+      future: _pagesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.navy),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(
+            child: Text(
+              'No se pudo generar la vista previa.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+          );
+        }
+
+        final paginas = snapshot.data!;
+
+        return ListView.builder(
+          controller: widget.scrollController,
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+          itemCount: paginas.length,
+          itemBuilder: (context, i) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (paginas.length > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text(
+                        'Página ${i + 1} de ${paginas.length}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 10, color: AppColors.textFaint),
+                      ),
+                    ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.cardBorder),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: InteractiveViewer(
+                        minScale: 1.0,
+                        maxScale: 5.0,
+                        boundaryMargin: const EdgeInsets.all(40),
+                        child: Image.memory(paginas[i]),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

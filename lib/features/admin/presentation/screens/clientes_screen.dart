@@ -162,10 +162,6 @@ class _ClientesScreenState extends State<ClientesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final total = _clientes.length;
-    final activos = _clientes.where((cliente) => cliente.isActivo).length;
-    final inactivos = total - activos;
-
     return Container(
       color: AppColors.pageBg,
       child: _loading
@@ -184,7 +180,6 @@ class _ClientesScreenState extends State<ClientesScreen> {
                     padding: EdgeInsets.zero,
                     children: [
                       _buildSearch(),
-                      _buildMetrics(total, activos, inactivos),
                       _buildSectionHeader(
                         'Lista de Clientes',
                         _clientesFiltrados.length,
@@ -237,121 +232,6 @@ class _ClientesScreenState extends State<ClientesScreen> {
                 style: const TextStyle(
                   fontSize: 13,
                   color: AppColors.inputText,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Métricas ──────────────────────────────────────────────────────────
-
-  Widget _buildMetrics(
-    int total,
-    int activos,
-    int inactivos,
-  ) {
-    final items = <_MetricItem>[
-      _MetricItem(
-        'Total Clientes',
-        total,
-        Icons.people_outline,
-        AppColors.iconOp,
-      ),
-      _MetricItem(
-        'Activos',
-        activos,
-        Icons.verified_user_outlined,
-        AppColors.iconActive,
-      ),
-      _MetricItem(
-        'Inactivos',
-        inactivos,
-        Icons.person_off_outlined,
-        AppColors.iconClient,
-      ),
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            for (int i = 0; i < items.length; i++) ...[
-              if (i > 0) const SizedBox(width: 10),
-              Expanded(
-                child: _buildMetricCard(items[i]),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetricCard(_MetricItem metric) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.pageBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.cardBorder,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 3.5,
-              color: metric.color,
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 14,
-                  horizontal: 8,
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: metric.color.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        metric.icon,
-                        size: 17,
-                        color: metric.color,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${metric.value}',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: metric.color,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      metric.label,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ),
@@ -453,48 +333,15 @@ class _ClientesScreenState extends State<ClientesScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              cliente.nombreCompleto,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: cliente.isActivo
-                                  ? AppColors.iconActive.withValues(
-                                      alpha: 0.10,
-                                    )
-                                  : AppColors.iconClient.withValues(
-                                      alpha: 0.10,
-                                    ),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              cliente.isActivo ? 'Activo' : 'Inactivo',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                                color: cliente.isActivo
-                                    ? AppColors.iconActive
-                                    : AppColors.iconClient,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        cliente.nombreCompleto,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -922,20 +769,6 @@ class _ClientesScreenState extends State<ClientesScreen> {
       ),
     );
   }
-}
-
-class _MetricItem {
-  final String label;
-  final int value;
-  final IconData icon;
-  final Color color;
-
-  const _MetricItem(
-    this.label,
-    this.value,
-    this.icon,
-    this.color,
-  );
 }
 
 // ── Vista previa del comprobante (bottom sheet con el PDF) ───────────────
