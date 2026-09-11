@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+
 import '../../../../core/constants/api_constants.dart';
 import '../models/orden_operario_model.dart';
 
@@ -24,30 +26,54 @@ class OrdenOperarioRepository {
     if (res.statusCode == 201) {
       return OrdenOperario.fromJson(jsonDecode(res.body));
     }
+
     final body = _tryDecode(res.body);
-    throw Exception(body?['error'] ?? 'No se pudo agregar la fase.');
+
+    throw Exception(
+      body?['error'] ?? 'No se pudo agregar la fase.',
+    );
   }
 
   Future<List<OrdenOperario>> getFasesDeOrden(int idOrden) async {
     final res = await http.get(
-      Uri.parse('${ApiConstants.ordenOperario}/orden/$idOrden'),
+      Uri.parse(
+        '${ApiConstants.ordenOperario}/orden/$idOrden',
+      ),
     );
+
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
-      return data.map((e) => OrdenOperario.fromJson(e)).toList();
+
+      return data
+          .map((e) => OrdenOperario.fromJson(e))
+          .toList();
     }
-    throw Exception('No se pudieron cargar las fases de la orden.');
+
+    throw Exception(
+      'No se pudieron cargar las fases de la orden.',
+    );
   }
 
-  Future<List<OrdenOperario>> getFasesDeOperario(int idOperario) async {
+  Future<List<OrdenOperario>> getFasesDeOperario(
+    int idOperario,
+  ) async {
     final res = await http.get(
-      Uri.parse('${ApiConstants.ordenOperario}/operario/$idOperario'),
+      Uri.parse(
+        '${ApiConstants.ordenOperario}/operario/$idOperario',
+      ),
     );
+
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
-      return data.map((e) => OrdenOperario.fromJson(e)).toList();
+
+      return data
+          .map((e) => OrdenOperario.fromJson(e))
+          .toList();
     }
-    throw Exception('No se pudieron cargar las fases del operario.');
+
+    throw Exception(
+      'No se pudieron cargar las fases del operario.',
+    );
   }
 
   Future<OrdenOperario> actualizarFase({
@@ -56,27 +82,44 @@ class OrdenOperarioRepository {
     String? descripcionFase,
   }) async {
     final res = await http.put(
-      Uri.parse('${ApiConstants.ordenOperario}/$idOrdenOperario'),
+      Uri.parse(
+        '${ApiConstants.ordenOperario}/$idOrdenOperario',
+      ),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        if (numeroFase != null) 'Numero_Fase': numeroFase,
-        if (descripcionFase != null) 'Descripcion_Fase': descripcionFase,
+        if (numeroFase != null)
+          'Numero_Fase': numeroFase,
+        if (descripcionFase != null)
+          'Descripcion_Fase': descripcionFase,
       }),
     );
 
     if (res.statusCode == 200) {
-      return OrdenOperario.fromJson(jsonDecode(res.body));
+      return OrdenOperario.fromJson(
+        jsonDecode(res.body),
+      );
     }
+
     final body = _tryDecode(res.body);
-    throw Exception(body?['error'] ?? 'No se pudo actualizar la fase.');
+
+    throw Exception(
+      body?['error'] ?? 'No se pudo actualizar la fase.',
+    );
   }
 
-  Future<void> eliminarFase(int idOrdenOperario) async {
+  Future<void> eliminarFase(
+    int idOrdenOperario,
+  ) async {
     final res = await http.delete(
-      Uri.parse('${ApiConstants.ordenOperario}/$idOrdenOperario'),
+      Uri.parse(
+        '${ApiConstants.ordenOperario}/$idOrdenOperario',
+      ),
     );
+
     if (res.statusCode != 200) {
-      throw Exception('No se pudo quitar la fase de la orden.');
+      throw Exception(
+        'No se pudo quitar la fase de la orden.',
+      );
     }
   }
 
@@ -85,13 +128,22 @@ class OrdenOperarioRepository {
     required int unidadesSesion,
   }) async {
     final res = await http.patch(
-      Uri.parse('${ApiConstants.ordenOperario}/$idOrdenOperario/avance'),
+      Uri.parse(
+        '${ApiConstants.ordenOperario}/$idOrdenOperario/avance',
+      ),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'unidadesSesion': unidadesSesion}),
+      body: jsonEncode({
+        'unidadesSesion': unidadesSesion,
+      }),
     );
+
     if (res.statusCode != 200) {
       final body = _tryDecode(res.body);
-      throw Exception(body?['error'] ?? 'No se pudo reportar el avance.');
+
+      throw Exception(
+        body?['error'] ??
+            'No se pudo reportar el avance.',
+      );
     }
   }
 
