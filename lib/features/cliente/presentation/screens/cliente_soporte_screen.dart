@@ -98,9 +98,9 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                               _ContactButton(
                                 icon: Icons.call_outlined,
                                 label: 'Llamar al soporte',
-                                sub: '+57 601 234 5678',
+                                sub: '+57 3165631588',
                                 color: AppColors.iconActive,
-                                onTap: () => _callSupport('+57 601 234 5678'),
+                                onTap: () => _callSupport('+57 3165631588'),
                               ),
                               const SizedBox(height: 10),
                               _ContactButton(
@@ -114,9 +114,9 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                               _ContactButton(
                                 icon: Icons.mail_outline,
                                 label: 'Enviar correo',
-                                sub: 'soporte@texticode.com',
+                                sub: 'kacq262007@gmail.com',
                                 color: AppColors.iconOp,
-                                onTap: () => _sendEmail('soporte@texticode.com'),
+                                onTap: () => _sendEmail('kacq262007@gmail.com'),
                               ),
                             ],
                           ),
