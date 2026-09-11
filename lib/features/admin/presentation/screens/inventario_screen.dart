@@ -367,7 +367,12 @@ class _InventarioScreenState extends State<InventarioScreen> {
                   ],
                 ),
               ),
-              ..._alertas.map((m) => Container(
+              ..._alertas.map((m) {
+                final agotado = m.stockActual <= 0;
+                final color = agotado ? AppColors.errorText : AppColors.priorityMediumText;
+                final badgeBg = agotado ? AppColors.errorBg : AppColors.priorityMediumBg;
+                final label = agotado ? 'Agotado' : 'Stock Bajo';
+                return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.errorBg,
@@ -378,36 +383,60 @@ class _InventarioScreenState extends State<InventarioScreen> {
                         Container(
                           width: 6,
                           height: 6,
-                          decoration: const BoxDecoration(
-                              color: AppColors.errorText, shape: BoxShape.circle),
+                          decoration: BoxDecoration(
+                              color: color, shape: BoxShape.circle),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text(m.nombre,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.errorText)),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(m.nombre,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary)),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Icon(Icons.person_outline,
+                                      size: 11,
+                                      color: AppColors.textMuted),
+                                  const SizedBox(width: 3),
+                                  Flexible(
+                                    child: Text(
+                                        m.nombreCliente ?? 'Sin cliente asignado',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                            fontSize: 10.5,
+                                            color: AppColors.textMuted)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                         Text('${m.stockActual} ${m.unidad}',
-                            style: TextStyle(fontSize: 11, color: AppColors.errorText.withValues(alpha: 0.85))),
+                            style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                              color: AppColors.errorBg,
+                              color: badgeBg,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: AppColors.errorText.withValues(alpha: 0.25))),
-                          child: const Text('Stock Bajo',
+                              border: Border.all(color: color.withValues(alpha: 0.25))),
+                          child: Text(label,
                               style: TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.errorText)),
+                                  color: color)),
                         ),
                       ],
                     ),
-                  )),
+                  );
+              }),
             ],
           ),
         ),
