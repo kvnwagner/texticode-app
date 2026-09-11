@@ -26,9 +26,9 @@ class ClienteOrdersData {
           "Sí, mientras el pedido esté en estado 'Pendiente'. Una vez iniciada la producción, contacta a soporte.",
     ),
     FaqItem(
-      question: '¿Qué métodos de pago aceptan?',
+      question: '¿Puedo descargar el comprobante de mi pedido?',
       answer:
-          'Aceptamos transferencia bancaria, PSE y pago en efectivo contra entrega según acuerdo comercial.',
+          "Sí. Una vez tu pedido aparezca como 'Completada', entra a 'Mis Pedidos', tócalo para expandirlo y usa el botón 'Descargar PDF'. Mientras el pedido no esté completado, ese botón permanece bloqueado.",
     ),
     FaqItem(
       question: '¿Cómo actualizo mis datos de contacto?',
