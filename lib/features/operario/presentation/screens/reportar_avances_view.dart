@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../admin/data/models/orden_model.dart';
+import '../../../admin/data/models/orden_operario_model.dart';
 import 'operario_shared_widgets.dart';
 import 'task_card.dart';
 
@@ -21,16 +21,16 @@ class AvanceReporte {
 /// Pantalla "Reportar Avances": tabs de Ordenes Activas / Historial, con
 /// acción de Reportar progreso por cada orden activa.
 class ReportarAvancesView extends StatefulWidget {
-  final List<Orden> ordenes;
+  final List<OrdenOperario> fases;
   final bool loading;
   final String? error;
   final Future<void> Function() onRefresh;
-  final ValueChanged<Orden> onReport;
+  final ValueChanged<OrdenOperario> onReport;
   final Map<int, List<AvanceReporte>> reportes;
 
   const ReportarAvancesView({
     super.key,
-    required this.ordenes,
+    required this.fases,
     required this.loading,
     required this.error,
     required this.onRefresh,
@@ -47,11 +47,11 @@ class _ReportarAvancesViewState extends State<ReportarAvancesView> {
 
   @override
   Widget build(BuildContext context) {
-    final activas = widget.ordenes.where((o) => !o.isCompletada).toList();
+    final activas = widget.fases.where((f) => !f.isCompletada).toList();
     // El historial representa reportes existentes, por lo que también debe
     // mostrar órdenes con avance parcial, no solo las ya completadas.
-    final historial = widget.ordenes
-        .where((o) => o.cantidadActual > 0 || o.isCompletada)
+    final historial = widget.fases
+        .where((f) => f.cantidadRealizada > 0 || f.isCompletada)
         .toList();
     final selectedList = _tabIndex == 0 ? activas : historial;
 
@@ -88,18 +88,19 @@ class _ReportarAvancesViewState extends State<ReportarAvancesView> {
                                   : 'No hay reportes en historial',
                             ),
                           ...selectedList.map(
-                            (o) => _tabIndex == 0
-                                ? TaskCard(
-                                    orden: o,
+                            (fase) => _tabIndex == 0
+                                ? FaseTaskCard(
+                                    fase: fase,
                                     showScale: false,
                                     bottomAction: ReportButton(
-                                      onPressed: () => widget.onReport(o),
+                                      onPressed: () => widget.onReport(fase),
                                     ),
                                   )
                                 : _HistoryCard(
-                                    orden: o,
+                                    fase: fase,
                                     reportes:
-                                        widget.reportes[o.idOrden] ?? const [],
+                                        widget.reportes[fase.idOrdenOperario] ??
+                                            const [],
                                   ),
                           ),
                         ],
@@ -236,16 +237,16 @@ class _TinyBadge extends StatelessWidget {
 }
 
 class _HistoryCard extends StatelessWidget {
-  final Orden orden;
+  final OrdenOperario fase;
   final List<AvanceReporte> reportes;
 
-  const _HistoryCard({required this.orden, required this.reportes});
+  const _HistoryCard({required this.fase, required this.reportes});
 
   @override
   Widget build(BuildContext context) {
-    final priority = priorityColors(orden);
-    final status = statusColors(orden);
-    final progressColor = progresoColor(orden);
+    final priority = fasePriorityColors(fase);
+    final status = faseStatusColors(fase);
+    final progressColor = faseProgresoColor(fase);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -260,7 +261,7 @@ class _HistoryCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                orden.codigoOrden,
+                fase.codigoOrden,
                 style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
@@ -269,20 +270,20 @@ class _HistoryCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               StatusBadge(
-                label: orden.estadoLabel,
+                label: fase.estadoFaseLabel,
                 bg: status.$1,
                 text: status.$2,
               ),
               const SizedBox(width: 6),
               StatusBadge(
-                  label: orden.prioridadLabel,
+                  label: fase.prioridadLabel,
                   bg: priority.$1,
                   text: priority.$2),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            orden.producto,
+            fase.producto ?? 'Orden #${fase.idOrden}',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w800,
@@ -291,7 +292,7 @@ class _HistoryCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Prendas: ${orden.cantidadActual}/${orden.cantidadTotal}',
+            'Fase ${fase.numeroFase}: ${fase.cantidadRealizada}/${fase.cantidadOrden ?? 0}',
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -305,7 +306,7 @@ class _HistoryCard extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: LinearProgressIndicator(
-                    value: orden.progreso,
+                    value: fase.progresoFase,
                     minHeight: 6,
                     backgroundColor: AppColors.cardBorder,
                     valueColor: AlwaysStoppedAnimation(progressColor),
@@ -314,7 +315,7 @@ class _HistoryCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '${orden.progresoPorcentaje}%',
+                '${fase.progresoFasePorcentaje}%',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
@@ -421,7 +422,7 @@ class _TimelineRow extends StatelessWidget {
 /// "Unidades completadas en esta sesión" (incremental — NO es el total
 /// acumulado, es lo que el operario avanzó ahora) y una nota opcional.
 class ReportProgressSheet extends StatefulWidget {
-  final Orden orden;
+  final OrdenOperario fase;
 
   /// [unidadesSesion] son las unidades avanzadas EN ESTA SESIÓN (se
   /// suman al avance ya registrado). [nota] es el comentario opcional.
@@ -429,7 +430,7 @@ class ReportProgressSheet extends StatefulWidget {
 
   const ReportProgressSheet({
     super.key,
-    required this.orden,
+    required this.fase,
     required this.onSubmit,
   });
 
@@ -444,8 +445,9 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
   String? _error;
 
   int get _restantes =>
-      (widget.orden.cantidadTotal - widget.orden.cantidadActual)
-          .clamp(0, widget.orden.cantidadTotal);
+      ((widget.fase.cantidadOrden ?? 0) - widget.fase.cantidadRealizada)
+          .clamp(0, widget.fase.cantidadOrden ?? 0)
+          .toInt();
 
   @override
   void dispose() {
@@ -495,7 +497,7 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
-    final orden = widget.orden;
+    final fase = widget.fase;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
@@ -529,7 +531,7 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${orden.codigoOrden} — ${orden.producto}',
+                            '${fase.codigoOrden} — ${fase.producto ?? 'Orden #${fase.idOrden}'}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -562,13 +564,13 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                       child: _SummaryItem(
                         label: 'PRENDAS HECHAS',
                         value:
-                            '${orden.cantidadActual} / ${orden.cantidadTotal}',
+                            '${fase.cantidadRealizada} / ${fase.cantidadOrden ?? 0}',
                       ),
                     ),
                     Expanded(
                       child: _SummaryItem(
                         label: 'PROGRESO ACTUAL',
-                        value: '${orden.progresoPorcentaje}%',
+                        value: '${fase.progresoFasePorcentaje}%',
                       ),
                     ),
                     Expanded(

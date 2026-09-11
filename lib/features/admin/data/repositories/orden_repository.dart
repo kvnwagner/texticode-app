@@ -38,7 +38,7 @@ class OrdenRepository {
     required String producto,
     String? descripcion,
     required int cantidadTotal,
-    required int idOperario,
+    int? idOperario,
     required String prioridad,
     required String fechaLimite,
     String dificultad = 'Media',
@@ -68,7 +68,8 @@ class OrdenRepository {
     final body = _tryDecode(res.body);
     final idOrden = body?['Id_Orden'];
     if (idOrden == null) {
-      throw Exception('La orden se creó pero el servidor no devolvió su Id_Orden.');
+      throw Exception(
+          'La orden se creó pero el servidor no devolvió su Id_Orden.');
     }
     return idOrden is int ? idOrden : int.parse('$idOrden');
   }
@@ -84,7 +85,7 @@ class OrdenRepository {
     required String producto,
     String? descripcion,
     required int cantidadTotal,
-    required int idOperario,
+    int? idOperario,
     required String prioridad,
     required String fechaLimite,
     required String estado,
@@ -149,7 +150,8 @@ class OrdenRepository {
       cantidadTotal: orden.cantidadTotal,
       idOperario: orden.idOperario,
       prioridad: orden.prioridad,
-      estado: nuevaCantidad >= orden.cantidadTotal ? 'Completada' : 'En Proceso',
+      estado:
+          nuevaCantidad >= orden.cantidadTotal ? 'Completada' : 'En Proceso',
       fechaLimite: orden.fechaLimite ?? '',
       unidades: orden.unidades,
       unidadesRealizadas: nuevaCantidad,
@@ -162,8 +164,9 @@ class OrdenRepository {
     required Orden orden,
     required int unidadesSesion,
   }) async {
-    final nuevaCantidad =
-        (orden.cantidadActual + unidadesSesion).clamp(0, orden.cantidadTotal).toInt();
+    final nuevaCantidad = (orden.cantidadActual + unidadesSesion)
+        .clamp(0, orden.cantidadTotal)
+        .toInt();
 
     await reportarAvance(orden: orden, cantidadActual: nuevaCantidad);
   }

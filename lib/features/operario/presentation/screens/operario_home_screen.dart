@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_dock.dart';
-import '../../../admin/data/models/orden_model.dart';
-import '../../../admin/data/repositories/orden_repository.dart';
+import '../../../admin/data/models/orden_operario_model.dart';
+import '../../../admin/data/repositories/orden_operario_repository.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import 'perfil_screen.dart';
 import 'tareas_asignadas_view.dart';
@@ -17,10 +17,10 @@ class OperarioHomeScreen extends StatefulWidget {
 }
 
 class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
-  final _repo = OrdenRepository();
+  final _repo = OrdenOperarioRepository();
   final _authRepo = AuthRepository();
   int _bottomIndex = 1;
-  List<Orden> _ordenes = [];
+  List<OrdenOperario> _fases = [];
   bool _loading = true;
   String? _error;
   final Map<int, List<AvanceReporte>> _reportes = {};
@@ -44,14 +44,11 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
     });
     try {
       final authUser = await _authRepo.getUsuarioGuardado();
-      final data = await _repo.getOrdenes();
+      final data = authUser == null
+          ? <OrdenOperario>[]
+          : await _repo.getFasesDeOperario(authUser.idUsuario);
       if (!mounted) return;
-      setState(() {
-        // Solo las órdenes asignadas a este operario.
-        _ordenes = authUser == null
-            ? data
-            : data.where((o) => o.idOperario == authUser.idUsuario).toList();
-      });
+      setState(() => _fases = data);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -60,7 +57,7 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
     }
   }
 
-  Future<void> _reportarAvance(Orden orden) async {
+  Future<void> _reportarAvance(OrdenOperario fase) async {
     int? unidadesReportadas;
     String? notaReportada;
     final updated = await showModalBottomSheet<bool>(
@@ -68,12 +65,12 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => ReportProgressSheet(
-        orden: orden,
+        fase: fase,
         onSubmit: (unidadesSesion, nota) async {
           unidadesReportadas = unidadesSesion;
           notaReportada = nota;
           await _repo.reportarAvanceIncremental(
-            orden: orden,
+            idOrdenOperario: fase.idOrdenOperario,
             unidadesSesion: unidadesSesion,
           );
         },
@@ -82,11 +79,11 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
     if (updated == true) {
       final unidades = unidadesReportadas;
       if (unidades != null) {
-        _reportes.putIfAbsent(orden.idOrden, () => []).add(
+        _reportes.putIfAbsent(fase.idOrdenOperario, () => []).add(
               AvanceReporte(
                 fecha: DateTime.now(),
                 unidades: unidades,
-                acumulado: orden.cantidadActual + unidades,
+                acumulado: fase.cantidadRealizada + unidades,
                 nota: notaReportada,
               ),
             );
@@ -112,7 +109,7 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
     switch (_bottomIndex) {
       case 0:
         return TareasAsignadasView(
-          ordenes: _ordenes,
+          fases: _fases,
           loading: _loading,
           error: _error,
           onRefresh: _cargar,
@@ -122,7 +119,7 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
       case 1:
       default:
         return ReportarAvancesView(
-          ordenes: _ordenes,
+          fases: _fases,
           loading: _loading,
           error: _error,
           onRefresh: _cargar,

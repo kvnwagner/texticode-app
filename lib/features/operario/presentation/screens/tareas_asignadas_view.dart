@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../admin/data/models/orden_model.dart';
+import '../../../admin/data/models/orden_operario_model.dart';
 import 'operario_shared_widgets.dart';
 import 'task_card.dart';
 
@@ -13,14 +13,14 @@ enum PrioridadFiltro { todas, alta, media, baja }
 /// búsqueda y filtros de estado/prioridad. No incluye el botón de
 /// reportar progreso (esa acción vive en ReportarAvancesView).
 class TareasAsignadasView extends StatefulWidget {
-  final List<Orden> ordenes;
+  final List<OrdenOperario> fases;
   final bool loading;
   final String? error;
   final Future<void> Function() onRefresh;
 
   const TareasAsignadasView({
     super.key,
-    required this.ordenes,
+    required this.fases,
     required this.loading,
     required this.error,
     required this.onRefresh,
@@ -35,39 +35,40 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
   PrioridadFiltro _prioridad = PrioridadFiltro.todas;
   String _query = '';
 
-  bool _matchEstado(Orden o) {
+  bool _matchEstado(OrdenOperario fase) {
     switch (_estado) {
       case EstadoFiltro.todos:
         return true;
       case EstadoFiltro.enProceso:
-        return o.isEnProceso;
+        return fase.isEnProceso;
       case EstadoFiltro.pendiente:
-        return o.isPendiente;
+        return fase.isPendiente;
       case EstadoFiltro.completada:
-        return o.isCompletada;
+        return fase.isCompletada;
       case EstadoFiltro.retrasada:
-        return o.isRetrasada;
+        return fase.isRetrasada;
     }
   }
 
-  bool _matchPrioridad(Orden o) {
+  bool _matchPrioridad(OrdenOperario fase) {
     switch (_prioridad) {
       case PrioridadFiltro.todas:
         return true;
       case PrioridadFiltro.alta:
-        return o.isAlta;
+        return fase.isAlta;
       case PrioridadFiltro.media:
-        return !o.isAlta && !o.isBaja;
+        return !fase.isAlta && !fase.isBaja;
       case PrioridadFiltro.baja:
-        return o.isBaja;
+        return fase.isBaja;
     }
   }
 
-  bool _matchQuery(Orden o) {
+  bool _matchQuery(OrdenOperario fase) {
     if (_query.trim().isEmpty) return true;
     final q = _query.toLowerCase();
-    return o.producto.toLowerCase().contains(q) ||
-        o.codigoOrden.toLowerCase().contains(q);
+    return (fase.producto ?? '').toLowerCase().contains(q) ||
+        fase.codigoOrden.toLowerCase().contains(q) ||
+        fase.descripcionFase.toLowerCase().contains(q);
   }
 
   @override
@@ -76,7 +77,7 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
     // las tareas asignadas al operario (en proceso, pendientes,
     // completadas y retrasadas). El filtro de estado es lo que decide
     // qué subconjunto ver, no un recorte fijo por defecto.
-    final todas = widget.ordenes;
+    final todas = widget.fases;
     final filtradas = todas
         .where((o) => _matchEstado(o) && _matchPrioridad(o) && _matchQuery(o))
         .toList();
@@ -163,8 +164,8 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
                                   : 'Ningun resultado con estos filtros',
                             ),
                           ...filtradas.map(
-                            (o) => TaskCard(
-                              orden: o,
+                            (fase) => FaseTaskCard(
+                              fase: fase,
                               showDescription: true,
                               showMateriales: true,
                               showScale: false,
