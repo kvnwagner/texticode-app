@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../admin/data/models/orden_model.dart';
+import '../../../admin/data/models/orden_operario_model.dart';
 
 /// Header reutilizado por ambas vistas (Tareas Asignadas / Reportar Avances).
 class OperarioHeader extends StatelessWidget {
@@ -317,5 +318,32 @@ class ErrorState extends StatelessWidget {
 Color progresoColor(Orden o) {
   if (o.isCompletada) return AppColors.iconActive;
   if (o.isRetrasada) return AppColors.errorText;
+  return AppColors.iconOp;
+}
+
+(Color, Color) fasePriorityColors(OrdenOperario fase) {
+  if (fase.isAlta) {
+    return (AppColors.priorityHighBg, AppColors.priorityHighText);
+  }
+  if (fase.isBaja) return (AppColors.statusPendingBg, AppColors.textMuted);
+  return (AppColors.priorityMediumBg, AppColors.priorityMediumText);
+}
+
+(Color, Color) faseStatusColors(OrdenOperario fase) {
+  if (fase.isCompletada) {
+    return (AppColors.statusCompletedBg, AppColors.statusCompletedText);
+  }
+  if (fase.isRetrasada) {
+    return (AppColors.statusDelayedBg, AppColors.statusDelayedText);
+  }
+  if (fase.isEnProceso) {
+    return (AppColors.badgeOpBlueBg, AppColors.iconOp);
+  }
+  return (AppColors.statusPendingBg, AppColors.statusPendingText);
+}
+
+Color faseProgresoColor(OrdenOperario fase) {
+  if (fase.isCompletada) return AppColors.iconActive;
+  if (fase.isRetrasada) return AppColors.errorText;
   return AppColors.iconOp;
 }

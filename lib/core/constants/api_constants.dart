@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'http://192.168.0.11:3001/api';
+  static const String baseUrl = 'http://192.168.10.26:3001/api';
 
   static const String usuarios = '$baseUrl/usuarios';
   static const String auth = '$baseUrl/auth';
@@ -16,6 +16,7 @@ class ApiConstants {
   // Tabla intermedia orden_material: permite asociar varios materiales
   // a una misma orden (Id_Orden, Id_Producto, Cantidad_Usada).
   static const String ordenMaterial = '$baseUrl/orden-material';
+  static const String ordenOperario = '$baseUrl/orden-operario';
 
   // ============================================================
   // GOOGLE AUTH (móvil)

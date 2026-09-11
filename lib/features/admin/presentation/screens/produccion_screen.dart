@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../data/models/orden_operario_model.dart';
 import '../../data/models/orden_model.dart';
 import '../../data/repositories/orden_repository.dart';
 import '../../data/repositories/orden_material_repository.dart';
+import '../../data/repositories/orden_operario_repository.dart';
 import '../widgets/new_order_sheet.dart';
 
 /// Pantalla "Gestión de Producción" — sigue EXACTAMENTE los mismos tokens
@@ -20,12 +22,14 @@ class ProduccionScreen extends StatefulWidget {
 class _ProduccionScreenState extends State<ProduccionScreen> {
   final _repo = OrdenRepository();
   final _ordenMaterialRepo = OrdenMaterialRepository();
+  final _ordenOperarioRepo = OrdenOperarioRepository();
   List<Orden> _ordenes = [];
 
   /// Materiales reales asignados a cada orden (Id_Orden -> lista de
   /// nombres para mostrar en la card), obtenidos de la tabla intermedia
   /// orden_material vía GET /api/orden-material/orden/:idOrden.
   Map<int, List<String>> _materialesPorOrden = {};
+  Map<int, List<OrdenOperario>> _fasesPorOrden = {};
 
   bool _loading = true;
   String? _error;
@@ -48,6 +52,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
       // No bloquea el loading principal: los materiales se pintan en
       // cuanto llegan, la lista de órdenes ya se muestra antes.
       _cargarMaterialesDeOrdenes(data);
+      _cargarFasesDeOrdenes(data);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -67,21 +72,36 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
       try {
         final materiales =
             await _ordenMaterialRepo.getMaterialesDeOrden(o.idOrden);
-        mapa[o.idOrden] = materiales.map((m) {
-          final nombre = m['Nombre_Material'] ??
-              m['nombre_material'] ??
-              m['Nombre_Producto'] ??
-              m['NombreMaterial'];
-          final cantidad = m['Cantidad_Usada'] ?? m['cantidad_usada'];
-          if (nombre != null) {
-            return cantidad != null ? '$nombre ($cantidad)' : '$nombre';
-          }
-          return 'Material #${m['Id_Producto'] ?? ''}';
-        }).where((s) => s.trim().isNotEmpty).toList();
+        mapa[o.idOrden] = materiales
+            .map((m) {
+              final nombre = m['Nombre_Material'] ??
+                  m['nombre_material'] ??
+                  m['Nombre_Producto'] ??
+                  m['NombreMaterial'];
+              final cantidad = m['Cantidad_Usada'] ?? m['cantidad_usada'];
+              if (nombre != null) {
+                return cantidad != null ? '$nombre ($cantidad)' : '$nombre';
+              }
+              return 'Material #${m['Id_Producto'] ?? ''}';
+            })
+            .where((s) => s.trim().isNotEmpty)
+            .toList();
       } catch (_) {
         mapa[o.idOrden] = const [];
       }
       if (mounted) setState(() => _materialesPorOrden = Map.of(mapa));
+    }
+  }
+
+  Future<void> _cargarFasesDeOrdenes(List<Orden> ordenes) async {
+    final mapa = <int, List<OrdenOperario>>{};
+    for (final o in ordenes) {
+      try {
+        mapa[o.idOrden] = await _ordenOperarioRepo.getFasesDeOrden(o.idOrden);
+      } catch (_) {
+        mapa[o.idOrden] = const [];
+      }
+      if (mounted) setState(() => _fasesPorOrden = Map.of(mapa));
     }
   }
 
@@ -112,7 +132,8 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                               physics: const AlwaysScrollableScrollPhysics(),
                               padding: EdgeInsets.zero,
                               children: [
-                                _buildStats(total, enProceso, completadas, retrasadas),
+                                _buildStats(
+                                    total, enProceso, completadas, retrasadas),
                                 _buildSectionHeader(_ordenes.length),
                                 if (_ordenes.isEmpty) _buildEmpty(),
                                 ..._ordenes.map(_buildOrderCard),
@@ -169,7 +190,8 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   alignment: Alignment.center,
-                  child: const Icon(Icons.checkroom, color: Colors.white, size: 18),
+                  child: const Icon(Icons.checkroom,
+                      color: Colors.white, size: 18),
                 ),
               ),
             ),
@@ -195,12 +217,17 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
   // Mismo patrón exacto que admin_home_screen._buildStats /
   // _buildStatCard: GridView.builder + mainAxisExtent fijo para evitar
   // overflow, barra lateral de color, número grande + icono a la derecha.
-  Widget _buildStats(int total, int enProceso, int completadas, int retrasadas) {
+  Widget _buildStats(
+      int total, int enProceso, int completadas, int retrasadas) {
     final items = <_StatItem>[
-      _StatItem('Total Órdenes', total, Icons.assignment_outlined, AppColors.iconTotal),
-      _StatItem('En Proceso', enProceso, Icons.autorenew_rounded, AppColors.purple),
-      _StatItem('Completadas', completadas, Icons.verified_outlined, AppColors.iconActive),
-      _StatItem('Retrasadas', retrasadas, Icons.warning_amber_rounded, AppColors.errorText),
+      _StatItem('Total Órdenes', total, Icons.assignment_outlined,
+          AppColors.iconTotal),
+      _StatItem(
+          'En Proceso', enProceso, Icons.autorenew_rounded, AppColors.purple),
+      _StatItem('Completadas', completadas, Icons.verified_outlined,
+          AppColors.iconActive),
+      _StatItem('Retrasadas', retrasadas, Icons.warning_amber_rounded,
+          AppColors.errorText),
     ];
 
     return Padding(
@@ -234,7 +261,8 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
             Container(width: 3.5, color: s.color),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 child: Row(
                   children: [
                     Expanded(
@@ -281,20 +309,26 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Row(
         children: [
-          const Icon(Icons.settings_outlined, size: 16, color: AppColors.textMuted),
+          const Icon(Icons.settings_outlined,
+              size: 16, color: AppColors.textMuted),
           const SizedBox(width: 6),
           const Text('Órdenes de Producción',
               style: TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary)),
           const Spacer(),
           Container(
             width: 22,
             height: 22,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(color: AppColors.navy, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+                color: AppColors.navy, shape: BoxShape.circle),
             child: Text('$count',
                 style: const TextStyle(
-                    fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
           ),
         ],
       ),
@@ -313,9 +347,15 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
   /// isEnProceso primero, así que una orden vencida pero aún "En
   /// Proceso" nunca llegaba a pintarse como retrasada.
   (Color, Color) _estadoColors(Orden o) {
-    if (o.isRetrasada) return (AppColors.statusDelayedBg, AppColors.statusDelayedText);
-    if (o.isCompletada) return (AppColors.statusCompletedBg, AppColors.statusCompletedText);
-    if (o.isEnProceso) return (AppColors.statusInProgressBg, AppColors.statusInProgressText);
+    if (o.isRetrasada) {
+      return (AppColors.statusDelayedBg, AppColors.statusDelayedText);
+    }
+    if (o.isCompletada) {
+      return (AppColors.statusCompletedBg, AppColors.statusCompletedText);
+    }
+    if (o.isEnProceso) {
+      return (AppColors.statusInProgressBg, AppColors.statusInProgressText);
+    }
     return (AppColors.statusPendingBg, AppColors.statusPendingText);
   }
 
@@ -335,6 +375,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
     // aún no llegaron (o fallaron), cae al campo o.materiales del GET
     // de órdenes por si el backend algún día lo incluye ahí.
     final materiales = _materialesPorOrden[o.idOrden] ?? o.materiales;
+    final fases = _fasesPorOrden[o.idOrden] ?? const <OrdenOperario>[];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -352,31 +393,96 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
               children: [
                 Text(o.codigoOrden,
                     style: const TextStyle(
-                        fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textFaint)),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textFaint)),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: prioBg, borderRadius: BorderRadius.circular(20)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                      color: prioBg, borderRadius: BorderRadius.circular(20)),
                   child: Text(o.prioridadLabel,
-                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: prioText)),
+                      style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: prioText)),
                 ),
                 const Spacer(),
+                GestureDetector(
+                  onTap: () => showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => NewOrderSheet(orden: o, onCreated: _cargar),
+                  ),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.searchBg,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.cardBorder),
+                    ),
+                    child: const Icon(Icons.edit_outlined,
+                        size: 14, color: AppColors.textMuted),
+                  ),
+                ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: estadoBg, borderRadius: BorderRadius.circular(20)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                      color: estadoBg, borderRadius: BorderRadius.circular(20)),
                   child: Text(o.estadoLabel,
-                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: estadoText)),
+                      style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: estadoText)),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(o.producto,
                 style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary)),
             const SizedBox(height: 2),
             Text(o.cliente,
-                style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                style:
+                    const TextStyle(fontSize: 11, color: AppColors.textMuted)),
             const SizedBox(height: 10),
+
+            if (fases.isNotEmpty)
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: fases
+                    .map((f) => Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.statusInProgressBg,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.cardBorder),
+                          ),
+                          child: Text(
+                            'F${f.numeroFase} · ${f.nombreOperario ?? 'Operario'}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.statusInProgressText,
+                            ),
+                          ),
+                        ))
+                    .toList(),
+              )
+            else
+              const Text('Sin fases asignadas',
+                  style: TextStyle(fontSize: 10, color: AppColors.textFaint)),
+            const SizedBox(height: 8),
 
             // Materiales reales asignados a esta orden (orden_material),
             // en vez del avatar de operario que iba antes en este lugar.
@@ -386,7 +492,8 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                 runSpacing: 6,
                 children: materiales
                     .map((m) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: AppColors.searchBg,
                             borderRadius: BorderRadius.circular(20),
@@ -405,26 +512,24 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                   style: TextStyle(fontSize: 10, color: AppColors.textFaint)),
             const SizedBox(height: 8),
 
-            Row(
-              children: [
-                Expanded(
-                  child: Text(o.operario,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                ),
-                Text('Vence: ${o.fechaCorta}',
-                    style: const TextStyle(fontSize: 10, color: AppColors.textFaint)),
-              ],
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text('Vence: ${o.fechaCorta}',
+                  style: const TextStyle(
+                      fontSize: 10, color: AppColors.textFaint)),
             ),
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('${o.cantidadActual} de ${o.cantidadTotal} prendas',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textSecondary)),
                 Text('${o.progresoPorcentaje}%',
                     style: TextStyle(
-                        fontSize: 11, fontWeight: FontWeight.bold, color: progresoColor)),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: progresoColor)),
               ],
             ),
             const SizedBox(height: 6),
@@ -448,7 +553,8 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
       padding: EdgeInsets.symmetric(vertical: 40),
       child: Column(
         children: [
-          Icon(Icons.inventory_2_outlined, size: 32, color: AppColors.textFaint),
+          Icon(Icons.inventory_2_outlined,
+              size: 32, color: AppColors.textFaint),
           SizedBox(height: 8),
           Text('No hay órdenes de producción',
               style: TextStyle(color: AppColors.textFaint, fontSize: 13)),
@@ -464,11 +570,13 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
+            const Icon(Icons.wifi_off_rounded,
+                size: 40, color: AppColors.textFaint),
             const SizedBox(height: 12),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                style:
+                    const TextStyle(color: AppColors.textMuted, fontSize: 13)),
             const SizedBox(height: 4),
             const Text(
               'Verifica que tu backend Express siga corriendo en el puerto 3001\ny que la IP en api_constants.dart sea correcta.',
@@ -479,7 +587,8 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
             ElevatedButton(
               onPressed: _cargar,
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.navy),
-              child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
+              child: const Text('Reintentar',
+                  style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
