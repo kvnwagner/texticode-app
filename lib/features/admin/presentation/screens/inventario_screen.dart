@@ -5,7 +5,7 @@ import '../../data/models/material_model.dart';
 import '../../data/repositories/material_repository.dart';
 import '../widgets/new_material_sheet.dart';
 
-const _categoriasFiltro = ['Todas', 'Accesorios', 'Telas', 'Hilos', 'Herramientas'];
+const _categoriasFiltro = ['Todas', 'Accesorios', 'Telas', 'Hilos'];
 
 /// Pantalla "Gestión de Inventario" — sigue EXACTAMENTE los mismos
 /// tokens visuales que admin_home_screen.dart / produccion_screen.dart:
@@ -401,7 +401,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                               const SizedBox(height: 2),
                               Row(
                                 children: [
-                                  Icon(Icons.person_outline,
+                                  const Icon(Icons.person_outline,
                                       size: 11,
                                       color: AppColors.textMuted),
                                   const SizedBox(width: 3),
