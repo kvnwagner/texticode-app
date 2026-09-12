@@ -550,6 +550,13 @@ class _OperariosScreenState extends State<OperariosScreen> {
     );
   }
 
+  // ✅ CAMBIO: la card ahora sigue el mismo patrón visual que las demás
+  // cards de la app (stats de Usuarios, Inventario, Producción, etc.):
+  // ClipRRect + Row con una franja de color (Container 3.5px) pegada al
+  // borde izquierdo, seguida del contenido con su propio padding. Antes
+  // el padding: EdgeInsets.all(14) envolvía TODO el contenido, así que
+  // no había espacio para pintar esa franja sin invadir el resto del
+  // diseño.
   Widget _buildCargaCard(_CargaOperario c) {
     final av = AppColors.avatarPalette[c.usuario.idUsuario % AppColors.avatarPalette.length];
     final estadoColor = c.isSobrecargado ? AppColors.errorText : AppColors.iconActive;
@@ -558,63 +565,78 @@ class _OperariosScreenState extends State<OperariosScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(top: 10),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.pageBg,
-          border: Border.all(color: AppColors.cardBorder),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AvatarWidget(initials: c.usuario.initials, size: 40, bg: av['bg']!, text: av['text']!),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.pageBg,
+            border: Border.all(color: AppColors.cardBorder),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 3.5, color: estadoColor),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      AvatarWidget(initials: c.usuario.initials, size: 40, bg: av['bg']!, text: av['text']!),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Text(c.usuario.nombreCompleto,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration:
-                            BoxDecoration(color: estadoBg, borderRadius: BorderRadius.circular(20)),
-                        child: Text(estadoLabel,
-                            style:
-                                TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: estadoColor)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(c.usuario.nombreCompleto,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration:
+                                      BoxDecoration(color: estadoBg, borderRadius: BorderRadius.circular(20)),
+                                  child: Text(estadoLabel,
+                                      style:
+                                          TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: estadoColor)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text('${c.activas} órdenes · capacidad ${c.capacidad}',
+                                style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                            const SizedBox(height: 10),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: LinearProgressIndicator(
+                                value: (c.percent / 100).clamp(0, 1),
+                                minHeight: 6,
+                                backgroundColor: AppColors.cardBorder,
+                                valueColor: AlwaysStoppedAnimation(estadoColor),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text('${c.percent}% capacidad',
+                                  style: const TextStyle(fontSize: 10, color: AppColors.textFaint)),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 3),
-                  Text('${c.activas} órdenes · capacidad ${c.capacidad}',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
-                  const SizedBox(height: 10),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: (c.percent / 100).clamp(0, 1),
-                      minHeight: 6,
-                      backgroundColor: AppColors.cardBorder,
-                      valueColor: AlwaysStoppedAnimation(estadoColor),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text('${c.percent}% capacidad',
-                        style: const TextStyle(fontSize: 10, color: AppColors.textFaint)),
-                  ),
-                ],
+                ),
               ),
+            ],
             ),
-          ],
+          ),
         ),
       ),
     );

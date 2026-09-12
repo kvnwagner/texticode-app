@@ -42,7 +42,15 @@ class ReassignOrdersView extends StatefulWidget {
 class _ReassignOrdersViewState extends State<ReassignOrdersView> {
   final _repo = OrdenRepository();
   Usuario? _seleccionado;
-  int? _reasignando; // idOrden en curso
+
+  // ✅ FIX: antes solo se guardaba el Id_Orden en curso (`int? _reasignando`).
+  // Como una misma orden muestra VARIOS botones "Reasignar" (uno por cada
+  // operario sugerido), todos ellos comparaban contra ese mismo Id_Orden y
+  // por eso los tres se ponían en modo "cargando" a la vez, sin importar
+  // cuál tocaste. Ahora se guarda una llave compuesta "idOrden-idOperario"
+  // que identifica exactamente EL botón presionado, así que solo ese
+  // muestra el spinner.
+  String? _reasignandoKey;
   String? _error;
 
   @override
@@ -69,13 +77,16 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
   List<Orden> _ordenesDe(Usuario u) =>
       widget.ordenes.where((o) => o.idOperario == u.idUsuario && !o.isCompletada).toList();
 
-  Future<void> _reasignar(Orden o, int nuevoOperario) async {
+  String _keyDe(Orden o, Usuario u) => '${o.idOrden}-${u.idUsuario}';
+
+  Future<void> _reasignar(Orden o, Usuario nuevoOperario) async {
+    final key = _keyDe(o, nuevoOperario);
     setState(() {
-      _reasignando = o.idOrden;
+      _reasignandoKey = key;
       _error = null;
     });
     try {
-      await _repo.reasignarOperario(orden: o, nuevoIdOperario: nuevoOperario);
+      await _repo.reasignarOperario(orden: o, nuevoIdOperario: nuevoOperario.idUsuario);
       widget.onChanged();
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -83,7 +94,12 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
-      if (mounted) setState(() => _reasignando = null);
+      // Solo limpia el estado de carga si sigue siendo ESTE botón el que
+      // quedó marcado (evita que una reasignación termine "apagando" el
+      // spinner de otra que se haya disparado después).
+      if (mounted && _reasignandoKey == key) {
+        setState(() => _reasignandoKey = null);
+      }
     }
   }
 
@@ -335,7 +351,11 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
 
   Widget _buildSugerenciaRow(Orden o, Usuario u) {
     final av = AppColors.avatarPalette[u.idUsuario % AppColors.avatarPalette.length];
-    final loading = _reasignando == o.idOrden;
+
+    // ✅ Ahora compara la llave compuesta "idOrden-idOperario": solo el
+    // botón de ESTE operario, para ESTA orden, entra en estado "loading".
+    final key = _keyDe(o, u);
+    final loading = _reasignandoKey == key;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -364,7 +384,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
           SizedBox(
             height: 32,
             child: ElevatedButton(
-              onPressed: loading ? null : () => _reasignar(o, u.idUsuario),
+              onPressed: loading ? null : () => _reasignar(o, u),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.navy,
                 disabledBackgroundColor: AppColors.navy.withValues(alpha: 0.5),
