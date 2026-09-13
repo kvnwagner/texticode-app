@@ -23,7 +23,7 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
   List<OrdenOperario> _fases = [];
   bool _loading = true;
   String? _error;
-  final Map<int, List<AvanceReporte>> _reportes = {};
+  List<OrdenOperario> _historial = [];
 
   static const _bottomIcons = [
     Icons.assignment_outlined,
@@ -44,11 +44,30 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
     });
     try {
       final authUser = await _authRepo.getUsuarioGuardado();
-      final data = authUser == null
-          ? <OrdenOperario>[]
-          : await _repo.getFasesDeOperario(authUser.idUsuario);
+      if (authUser == null) {
+        if (mounted) {
+          setState(() {
+            _fases = [];
+            _historial = [];
+          });
+        }
+        return;
+      }
+
+      // El historial es complementario: una ruta pendiente de desplegar o
+      // una migración aún no aplicada nunca debe ocultar las tareas activas.
+      final fases = await _repo.getFasesDeOperario(authUser.idUsuario);
+      List<OrdenOperario> historial = const [];
+      try {
+        historial = await _repo.getHistorialDeOperario(authUser.idUsuario);
+      } catch (_) {
+        // La vista de historial mostrará vacío hasta que el backend lo exponga.
+      }
       if (!mounted) return;
-      setState(() => _fases = data);
+      setState(() {
+        _fases = fases;
+        _historial = historial;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -58,38 +77,21 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
   }
 
   Future<void> _reportarAvance(OrdenOperario fase) async {
-    int? unidadesReportadas;
-    String? notaReportada;
     final updated = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => ReportProgressSheet(
         fase: fase,
-        onSubmit: (unidadesSesion, nota) async {
-          unidadesReportadas = unidadesSesion;
-          notaReportada = nota;
-          await _repo.reportarAvanceIncremental(
+        onSubmit: (nota) async {
+          await _repo.completarFase(
             idOrdenOperario: fase.idOrdenOperario,
-            unidadesSesion: unidadesSesion,
+            nota: nota,
           );
         },
       ),
     );
-    if (updated == true) {
-      final unidades = unidadesReportadas;
-      if (unidades != null) {
-        _reportes.putIfAbsent(fase.idOrdenOperario, () => []).add(
-              AvanceReporte(
-                fecha: DateTime.now(),
-                unidades: unidades,
-                acumulado: fase.cantidadRealizada + unidades,
-                nota: notaReportada,
-              ),
-            );
-      }
-      await _cargar();
-    }
+    if (updated == true) await _cargar();
   }
 
   @override
@@ -124,7 +126,7 @@ class _OperarioHomeScreenState extends State<OperarioHomeScreen> {
           error: _error,
           onRefresh: _cargar,
           onReport: _reportarAvance,
-          reportes: _reportes,
+          historial: _historial,
         );
     }
   }
