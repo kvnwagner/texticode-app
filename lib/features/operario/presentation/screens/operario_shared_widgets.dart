@@ -16,7 +16,7 @@ class OperarioHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
@@ -24,19 +24,19 @@ class OperarioHeader extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 50,
-            height: 50,
+            width: 55,
+            height: 55,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.asset(
                 AppConstants.logoAssetPath,
-                width: 50,
-                height: 50,
+                width: 55,
+                height: 55,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   decoration: BoxDecoration(
                     color: AppColors.navy,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   alignment: Alignment.center,
                   child: const Icon(Icons.checkroom,
@@ -45,7 +45,7 @@ class OperarioHeader extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

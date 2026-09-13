@@ -44,9 +44,7 @@ class OrdenOperarioRepository {
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
 
-      return data
-          .map((e) => OrdenOperario.fromJson(e))
-          .toList();
+      return data.map((e) => OrdenOperario.fromJson(e)).toList();
     }
 
     throw Exception(
@@ -66,9 +64,7 @@ class OrdenOperarioRepository {
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
 
-      return data
-          .map((e) => OrdenOperario.fromJson(e))
-          .toList();
+      return data.map((e) => OrdenOperario.fromJson(e)).toList();
     }
 
     throw Exception(
@@ -87,10 +83,8 @@ class OrdenOperarioRepository {
       ),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        if (numeroFase != null)
-          'Numero_Fase': numeroFase,
-        if (descripcionFase != null)
-          'Descripcion_Fase': descripcionFase,
+        if (numeroFase != null) 'Numero_Fase': numeroFase,
+        if (descripcionFase != null) 'Descripcion_Fase': descripcionFase,
       }),
     );
 
@@ -123,17 +117,18 @@ class OrdenOperarioRepository {
     }
   }
 
-  Future<void> reportarAvanceIncremental({
+  Future<void> completarFase({
     required int idOrdenOperario,
-    required int unidadesSesion,
+    String? nota,
   }) async {
     final res = await http.patch(
       Uri.parse(
-        '${ApiConstants.ordenOperario}/$idOrdenOperario/avance',
+        '${ApiConstants.ordenOperario}/$idOrdenOperario/completar',
       ),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'unidadesSesion': unidadesSesion,
+        if (nota != null && nota.trim().isNotEmpty)
+          'Nota_Operario': nota.trim(),
       }),
     );
 
@@ -141,10 +136,20 @@ class OrdenOperarioRepository {
       final body = _tryDecode(res.body);
 
       throw Exception(
-        body?['error'] ??
-            'No se pudo reportar el avance.',
+        body?['error'] ?? 'No se pudo completar la fase.',
       );
     }
+  }
+
+  Future<List<OrdenOperario>> getHistorialDeOperario(int idOperario) async {
+    final res = await http.get(Uri.parse(
+      '${ApiConstants.ordenOperario}/operario/$idOperario/historial',
+    ));
+    if (res.statusCode == 200) {
+      final List data = jsonDecode(res.body);
+      return data.map((e) => OrdenOperario.fromJson(e)).toList();
+    }
+    throw Exception('No se pudo cargar el historial.');
   }
 
   Map<String, dynamic>? _tryDecode(String body) {

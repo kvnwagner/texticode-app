@@ -4,7 +4,7 @@ import '../../../admin/data/models/orden_operario_model.dart';
 import 'operario_shared_widgets.dart';
 import 'task_card.dart';
 
-enum EstadoFiltro { todos, enProceso, pendiente, completada, retrasada }
+enum EstadoFiltro { todos, enProceso, completada, retrasada }
 
 enum PrioridadFiltro { todas, alta, media, baja }
 
@@ -41,8 +41,6 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
         return true;
       case EstadoFiltro.enProceso:
         return fase.isEnProceso;
-      case EstadoFiltro.pendiente:
-        return fase.isPendiente;
       case EstadoFiltro.completada:
         return fase.isCompletada;
       case EstadoFiltro.retrasada:
@@ -77,7 +75,7 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
     // las tareas asignadas al operario (en proceso, pendientes,
     // completadas y retrasadas). El filtro de estado es lo que decide
     // qué subconjunto ver, no un recorte fijo por defecto.
-    final todas = widget.fases;
+    final todas = [...widget.fases]..sort(OrdenOperario.compareForOperario);
     final filtradas = todas
         .where((o) => _matchEstado(o) && _matchPrioridad(o) && _matchQuery(o))
         .toList();
@@ -118,7 +116,6 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
                                   items: const {
                                     EstadoFiltro.todos: 'Todos los estados',
                                     EstadoFiltro.enProceso: 'En proceso',
-                                    EstadoFiltro.pendiente: 'Pendiente',
                                     EstadoFiltro.completada: 'Completada',
                                     EstadoFiltro.retrasada: 'Retrasada',
                                   },

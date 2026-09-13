@@ -4,29 +4,14 @@ import '../../../admin/data/models/orden_operario_model.dart';
 import 'operario_shared_widgets.dart';
 import 'task_card.dart';
 
-class AvanceReporte {
-  final DateTime fecha;
-  final int unidades;
-  final int acumulado;
-  final String? nota;
-
-  const AvanceReporte({
-    required this.fecha,
-    required this.unidades,
-    required this.acumulado,
-    this.nota,
-  });
-}
-
-/// Pantalla "Reportar Avances": tabs de Ordenes Activas / Historial, con
-/// acción de Reportar progreso por cada orden activa.
+/// Pantalla de fases asignadas: una fase se cierra en un único reporte.
 class ReportarAvancesView extends StatefulWidget {
   final List<OrdenOperario> fases;
   final bool loading;
   final String? error;
   final Future<void> Function() onRefresh;
   final ValueChanged<OrdenOperario> onReport;
-  final Map<int, List<AvanceReporte>> reportes;
+  final List<OrdenOperario> historial;
 
   const ReportarAvancesView({
     super.key,
@@ -35,7 +20,7 @@ class ReportarAvancesView extends StatefulWidget {
     required this.error,
     required this.onRefresh,
     required this.onReport,
-    this.reportes = const {},
+    this.historial = const [],
   });
 
   @override
@@ -47,12 +32,10 @@ class _ReportarAvancesViewState extends State<ReportarAvancesView> {
 
   @override
   Widget build(BuildContext context) {
-    final activas = widget.fases.where((f) => !f.isCompletada).toList();
-    // El historial representa reportes existentes, por lo que también debe
-    // mostrar órdenes con avance parcial, no solo las ya completadas.
-    final historial = widget.fases
-        .where((f) => f.cantidadRealizada > 0 || f.isCompletada)
-        .toList();
+    final activas = widget.fases.where((f) => !f.isCompletada).toList()
+      ..sort(OrdenOperario.compareForOperario);
+    final historial = [...widget.historial]..sort(
+        (a, b) => (b.fechaCompletada ?? '').compareTo(a.fechaCompletada ?? ''));
     final selectedList = _tabIndex == 0 ? activas : historial;
 
     return Column(
@@ -98,9 +81,6 @@ class _ReportarAvancesViewState extends State<ReportarAvancesView> {
                                   )
                                 : _HistoryCard(
                                     fase: fase,
-                                    reportes:
-                                        widget.reportes[fase.idOrdenOperario] ??
-                                            const [],
                                   ),
                           ),
                         ],
@@ -238,9 +218,8 @@ class _TinyBadge extends StatelessWidget {
 
 class _HistoryCard extends StatelessWidget {
   final OrdenOperario fase;
-  final List<AvanceReporte> reportes;
 
-  const _HistoryCard({required this.fase, required this.reportes});
+  const _HistoryCard({required this.fase});
 
   @override
   Widget build(BuildContext context) {
@@ -292,7 +271,7 @@ class _HistoryCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Fase ${fase.numeroFase}: ${fase.cantidadRealizada}/${fase.cantidadOrden ?? 0}',
+            'Fase ${fase.numeroFase} completada',
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -326,7 +305,7 @@ class _HistoryCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           const Text(
-            'Reportes enviados',
+            'Registro de finalización',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
@@ -334,26 +313,20 @@ class _HistoryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          if (reportes.isEmpty)
-            const _TimelineRow(
-              date: 'Sin reportes detallados disponibles',
-              text: 'El avance actual proviene del registro de la orden.',
-            )
-          else
-            ...reportes.reversed.map(
-              (reporte) => _TimelineRow(
-                date: _formatDate(reporte.fecha),
-                text: '${reporte.unidades} prendas reportadas '
-                    '(acumulado: ${reporte.acumulado}).'
-                    '${reporte.nota == null ? '' : ' ${reporte.nota}'}',
-              ),
-            ),
+          _TimelineRow(
+            date: _formatDateString(fase.fechaCompletada),
+            text: (fase.notaOperario?.trim().isNotEmpty ?? false)
+                ? fase.notaOperario!.trim()
+                : 'Fase marcada como completada.',
+          ),
         ],
       ),
     );
   }
 
-  static String _formatDate(DateTime date) {
+  static String _formatDateString(String? source) {
+    final date = DateTime.tryParse(source ?? '');
+    if (date == null) return 'Fecha no disponible';
     final local = date.toLocal();
     final day = local.day.toString().padLeft(2, '0');
     final month = local.month.toString().padLeft(2, '0');
@@ -413,20 +386,10 @@ class _TimelineRow extends StatelessWidget {
   }
 }
 
-/// Bottom sheet para reportar el avance de una orden. Se abre desde
-/// [OperarioHomeScreen] (necesita `Navigator`/`ScaffoldMessenger` del árbol
-/// de la screen padre).
-///
-/// Sigue la misma estructura del prototipo web: resumen de
-/// prendas hechas / progreso actual / restantes, seguido del campo
-/// "Unidades completadas en esta sesión" (incremental — NO es el total
-/// acumulado, es lo que el operario avanzó ahora) y una nota opcional.
+/// Bottom sheet para cerrar una fase y guardar su nota opcional.
 class ReportProgressSheet extends StatefulWidget {
   final OrdenOperario fase;
-
-  /// [unidadesSesion] son las unidades avanzadas EN ESTA SESIÓN (se
-  /// suman al avance ya registrado). [nota] es el comentario opcional.
-  final Future<void> Function(int unidadesSesion, String? nota) onSubmit;
+  final Future<void> Function(String? nota) onSubmit;
 
   const ReportProgressSheet({
     super.key,
@@ -439,43 +402,24 @@ class ReportProgressSheet extends StatefulWidget {
 }
 
 class _ReportProgressSheetState extends State<ReportProgressSheet> {
-  final _unidadesController = TextEditingController(text: '0');
   final _notaController = TextEditingController();
   bool _saving = false;
   String? _error;
 
-  int get _restantes =>
-      ((widget.fase.cantidadOrden ?? 0) - widget.fase.cantidadRealizada)
-          .clamp(0, widget.fase.cantidadOrden ?? 0)
-          .toInt();
-
   @override
   void dispose() {
-    _unidadesController.dispose();
     _notaController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (_saving) return;
-    final unidades = int.tryParse(_unidadesController.text.trim());
-    if (unidades == null || unidades <= 0) {
-      setState(() => _error = 'Ingresa una cantidad mayor a 0.');
-      return;
-    }
-    if (unidades > _restantes) {
-      setState(() => _error =
-          'No puedes reportar más de las $_restantes prendas que quedan.');
-      return;
-    }
-
     setState(() {
       _saving = true;
       _error = null;
     });
     try {
       await widget.onSubmit(
-        unidades,
         _notaController.text.trim().isEmpty
             ? null
             : _notaController.text.trim(),
@@ -483,7 +427,7 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
       if (!mounted) return;
       Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Avance reportado correctamente.')),
+        const SnackBar(content: Text('Fase completada correctamente.')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -522,7 +466,7 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Reportar Progreso',
+                            'Completar fase',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -555,29 +499,22 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
               ),
               const Divider(height: 1, color: AppColors.cardBorder),
 
-              // ── Resumen: prendas hechas / progreso / quedan ──
+              // ── Resumen de la fase a cerrar ──
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: Row(
                   children: [
                     Expanded(
                       child: _SummaryItem(
-                        label: 'PRENDAS HECHAS',
-                        value:
-                            '${fase.cantidadRealizada} / ${fase.cantidadOrden ?? 0}',
+                        label: 'FASE',
+                        value: '${fase.numeroFase}',
                       ),
                     ),
                     Expanded(
+                      flex: 2,
                       child: _SummaryItem(
-                        label: 'PROGRESO ACTUAL',
-                        value: '${fase.progresoFasePorcentaje}%',
-                      ),
-                    ),
-                    Expanded(
-                      child: _SummaryItem(
-                        label: 'QUEDAN',
-                        value: '$_restantes',
-                        valueColor: AppColors.errorText,
+                        label: 'PRENDAS ASIGNADAS',
+                        value: '${fase.cantidadOrden ?? 0}',
                       ),
                     ),
                   ],
@@ -589,21 +526,14 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const _InputLabel('Unidades completadas en esta sesión *'),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _unidadesController,
-                      keyboardType: TextInputType.number,
-                      decoration: _inputDecoration('0'),
-                    ),
-                    const SizedBox(height: 14),
                     const _InputLabel('Nota (opcional)'),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _notaController,
                       minLines: 3,
                       maxLines: 3,
-                      decoration: _inputDecoration('Describe el avance...'),
+                      decoration:
+                          _inputDecoration('Describe cualquier novedad...'),
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 10),
@@ -673,7 +603,7 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                                         Icon(Icons.send_rounded, size: 14),
                                         SizedBox(width: 6),
                                         Text(
-                                          'Enviar Reporte',
+                                          'Completar fase',
                                           style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w800),
@@ -717,12 +647,10 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
 class _SummaryItem extends StatelessWidget {
   final String label;
   final String value;
-  final Color? valueColor;
 
   const _SummaryItem({
     required this.label,
     required this.value,
-    this.valueColor,
   });
 
   @override
@@ -742,10 +670,10 @@ class _SummaryItem extends StatelessWidget {
         const SizedBox(height: 3),
         Text(
           value,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w800,
-            color: valueColor ?? AppColors.textPrimary,
+            color: AppColors.textPrimary,
           ),
         ),
       ],

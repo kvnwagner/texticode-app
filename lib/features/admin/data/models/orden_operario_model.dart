@@ -18,6 +18,8 @@ class OrdenOperario {
   final int? idCliente;
   final String? cliente;
   final String? nombreMaterial;
+  final String? notaOperario;
+  final String? fechaCompletada;
 
   OrdenOperario({
     required this.idOrdenOperario,
@@ -38,6 +40,8 @@ class OrdenOperario {
     this.idCliente,
     this.cliente,
     this.nombreMaterial,
+    this.notaOperario,
+    this.fechaCompletada,
   });
 
   factory OrdenOperario.fromJson(Map<String, dynamic> json) {
@@ -60,6 +64,8 @@ class OrdenOperario {
       idCliente: _toIntOrNull(json['Id_Cliente']),
       cliente: json['Cliente']?.toString(),
       nombreMaterial: json['NombreMaterial']?.toString(),
+      notaOperario: json['Nota_Operario']?.toString(),
+      fechaCompletada: json['Fecha_Completada']?.toString(),
     );
   }
 
@@ -73,8 +79,10 @@ class OrdenOperario {
   }
 
   bool get isCompletada => estadoFase.toLowerCase().contains('completad');
-  bool get isEnProceso => estadoFase.toLowerCase().contains('proceso');
-  bool get isPendiente => estadoFase.toLowerCase().contains('pendient');
+
+  /// La tabla histórica puede contener "Pendiente", pero para el operario
+  /// solo existen tres estados visibles: en proceso, retrasada y completada.
+  bool get isEnProceso => !isCompletada && !isRetrasada;
 
   bool get isAlta => (prioridad ?? '').toLowerCase() == 'alta';
   bool get isBaja => (prioridad ?? '').toLowerCase() == 'baja';
@@ -87,8 +95,9 @@ class OrdenOperario {
 
   String get estadoFaseLabel {
     if (isCompletada) return 'Completada';
+    if (isRetrasada) return 'Retrasada';
     if (isEnProceso) return 'En proceso';
-    return 'Pendiente';
+    return 'En proceso';
   }
 
   bool get isRetrasada {
@@ -96,7 +105,11 @@ class OrdenOperario {
       return false;
     }
     final limite = DateTime.tryParse(fechaLimite!);
-    return limite != null && limite.isBefore(DateTime.now());
+    if (limite == null) return false;
+    final hoy = DateTime.now();
+    final inicioHoy = DateTime(hoy.year, hoy.month, hoy.day);
+    final fechaLimiteDia = DateTime(limite.year, limite.month, limite.day);
+    return fechaLimiteDia.isBefore(inicioHoy);
   }
 
   double get progresoFase {
@@ -122,5 +135,29 @@ class OrdenOperario {
     } catch (_) {
       return fechaLimite!;
     }
+  }
+
+  /// Orden operativo común para web y móvil: vencidas, en proceso y
+  /// completadas. Dentro de cada grupo vence primero la fecha más cercana.
+  static int compareForOperario(OrdenOperario a, OrdenOperario b) {
+    int grupo(OrdenOperario fase) {
+      if (fase.isRetrasada) return 0;
+      if (fase.isCompletada) return 2;
+      return 1;
+    }
+
+    final byGroup = grupo(a).compareTo(grupo(b));
+    if (byGroup != 0) return byGroup;
+    final aDate = DateTime.tryParse(a.fechaLimite ?? '');
+    final bDate = DateTime.tryParse(b.fechaLimite ?? '');
+    if (aDate != null && bDate != null) {
+      final byDate = aDate.compareTo(bDate);
+      if (byDate != 0) return byDate;
+    } else if (aDate != null) {
+      return -1;
+    } else if (bDate != null) {
+      return 1;
+    }
+    return a.numeroFase.compareTo(b.numeroFase);
   }
 }

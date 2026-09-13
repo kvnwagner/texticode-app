@@ -28,7 +28,7 @@ class TaskCard extends StatelessWidget {
     required this.orden,
     this.showDescription = false,
     this.showMateriales = false,
-    this.showScale = true,
+    this.showScale = false,
     this.topRightAction,
     this.bottomAction,
   });
@@ -186,19 +186,6 @@ class TaskCard extends StatelessWidget {
                           valueColor: AlwaysStoppedAnimation(progressColor),
                         ),
                       ),
-                      if (showScale) ...[
-                        const SizedBox(height: 7),
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('0', style: ScaleStyle()),
-                            Text('25', style: ScaleStyle()),
-                            Text('50', style: ScaleStyle()),
-                            Text('75', style: ScaleStyle()),
-                            Text('100', style: ScaleStyle()),
-                          ],
-                        ),
-                      ],
                       if (bottomAction != null) ...[
                         const SizedBox(height: 12),
                         bottomAction!,
@@ -257,7 +244,7 @@ class FaseTaskCard extends StatelessWidget {
     required this.fase,
     this.showDescription = false,
     this.showMateriales = false,
-    this.showScale = true,
+    this.showScale = false,
     this.bottomAction,
   });
 
@@ -406,19 +393,6 @@ class FaseTaskCard extends StatelessWidget {
                           valueColor: AlwaysStoppedAnimation(progressColor),
                         ),
                       ),
-                      if (showScale) ...[
-                        const SizedBox(height: 7),
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('0', style: ScaleStyle()),
-                            Text('25', style: ScaleStyle()),
-                            Text('50', style: ScaleStyle()),
-                            Text('75', style: ScaleStyle()),
-                            Text('100', style: ScaleStyle()),
-                          ],
-                        ),
-                      ],
                       if (bottomAction != null) ...[
                         const SizedBox(height: 12),
                         bottomAction!,
