@@ -9,6 +9,7 @@ import '../../../auth/data/repositories/auth_repository.dart';
 import 'cliente_pedidos_screen.dart';
 import 'cliente_soporte_screen.dart';
 import 'cliente_perfil_screen.dart';
+import 'cliente_alertas_screen.dart';
 
 class ClienteHomeScreen extends StatefulWidget {
   const ClienteHomeScreen({super.key});
@@ -29,11 +30,12 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
   bool _loading = true;
   String? _error;
 
-  static const _icons = [
-    Icons.shopping_bag_outlined,
-    Icons.support_agent_outlined,
-    Icons.person_outline_rounded,
-  ];
+static const _icons = [
+  Icons.shopping_bag_outlined,
+  Icons.warning_amber_rounded, // ⬅️ debe estar aquí
+  Icons.support_agent_outlined,
+  Icons.person_outline_rounded,
+];
 
   @override
   void initState() {
@@ -71,16 +73,17 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      ClientePedidosScreen(
-        ordenes: _ordenes,
-        loading: _loading,
-        error: _error,
-        onRefresh: _cargar,
-      ),
-      const ClienteSoporteScreen(),
-      ClientePerfilScreen(onLogout: _logout),
-    ];
+final pages = [
+  ClientePedidosScreen(
+    ordenes: _ordenes,
+    loading: _loading,
+    error: _error,
+    onRefresh: _cargar,
+  ),
+  const ClienteAlertasScreen(), // ⬅️ FALTABA ESTO
+  const ClienteSoporteScreen(),
+  ClientePerfilScreen(onLogout: _logout),
+];
 
     return Scaffold(
       backgroundColor: AppColors.pageBg,
@@ -96,3 +99,4 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
     );
   }
 }
+
