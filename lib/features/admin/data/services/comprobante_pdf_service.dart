@@ -55,7 +55,18 @@ class ComprobantePdfService {
     final clienteEmail = cliente?.correo ?? '';
     final clienteTel = cliente?.telefono ?? '';
 
-    final descripcion = comprobante.ordenDescripcion ?? '—';
+    // Igual que en la web: el "Producto" es el título en negrita de la
+    // fila, y la "Descripcion" es una línea secundaria debajo, y solo se
+    // muestra si aporta algo distinto del título (si no hay Producto o
+    // es igual a la descripción, se muestra solo una línea).
+    final producto =
+        comprobante.ordenProducto ?? comprobante.ordenDescripcion ?? '—';
+    final descripcionDetalle =
+        (comprobante.ordenDescripcion != null &&
+                comprobante.ordenDescripcion!.isNotEmpty &&
+                comprobante.ordenDescripcion != producto)
+            ? comprobante.ordenDescripcion
+            : null;
 
     // ⚠️ Tu backend actual no expone la cantidad real de la orden.
     const cantidad = 1;
@@ -186,7 +197,7 @@ class ComprobantePdfService {
                             _label('CLIENTE'),
                             pw.SizedBox(height: 4),
                             pw.Text(
-                              comprobante.usuario,
+                              cliente?.nombreCompleto ?? comprobante.cliente,
                               style: pw.TextStyle(
                                 fontSize: 12,
                                 fontWeight: pw.FontWeight.bold,
@@ -335,13 +346,29 @@ class ComprobantePdfService {
                             horizontal: 12,
                             vertical: 10,
                           ),
-                          child: pw.Text(
-                            descripcion,
-                            style: pw.TextStyle(
-                              fontSize: 10,
-                              fontWeight: pw.FontWeight.bold,
-                              color: _negro,
-                            ),
+                          child: pw.Column(
+                            crossAxisAlignment:
+                                pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                producto,
+                                style: pw.TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: pw.FontWeight.bold,
+                                  color: _negro,
+                                ),
+                              ),
+                              if (descripcionDetalle != null) ...[
+                                pw.SizedBox(height: 2),
+                                pw.Text(
+                                  descripcionDetalle,
+                                  style: const pw.TextStyle(
+                                    fontSize: 8,
+                                    color: _grisTexto,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                         _tdCell(
@@ -471,7 +498,7 @@ class ComprobantePdfService {
                             ),
                           ),
                           pw.Text(
-                            comprobante.usuario,
+                            cliente?.nombreCompleto ?? comprobante.cliente,
                             style: pw.TextStyle(
                               fontSize: 8,
                               fontWeight: pw.FontWeight.bold,

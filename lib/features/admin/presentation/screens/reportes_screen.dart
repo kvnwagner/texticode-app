@@ -74,6 +74,51 @@ class _ReportesScreenState extends State<ReportesScreen> {
   String? _error;
   String _filtro = 'Todos los tipos';
 
+  /// '' = todos los períodos. Si no, clave "YYYY-MM" de un mes que
+  /// realmente tiene al menos una orden (nunca se ofrece un mes vacío).
+  String _mesFiltro = '';
+
+  static const _nombresMeses = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+
+  /// Clave "YYYY-MM" de la fecha límite de una orden, o null si no tiene
+  /// fecha válida (esas órdenes no participan del filtro de mes).
+  String? _mesKeyDe(Orden o) {
+    if (o.fechaLimite == null || o.fechaLimite!.isEmpty) return null;
+    final d = DateTime.tryParse(o.fechaLimite!);
+    if (d == null) return null;
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}';
+  }
+
+  String _mesLabel(String key) {
+    final partes = key.split('-');
+    final anio = partes[0];
+    final mes = int.parse(partes[1]);
+    return '${_nombresMeses[mes - 1]} $anio';
+  }
+
+  /// Meses que realmente existen en los datos cargados, más recientes
+  /// primero. Nunca incluye un mes sin órdenes.
+  List<String> get _mesesDisponibles {
+    final claves = <String>{};
+    for (final o in _ordenes) {
+      final k = _mesKeyDe(o);
+      if (k != null) claves.add(k);
+    }
+    final lista = claves.toList()..sort((a, b) => b.compareTo(a));
+    return lista;
+  }
+
+  List<Orden> get _ordenesDelPeriodo {
+    if (_mesFiltro.isEmpty) return _ordenes;
+    return _ordenes.where((o) => _mesKeyDe(o) == _mesFiltro).toList();
+  }
+
+  String get _periodoLabel =>
+      _mesFiltro.isEmpty ? 'Todos los períodos' : _mesLabel(_mesFiltro);
+
   @override
   void initState() {
     super.initState();
@@ -106,6 +151,13 @@ class _ReportesScreenState extends State<ReportesScreen> {
         _materiales = materiales;
         _operarios = operarios;
         _errorOperarios = errorOperarios;
+        final clavesActuales = <String>{
+          for (final o in ordenes)
+            if (_mesKeyDe(o) != null) _mesKeyDe(o)!,
+        };
+        if (_mesFiltro.isNotEmpty && !clavesActuales.contains(_mesFiltro)) {
+          _mesFiltro = '';
+        }
       });
     } catch (e) {
       if (!mounted) return;
@@ -122,28 +174,35 @@ class _ReportesScreenState extends State<ReportesScreen> {
 
   bool _visible(String tipo) => _filtro == 'Todos los tipos' || _filtro == tipo;
 
-  _TablaReporte _tablaPedidos() => _TablaReporte(
-        titulo: 'Pedidos',
-        subtitulo: _total == 0 ? 'Sin órdenes registradas' : '$_total órdenes registradas',
-        headers: const ['Código', 'Producto', 'Cliente', 'Operario', 'Estado', 'Progreso'],
-        filas: _ordenes
-            .map((o) => [
-                  o.codigoOrden,
-                  o.producto,
-                  o.cliente,
-                  o.operario,
-                  o.estadoLabel,
-                  '${o.progresoPorcentaje}%',
-                ])
-            .toList(),
-        columnFlex: const [2, 3, 3, 3, 2, 2],
-      );
+  _TablaReporte _tablaPedidos() {
+    final base = _ordenesDelPeriodo;
+    return _TablaReporte(
+      titulo: 'Pedidos',
+      subtitulo: base.isEmpty
+          ? 'Sin órdenes registradas · $_periodoLabel'
+          : '${base.length} órdenes registradas · $_periodoLabel',
+      headers: const ['Código', 'Producto', 'Cliente', 'Operario', 'Estado', 'Progreso'],
+      filas: base
+          .map((o) => [
+                o.codigoOrden,
+                o.producto,
+                o.cliente,
+                o.operario,
+                o.estadoLabel,
+                '${o.progresoPorcentaje}%',
+              ])
+          .toList(),
+      columnFlex: const [2, 3, 3, 3, 2, 2],
+    );
+  }
 
   _TablaReporte _tablaPedidosPendientes() {
-    final pendientes = _ordenes.where((o) => !o.isCompletada).toList();
+    final pendientes = _ordenesDelPeriodo.where((o) => !o.isCompletada).toList();
     return _TablaReporte(
       titulo: 'Pedidos Pendientes',
-      subtitulo: pendientes.isEmpty ? 'Sin pedidos pendientes' : '${pendientes.length} pedidos pendientes',
+      subtitulo: pendientes.isEmpty
+          ? 'Sin pedidos pendientes · $_periodoLabel'
+          : '${pendientes.length} pedidos pendientes · $_periodoLabel',
       headers: const ['Código', 'Producto', 'Cliente', 'Operario', 'Estado', 'Progreso'],
       filas: pendientes
           .map((o) => [
@@ -544,6 +603,74 @@ class _ReportesScreenState extends State<ReportesScreen> {
                     constraints: const BoxConstraints(maxWidth: 90),
                     child: Text(
                       _filtro,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.keyboard_arrow_down, size: 15, color: AppColors.textFaint),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          PopupMenuButton<String>(
+            color: Colors.white,
+            offset: const Offset(0, 32),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: AppColors.cardBorder),
+            ),
+            onSelected: (v) => setState(() => _mesFiltro = v),
+            itemBuilder: (context) {
+              final meses = _mesesDisponibles;
+              return [
+                PopupMenuItem<String>(
+                  value: '',
+                  child: Text(
+                    'Todos los períodos',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: _mesFiltro.isEmpty ? FontWeight.bold : FontWeight.normal,
+                      color: _mesFiltro.isEmpty ? AppColors.navy : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                // Solo se listan meses que realmente tienen al menos una
+                // orden registrada — nunca un mes vacío.
+                for (final key in meses)
+                  PopupMenuItem<String>(
+                    value: key,
+                    child: Text(
+                      _mesLabel(key),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: _mesFiltro == key ? FontWeight.bold : FontWeight.normal,
+                        color: _mesFiltro == key ? AppColors.navy : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+              ];
+            },
+            child: Container(
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: AppColors.searchBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.calendar_month_outlined, size: 13, color: AppColors.textMuted),
+                  const SizedBox(width: 6),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 100),
+                    child: Text(
+                      _periodoLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(

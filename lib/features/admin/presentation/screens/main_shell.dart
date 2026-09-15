@@ -26,11 +26,11 @@ class _MainShellState extends State<MainShell> {
       0; // 0 Usuarios · 1 Clientes · 2 Operarios (solo aplica si _bottomIndex == 0)
 
   static const _bottomIcons = [
-    Icons.people_alt_rounded,
-    Icons.inventory_2_outlined,
-    Icons.bar_chart_rounded,
-    Icons.settings_outlined,
-    Icons.person_outline_rounded,
+    Icons.people_alt_rounded, // Gestión de Usuarios (Usuarios/Clientes/Operarios)
+    Icons.settings_outlined, // Gestión de Producción
+    Icons.assignment_outlined, // Reportes
+    Icons.inventory_2_outlined, // Gestión de Inventario
+    Icons.person_outline_rounded, // Perfil
   ];
 
   // Controla el deslizamiento de contenido entre Usuarios / Clientes /
