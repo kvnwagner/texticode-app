@@ -479,17 +479,31 @@ class _ReportesScreenState extends State<ReportesScreen> {
       _MetricItem('Pendientes', '$_pendientes', Icons.pause_circle_outline, AppColors.iconClient),
     ];
 
+    // ✅ FIX "universal": la altura fija de 78px funcionaba bien en un
+    // celular, pero en otros (distinto tamaño de fuente del sistema,
+    // distinta densidad de píxeles) el contenido de la card (número +
+    // spacing + label) terminaba siendo más alto que esos 78px, causando
+    // el RenderFlex overflow. Ahora la altura se calcula en base al
+    // textScaler del dispositivo (MediaQuery), así crece si el usuario
+    // tiene fuente grande y se mantiene compacta si no. Además, el
+    // número dentro de cada card va envuelto en un FittedBox que lo
+    // reduce automáticamente si por cualquier motivo no entra en el
+    // espacio disponible, así que nunca puede generar overflow sin
+    // importar el tamaño o densidad de pantalla del emulador/celular.
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final cardHeight = 78 * textScale.clamp(1.0, 1.3);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: items.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
-          mainAxisExtent: 78,
+          mainAxisExtent: cardHeight, // altura responsive, nunca fija
         ),
         itemBuilder: (context, i) => _buildMetricCard(items[i]),
       ),
@@ -519,9 +533,13 @@ class _ReportesScreenState extends State<ReportesScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(metric.value,
-                              style: TextStyle(
-                                  fontSize: 26, fontWeight: FontWeight.bold, color: metric.color)),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(metric.value,
+                                style: TextStyle(
+                                    fontSize: 26, fontWeight: FontWeight.bold, color: metric.color)),
+                          ),
                           const SizedBox(height: 3),
                           Text(metric.label,
                               maxLines: 1,
