@@ -554,7 +554,7 @@ class _OperariosScreenState extends State<OperariosScreen> {
   // cards de la app (stats de Usuarios, Inventario, Producción, etc.):
   // ClipRRect + Row con una franja de color (Container 3.5px) pegada al
   // borde izquierdo, seguida del contenido con su propio padding. Antes
-  // el padding: EdgeInsets.all(14) envolvía TODO el contenido, así que
+  // el padding: EdgeInsets.all(14) envolvía todo el contenido, así que
   // no había espacio para pintar esa franja sin invadir el resto del
   // diseño.
   Widget _buildCargaCard(_CargaOperario c) {
