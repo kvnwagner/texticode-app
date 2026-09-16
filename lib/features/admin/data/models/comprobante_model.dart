@@ -26,6 +26,11 @@ class Comprobante {
   /// título del ítem; la descripción va debajo, igual que en la web.
   final String? ordenProducto;
   final String? ordenEstado;
+
+  /// Cantidad del producto en la orden (columna `Cantidad` de
+  /// `orden_produccion`). Es la misma cantidad que se muestra en el
+  /// comprobante de la web (endpoint de órdenes).
+  final int? ordenCantidad;
   final int? idCliente;
 
   /// Nombre real del cliente del pedido. Úsalo en la UI en vez de
@@ -42,6 +47,7 @@ class Comprobante {
     this.ordenDescripcion,
     this.ordenProducto,
     this.ordenEstado,
+    this.ordenCantidad,
     this.idCliente,
     required this.cliente,
   });
@@ -63,6 +69,11 @@ class Comprobante {
       ordenDescripcion: json['Orden_Descripcion'],
       ordenProducto: json['Orden_Producto'],
       ordenEstado: json['Orden_Estado'],
+      ordenCantidad: json['Orden_Cantidad'] == null
+          ? null
+          : (json['Orden_Cantidad'] is int
+          ? json['Orden_Cantidad']
+          : int.tryParse('${json['Orden_Cantidad']}')),
       idCliente: json['Id_Cliente'] == null
           ? null
           : (json['Id_Cliente'] is int

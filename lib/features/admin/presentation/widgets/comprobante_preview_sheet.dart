@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/models/comprobante_model.dart';
 import '../../data/models/usuario_model.dart';
+import '../../../../core/theme/app_colors.dart';
 
 /// Vista previa del comprobante dentro de la app (icono de ojito).
 /// Replica el mismo diseño usado en el PDF (ComprobantePdfService):
@@ -23,10 +24,6 @@ class _ComprobanteColors {
   static const negro = Color(0xFF111827);
   static const grisBg = Color(0xFFF9FAFB);
   static const grisLinea = Color(0xFFE5E7EB);
-  static const verdeBg = Color(0xFFD1FAE5);
-  static const verdeTexto = Color(0xFF065F46);
-  static const amarilloBg = Color(0xFFFFEDD5);
-  static const amarilloTexto = Color(0xFF92400E);
 }
 
 class ComprobantePreviewSheet extends StatelessWidget {
@@ -55,15 +52,41 @@ class ComprobantePreviewSheet extends StatelessWidget {
     );
   }
 
-  bool get _entregado =>
-      comprobante.estado.toLowerCase().contains('entregado') ||
-          comprobante.estado.toLowerCase().contains('completado');
+  // Antes esto era un booleano (_entregado) que comparaba
+  // comprobante.estado contra 'completado'/'entregado' — pero el valor
+  // real es 'Completada' (con 'a'), así que esa comparación nunca hacía
+  // match y todo caía siempre en la rama "Pendiente" (amarillo). Los
+  // únicos 3 estados reales hoy son 'Completada', 'En Proceso' y
+  // 'Retrasada' — no existe 'Pendiente'. Usamos los mismos colores de
+  // AppColors que ya se usan para el estado de una orden en el resto
+  // de la app, para que Retrasada tenga por fin su propio rojo pastel.
+  Color get _estadoBg {
+    switch (comprobante.estado) {
+      case 'Completada':
+        return AppColors.statusCompletedBg;
+      case 'Retrasada':
+        return AppColors.statusDelayedBg;
+      default: // 'En Proceso' o cualquier valor no reconocido
+        return AppColors.statusInProgressBg;
+    }
+  }
+
+  Color get _estadoTexto {
+    switch (comprobante.estado) {
+      case 'Completada':
+        return AppColors.statusCompletedText;
+      case 'Retrasada':
+        return AppColors.statusDelayedText;
+      default:
+        return AppColors.statusInProgressText;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final estadoBg = _entregado ? _ComprobanteColors.verdeBg : _ComprobanteColors.amarilloBg;
-    final estadoTexto = _entregado ? _ComprobanteColors.verdeTexto : _ComprobanteColors.amarilloTexto;
-    final estadoLabel = _entregado ? 'Entregado' : 'Pendiente';
+    final estadoBg = _estadoBg;
+    final estadoTexto = _estadoTexto;
+    final estadoLabel = comprobante.estado;
     final numero = comprobante.idComprobante.toString().padLeft(4, '0');
     final descripcion = comprobante.ordenDescripcion ?? '—';
     final clienteEmail = cliente?.correo ?? '';

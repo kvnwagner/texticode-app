@@ -448,11 +448,16 @@ class _NewUserSheetState extends State<NewUserSheet> {
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
                             ),
-                            child: const Text('Cancelar',
-                                style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14)),
+                            child: const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text('Cancelar',
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14)),
+                            ),
                           ),
                         ),
                       ),

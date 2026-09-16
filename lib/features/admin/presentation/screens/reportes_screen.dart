@@ -221,10 +221,10 @@ class _ReportesScreenState extends State<ReportesScreen> {
   _TablaReporte _tablaEficiencia() => _TablaReporte(
         titulo: 'Eficiencia Operaria',
         subtitulo: _errorOperarios != null
-            ? 'Error al cargar: $_errorOperarios'
+            ? 'Error al cargar: $_errorOperarios · Datos actuales'
             : _operarios.isEmpty
-                ? 'Sin datos de operarios'
-                : '${_operarios.length} operarios evaluados',
+                ? 'Sin datos de operarios · Datos actuales'
+                : '${_operarios.length} operarios evaluados · Datos actuales',
         headers: const [
           'Operario',
           'Rendimiento',
@@ -249,8 +249,8 @@ class _ReportesScreenState extends State<ReportesScreen> {
   _TablaReporte _tablaInventario() => _TablaReporte(
         titulo: 'Inventario',
         subtitulo: _materiales.isEmpty
-            ? 'Sin materiales registrados'
-            : '${_materiales.length} materiales en inventario',
+            ? 'Sin materiales registrados · Datos actuales'
+            : '${_materiales.length} materiales en inventario · Datos actuales',
         headers: const ['Material', 'Categoría', 'Stock', 'Mínimo', 'Máximo'],
         filas: _materiales
             .map((m) => [
@@ -554,16 +554,8 @@ class _ReportesScreenState extends State<ReportesScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          const Icon(Icons.description_outlined, size: 18, color: AppColors.navy),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text('Reportes Disponibles',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-          ),
-          const SizedBox(width: 8),
           PopupMenuButton<String>(
             color: Colors.white,
             offset: const Offset(0, 32),

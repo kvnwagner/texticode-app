@@ -68,8 +68,10 @@ class ComprobantePdfService {
             ? comprobante.ordenDescripcion
             : null;
 
-    // ⚠️ Tu backend actual no expone la cantidad real de la orden.
-    const cantidad = 1;
+    // Cantidad real del producto en la orden (igual que en la web, que
+    // la lee del endpoint de órdenes). Si por algún motivo llega null
+    // (backend viejo sin el JOIN de Cantidad), se cae a 1.
+    final cantidad = comprobante.ordenCantidad ?? 1;
 
     const observaciones =
         'Ninguna observación registrada para este pedido.';
