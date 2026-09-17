@@ -263,9 +263,16 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
     );
   }
 
-  // Mismo patrón exacto que admin_home_screen._buildStats /
-  // _buildStatCard: GridView.builder + mainAxisExtent fijo para evitar
-  // overflow, barra lateral de color, número grande + icono a la derecha.
+  // ── STATS ─────────────────────────────────────────────────────────
+  // Antes: GridView.builder con `mainAxisExtent: 78` (altura FIJA).
+  // En celulares con la fuente del sistema agrandada, el contenido
+  // superaba esos 78 px y Flutter pintaba el clásico
+  // "BOTTOM OVERFLOWED BY X PIXELS".
+  //
+  // Ahora: LayoutBuilder + Wrap. El ancho de cada card se calcula
+  // (mitad del espacio disponible menos el spacing) y la ALTURA es
+  // intrínseca: crece sola según el contenido, con un mínimo de 78 px
+  // para conservar exactamente el mismo look en pantallas normales.
   Widget _buildStats(
       int total, int enProceso, int completadas, int retrasadas) {
     final items = <_StatItem>[
@@ -279,19 +286,30 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
           AppColors.errorText, _FiltroEstadoOrden.retrasadas),
     ];
 
+    const double spacing = 12;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: items.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          mainAxisExtent: 78,
-        ),
-        itemBuilder: (context, index) => _buildStatCard(items[index]),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // En pantallas muy angostas (< 300 px útiles) se pasa a una
+          // sola columna para que nunca se corte el contenido.
+          final unaColumna = constraints.maxWidth < 300;
+          final anchoCard = unaColumna
+              ? constraints.maxWidth
+              : (constraints.maxWidth - spacing) / 2;
+
+          return Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: items
+                .map((s) => SizedBox(
+                      width: anchoCard,
+                      child: _buildStatCard(s),
+                    ))
+                .toList(),
+          );
+        },
       ),
     );
   }
@@ -319,54 +337,86 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                 width: activa ? 1.4 : 1,
               ),
             ),
-            child: Row(
-              children: [
-                Container(width: 3.5, color: s.color),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
+            // Tope de escala de texto SOLO dentro de la card: evita que
+            // una configuración de fuente extrema (1.5x, 2x) deforme el
+            // grid. El resto de la app sigue respetando la accesibilidad.
+            child: MediaQuery.withClampedTextScaling(
+              maxScaleFactor: 1.3,
+              child: ConstrainedBox(
+                // Altura mínima = el look original. Máxima: ninguna,
+                // así nunca hay overflow.
+                constraints: const BoxConstraints(minHeight: 78),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Barra lateral de color: con `stretch` se estira
+                      // a la altura real de la card sin necesitar una
+                      // altura fija.
+                      Container(width: 3.5, color: s.color),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Text('${s.value}',
-                                  style: TextStyle(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.bold,
-                                      color: s.color)),
-                              const SizedBox(height: 3),
-                              Text(s.label,
-                                  style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.textMuted)),
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '${s.value}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 26,
+                                        height: 1.1,
+                                        fontWeight: FontWeight.bold,
+                                        color: s.color,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      s.label,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        height: 1.2,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: s.color.withValues(
+                                      alpha: activa ? 0.16 : 0.08),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  activa ? Icons.check_rounded : s.icon,
+                                  size: 16,
+                                  color: s.color,
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: s.color.withValues(
-                                alpha: activa ? 0.16 : 0.08),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            activa ? Icons.check_rounded : s.icon,
-                            size: 16,
-                            color: s.color,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -389,6 +439,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
           const SizedBox(width: 6),
           Expanded(
             child: Text(_tituloListaFiltrada,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                     fontSize: 14,
@@ -400,6 +451,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
               onTap: () =>
                   setState(() => _filtro = _FiltroEstadoOrden.todos),
               child: Container(
+                margin: const EdgeInsets.only(left: 8),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -413,6 +465,8 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                     Icon(Icons.close, size: 11, color: AppColors.textMuted),
                     SizedBox(width: 4),
                     Text('Quitar filtro',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
@@ -480,6 +534,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
               children: [
                 Expanded(
                   child: Text(o.codigoOrden,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                           fontSize: 10,
@@ -537,17 +592,28 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
               alignment: Alignment.centerRight,
               child: Text(
                   'Vence: ${o.fechaCorta.isEmpty ? 'Sin fecha' : o.fechaCorta}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       fontSize: 10, color: AppColors.textFaint)),
             ),
             const SizedBox(height: 10),
+            // Antes era un Row con dos Text sueltos: con fuentes grandes
+            // podía desbordar a la derecha. Ahora el primero es flexible.
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('${o.cantidadActual} de ${o.cantidadTotal} prendas',
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.textSecondary)),
+                Flexible(
+                  child: Text(
+                      '${o.cantidadActual} de ${o.cantidadTotal} prendas',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.textSecondary)),
+                ),
+                const SizedBox(width: 8),
                 Text('${o.progresoPorcentaje}%',
+                    maxLines: 1,
                     style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -617,12 +683,16 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(o.codigoOrden,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.textFaint)),
                             const SizedBox(height: 2),
                             Text(o.producto,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -643,7 +713,12 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                     controller: scrollController,
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
                     children: [
-                      Row(
+                      // Wrap en vez de Row: si el estado y la prioridad
+                      // no caben en una línea, bajan a la siguiente en
+                      // lugar de desbordar.
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -657,7 +732,6 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                                     fontWeight: FontWeight.bold,
                                     color: estadoText)),
                           ),
-                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 5),
@@ -678,11 +752,17 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('${o.cantidadActual} de ${o.cantidadTotal} prendas',
-                              style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textSecondary)),
+                          Flexible(
+                            child: Text(
+                                '${o.cantidadActual} de ${o.cantidadTotal} prendas',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSecondary)),
+                          ),
+                          const SizedBox(width: 8),
                           Text('${o.progresoPorcentaje}%',
                               style: TextStyle(
                                   fontSize: 13,
@@ -780,13 +860,17 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                                       Expanded(
                                         child: Text(
                                             f.nombreOperario ?? 'Operario',
+                                            maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w700,
                                                 color: AppColors.textPrimary)),
                                       ),
+                                      const SizedBox(width: 6),
                                       Text(f.estadoFaseLabel,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                           style: const TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.w600,
@@ -871,28 +955,38 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
     );
   }
 
+  // `SizedBox(width: 130)` fijo desbordaba en pantallas angostas.
+  // Ahora el label usa el 40% del ancho disponible con un tope, así
+  // funciona igual en un celular de 320 px que en una tablet.
   Widget _detalleRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 130,
-            child: Text(label,
-                style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textMuted)),
-          ),
-          Expanded(
-            child: Text(value,
-                style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary)),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final anchoLabel =
+              (constraints.maxWidth * 0.42).clamp(90.0, 130.0);
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: anchoLabel,
+                child: Text(label,
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textMuted)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(value,
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

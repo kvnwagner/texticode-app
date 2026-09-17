@@ -466,10 +466,17 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
     color: AppColors.textMuted,
   );
 
+  /// `hintMaxLines: 1` + `isDense` evitan que un hint largo
+  /// (ej. "Material principal: Hilos Blancos") empuje el ancho del
+  /// campo y provoque overflow en pantallas angostas.
   InputDecoration _dec(String hint) => InputDecoration(
         hintText: hint,
-        hintStyle:
-            const TextStyle(color: AppColors.inputPlaceholder, fontSize: 13),
+        hintMaxLines: 1,
+        hintStyle: const TextStyle(
+          color: AppColors.inputPlaceholder,
+          fontSize: 13,
+          overflow: TextOverflow.ellipsis,
+        ),
         filled: true,
         fillColor: AppColors.inputBg,
         contentPadding:
@@ -488,10 +495,16 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
         ),
       );
 
-  Widget _fieldLabel(String text) =>
-      Text(text.toUpperCase(), style: _labelStyle);
+  Widget _fieldLabel(String text) => Text(
+        text.toUpperCase(),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: _labelStyle,
+      );
 
   Widget _fieldLabelWithHint(String text, String hint) => RichText(
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
         text: TextSpan(
           children: [
             TextSpan(text: text.toUpperCase(), style: _labelStyle),
@@ -521,443 +534,493 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
     );
   }
 
+  /// Botón "+ Agregar" reutilizable. [expandido] lo hace ocupar todo el
+  /// ancho cuando la fila se reacomoda en vertical en pantallas chicas.
+  Widget _botonAgregar({
+    required VoidCallback? onPressed,
+    bool expandido = false,
+    double paddingH = 14,
+  }) {
+    final boton = SizedBox(
+      height: 46,
+      width: expandido ? double.infinity : null,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.navy,
+          disabledBackgroundColor: AppColors.navy.withValues(alpha: 0.35),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: EdgeInsets.symmetric(horizontal: paddingH),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)),
+        ),
+        icon: const Icon(Icons.add, size: 16, color: Colors.white),
+        label: const Text('Agregar',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+      ),
+    );
+    return boton;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding:
-          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        constraints:
-            BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardBorder,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                              _isEdit
-                                  ? 'Editar Orden de Producción'
-                                  : 'Nueva Orden de Producción',
-                              style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary)),
-                          const SizedBox(height: 2),
-                          Text(
-                              _isEdit
-                                  ? 'Actualiza los campos de la orden'
-                                  : 'Completa los campos para registrar la orden',
-                              style: const TextStyle(
-                                  fontSize: 11, color: AppColors.textMuted)),
-                        ],
-                      ),
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: AppColors.searchBg,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.cardBorder),
+    // Tope de escala de texto: impide que una fuente del sistema muy
+    // grande (1.5x / 2x, común en Samsung) rompa los campos del
+    // formulario. Se conserva algo de accesibilidad hasta 1.25x.
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.25,
+      child: Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Container(
+          constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.9),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: Form(
+                key: _formKey,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Ancho útil del formulario (ya sin el padding de 20+20).
+                    // Debajo de 330 px las filas "campo + botón Agregar"
+                    // se reacomodan en vertical para no desbordar nunca.
+                    final compacto = constraints.maxWidth < 330;
+
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: AppColors.cardBorder,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                           ),
-                          child: const Icon(Icons.close,
-                              size: 15, color: AppColors.textMuted),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
 
-                  _fieldLabel('Cliente'),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<Usuario>(
-                    initialValue: _clienteSeleccionado,
-                    decoration: _dec(_loadingDatos
-                        ? 'Cargando...'
-                        : 'Selecciona un cliente'),
-                    icon: const Icon(Icons.keyboard_arrow_down,
-                        color: AppColors.textFaint),
-                    style: const TextStyle(
-                        fontSize: 13, color: AppColors.inputText),
-                    items: _clientes
-                        .map((c) => DropdownMenuItem(
-                            value: c, child: Text(c.nombreCompleto)))
-                        .toList(),
-                    onChanged: _onClienteChanged,
-                  ),
-                  const SizedBox(height: 14),
+                        // ⬅️ El Column del título ahora va dentro de un
+                        // Expanded: antes tomaba su ancho intrínseco y el
+                        // título largo desbordaba en pantallas angostas.
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                      _isEdit
+                                          ? 'Editar Orden de Producción'
+                                          : 'Nueva Orden de Producción',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textPrimary)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                      _isEdit
+                                          ? 'Actualiza los campos de la orden'
+                                          : 'Completa los campos para registrar la orden',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textMuted)),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: AppColors.searchBg,
+                                  shape: BoxShape.circle,
+                                  border:
+                                      Border.all(color: AppColors.cardBorder),
+                                ),
+                                child: const Icon(Icons.close,
+                                    size: 15, color: AppColors.textMuted),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
 
-                  // ── MATERIALES: filtrados por el cliente elegido + varios
-                  // materiales por orden (dropdown "+ Agregar material..."
-                  // más botón "Agregar", como en la referencia). Solo se
-                  // ofrecen materiales con stock disponible. ──
-                  _fieldLabelWithHint(
-                    'Materiales',
-                    _isEdit
-                        ? '— no se modifican desde edición'
-                        : '— selecciona uno o más',
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<MaterialItem>(
-                          key: ValueKey(_clienteSeleccionado?.idUsuario),
-                          initialValue: _materialParaAgregar,
-                          decoration: _dec(
-                            _isEdit
-                                ? 'Material principal: ${widget.orden?.nombreMaterial ?? 'sin nombre'}'
-                                : _clienteSeleccionado == null
-                                    ? 'Selecciona un cliente primero'
-                                    : (_loadingMateriales
-                                        ? 'Cargando...'
-                                        : (_materialesDisponiblesParaAgregar
-                                                .isEmpty
-                                            ? (_materialesCliente.isEmpty
-                                                ? 'Este cliente no tiene materiales'
-                                                : 'Ya agregaste todos los materiales con stock')
-                                            : '+ Agregar material...')),
-                          ),
+                        _fieldLabel('Cliente'),
+                        const SizedBox(height: 6),
+                        // isExpanded: true → el dropdown se adapta al ancho
+                        // del padre en vez de exigir el ancho del item más
+                        // largo (causa raíz del "RIGHT OVERFLOWED").
+                        DropdownButtonFormField<Usuario>(
+                          isExpanded: true,
+                          initialValue: _clienteSeleccionado,
+                          decoration: _dec(_loadingDatos
+                              ? 'Cargando...'
+                              : 'Selecciona un cliente'),
                           icon: const Icon(Icons.keyboard_arrow_down,
                               color: AppColors.textFaint),
                           style: const TextStyle(
                               fontSize: 13, color: AppColors.inputText),
-                          items: _materialesDisponiblesParaAgregar
-                              .map((m) => DropdownMenuItem(
-                                    value: m,
+                          items: _clientes
+                              .map((c) => DropdownMenuItem(
+                                    value: c,
                                     child: Text(
-                                      '${m.nombre} · Stock: ${m.stockActual} ${m.unidad}',
+                                      c.nombreCompleto,
+                                      maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ))
                               .toList(),
-                          onChanged: (_isEdit ||
-                                  _clienteSeleccionado == null ||
-                                  _loadingMateriales)
-                              ? null
-                              : (v) => setState(() => _materialParaAgregar = v),
+                          onChanged: _onClienteChanged,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        height: 46,
-                        child: ElevatedButton.icon(
-                          onPressed: _materialParaAgregar == null
-                              ? null
-                              : _agregarMaterial,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.navy,
-                            disabledBackgroundColor:
-                                AppColors.navy.withValues(alpha: 0.35),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                        const SizedBox(height: 14),
+
+                        // ── MATERIALES: filtrados por el cliente elegido +
+                        // varios materiales por orden. En pantallas chicas
+                        // el botón "Agregar" baja debajo del dropdown. ──
+                        _fieldLabelWithHint(
+                          'Materiales',
+                          _isEdit
+                              ? '— no se modifican desde edición'
+                              : '— selecciona uno o más',
+                        ),
+                        const SizedBox(height: 6),
+                        if (compacto) ...[
+                          _dropdownMateriales(),
+                          const SizedBox(height: 8),
+                          _botonAgregar(
+                            expandido: true,
+                            onPressed: _materialParaAgregar == null
+                                ? null
+                                : _agregarMaterial,
                           ),
-                          icon: const Icon(Icons.add,
-                              size: 16, color: Colors.white),
-                          label: const Text('Agregar',
-                              style: TextStyle(
-                                  fontSize: 12.5, fontWeight: FontWeight.w700)),
+                        ] else
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: _dropdownMateriales()),
+                              const SizedBox(width: 8),
+                              _botonAgregar(
+                                onPressed: _materialParaAgregar == null
+                                    ? null
+                                    : _agregarMaterial,
+                              ),
+                            ],
+                          ),
+                        if (_materialesSeleccionados.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          ..._materialesSeleccionados
+                              .map(_buildMaterialSeleccionadoRow),
+                        ],
+                        const SizedBox(height: 14),
+
+                        _fieldLabel('Producto'),
+                        const SizedBox(height: 6),
+                        _textField(
+                          controller: _productoCtrl,
+                          hint: 'Nombre del producto',
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'El producto es requerido'
+                              : null,
                         ),
-                      ),
-                    ],
-                  ),
-                  if (_materialesSeleccionados.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    ..._materialesSeleccionados
-                        .map(_buildMaterialSeleccionadoRow),
-                  ],
-                  const SizedBox(height: 14),
+                        const SizedBox(height: 14),
 
-                  _fieldLabel('Producto'),
-                  const SizedBox(height: 6),
-                  _textField(
-                    controller: _productoCtrl,
-                    hint: 'Nombre del producto',
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'El producto es requerido'
-                        : null,
-                  ),
-                  const SizedBox(height: 14),
+                        _fieldLabel('Descripción'),
+                        const SizedBox(height: 6),
+                        _textField(
+                          controller: _descripcionCtrl,
+                          hint: 'Descripción detallada',
+                          maxLines: 3,
+                        ),
+                        const SizedBox(height: 14),
 
-                  _fieldLabel('Descripción'),
-                  const SizedBox(height: 6),
-                  _textField(
-                    controller: _descripcionCtrl,
-                    hint: 'Descripción detallada',
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 14),
-
-                  _fieldLabel('Cantidad'),
-                  const SizedBox(height: 6),
-                  _textField(
-                    controller: _cantidadCtrl,
-                    hint: '0',
-                    keyboardType: TextInputType.number,
-                    validator: (v) {
-                      final n = int.tryParse(v ?? '');
-                      if (n == null || n <= 0) return 'Cantidad inválida';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 14),
-
-                  _fieldLabelWithHint(
-                      'Operarios y fases', '— una fase por paso de producción'),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<Usuario>(
-                    initialValue: _operarioFaseParaAgregar,
-                    decoration: _dec(
-                        _loadingDatos ? 'Cargando...' : 'Seleccionar operario'),
-                    icon: const Icon(Icons.keyboard_arrow_down,
-                        color: AppColors.textFaint),
-                    style: const TextStyle(
-                        fontSize: 13, color: AppColors.inputText),
-                    items: _operarios
-                        .map((o) => DropdownMenuItem(
-                            value: o, child: Text(o.nombreCompleto)))
-                        .toList(),
-                    onChanged: (v) =>
-                        setState(() => _operarioFaseParaAgregar = v),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 78,
-                        child: TextFormField(
-                          controller: _numeroFaseCtrl,
+                        _fieldLabel('Cantidad'),
+                        const SizedBox(height: 6),
+                        _textField(
+                          controller: _cantidadCtrl,
+                          hint: '0',
                           keyboardType: TextInputType.number,
-                          textAlign: TextAlign.center,
-                          decoration: _dec('Fase'),
+                          validator: (v) {
+                            final n = int.tryParse(v ?? '');
+                            if (n == null || n <= 0) return 'Cantidad inválida';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 14),
+
+                        _fieldLabelWithHint('Operarios y fases',
+                            '— una fase por paso de producción'),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<Usuario>(
+                          isExpanded: true,
+                          initialValue: _operarioFaseParaAgregar,
+                          decoration: _dec(_loadingDatos
+                              ? 'Cargando...'
+                              : 'Seleccionar operario'),
+                          icon: const Icon(Icons.keyboard_arrow_down,
+                              color: AppColors.textFaint),
                           style: const TextStyle(
                               fontSize: 13, color: AppColors.inputText),
+                          items: _operarios
+                              .map((o) => DropdownMenuItem(
+                                    value: o,
+                                    child: Text(
+                                      o.nombreCompleto,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ))
+                              .toList(),
+                          onChanged: (v) =>
+                              setState(() => _operarioFaseParaAgregar = v),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _descripcionFaseCtrl,
-                          decoration: _dec('Descripción de la fase'),
-                          style: const TextStyle(
-                              fontSize: 13, color: AppColors.inputText),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        height: 46,
-                        child: ElevatedButton.icon(
-                          onPressed: _operarioFaseParaAgregar == null
-                              ? null
-                              : _agregarFase,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.navy,
-                            disabledBackgroundColor:
-                                AppColors.navy.withValues(alpha: 0.35),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                          icon: const Icon(Icons.add,
-                              size: 16, color: Colors.white),
-                          label: const Text('Agregar',
-                              style: TextStyle(
-                                  fontSize: 12.5, fontWeight: FontWeight.w700)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_fasesSeleccionadas.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    ..._fasesSeleccionadas.asMap().entries.map((entry) =>
-                        _buildFaseSeleccionadaRow(entry.key, entry.value)),
-                  ],
-                  const SizedBox(height: 14),
+                        const SizedBox(height: 8),
 
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
+                        // Fila fase: número + descripción + botón. Son 3
+                        // elementos: en pantallas angostas el botón pasa
+                        // a una segunda línea a ancho completo.
+                        if (compacto) ...[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(width: 70, child: _campoNumeroFase()),
+                              const SizedBox(width: 8),
+                              Expanded(child: _campoDescripcionFase()),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          _botonAgregar(
+                            expandido: true,
+                            onPressed: _operarioFaseParaAgregar == null
+                                ? null
+                                : _agregarFase,
+                          ),
+                        ] else
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(width: 70, child: _campoNumeroFase()),
+                              const SizedBox(width: 8),
+                              Expanded(child: _campoDescripcionFase()),
+                              const SizedBox(width: 8),
+                              _botonAgregar(
+                                paddingH: 12,
+                                onPressed: _operarioFaseParaAgregar == null
+                                    ? null
+                                    : _agregarFase,
+                              ),
+                            ],
+                          ),
+                        if (_fasesSeleccionadas.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          ..._fasesSeleccionadas.asMap().entries.map((entry) =>
+                              _buildFaseSeleccionadaRow(
+                                  entry.key, entry.value)),
+                        ],
+                        const SizedBox(height: 14),
+
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _fieldLabel('Prioridad'),
-                            const SizedBox(height: 6),
-                            DropdownButtonFormField<String>(
-                              initialValue: _prioridad,
-                              decoration: _dec('Media'),
-                              icon: const Icon(Icons.keyboard_arrow_down,
-                                  color: AppColors.textFaint),
-                              style: const TextStyle(
-                                  fontSize: 13, color: AppColors.inputText),
-                              items: const ['Baja', 'Media', 'Alta']
-                                  .map((p) => DropdownMenuItem(
-                                      value: p, child: Text(p)))
-                                  .toList(),
-                              onChanged: (v) =>
-                                  setState(() => _prioridad = v ?? 'Media'),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _fieldLabel('Dificultad'),
-                            const SizedBox(height: 6),
-                            DropdownButtonFormField<String>(
-                              initialValue: _dificultad,
-                              decoration: _dec('Media'),
-                              icon: const Icon(Icons.keyboard_arrow_down,
-                                  color: AppColors.textFaint),
-                              style: const TextStyle(
-                                  fontSize: 13, color: AppColors.inputText),
-                              items: const ['Baja', 'Media', 'Alta']
-                                  .map((p) => DropdownMenuItem(
-                                      value: p, child: Text(p)))
-                                  .toList(),
-                              onChanged: (v) =>
-                                  setState(() => _dificultad = v ?? 'Media'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  _fieldLabel('Fecha Límite'),
-                  const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: _pickFecha,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.inputBg,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.inputBorder),
-                      ),
-                      child: Text(
-                        _fechaLimite == null
-                            ? 'dd/mm/aaaa'
-                            : '${_fechaLimite!.day.toString().padLeft(2, '0')}/${_fechaLimite!.month.toString().padLeft(2, '0')}/${_fechaLimite!.year}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: _fechaLimite == null
-                              ? AppColors.inputPlaceholder
-                              : AppColors.inputText,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  if (_error != null) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: AppColors.errorBg,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.errorBorder),
-                      ),
-                      child: Text(_error!,
-                          style: const TextStyle(
-                              color: AppColors.errorText, fontSize: 12)),
-                    ),
-                  ],
-                  const SizedBox(height: 18),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 46,
-                          child: OutlinedButton(
-                            onPressed:
-                                _loading ? null : () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              side:
-                                  const BorderSide(color: AppColors.cardBorder),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
-                            ),
-                            child: const Text('Cancelar',
-                                style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: SizedBox(
-                          height: 46,
-                          child: ElevatedButton(
-                            onPressed: _loading ? null : _submit,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.navy,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
-                            ),
-                            child: _loading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: Colors.white))
-                                : Text(
-                                    _isEdit ? 'Guardar Cambios' : 'Crear Orden',
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _fieldLabel('Prioridad'),
+                                  const SizedBox(height: 6),
+                                  DropdownButtonFormField<String>(
+                                    isExpanded: true,
+                                    initialValue: _prioridad,
+                                    decoration: _dec('Media'),
+                                    icon: const Icon(Icons.keyboard_arrow_down,
+                                        color: AppColors.textFaint),
                                     style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14)),
+                                        fontSize: 13,
+                                        color: AppColors.inputText),
+                                    items: const ['Baja', 'Media', 'Alta']
+                                        .map((p) => DropdownMenuItem(
+                                              value: p,
+                                              child: Text(p,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis),
+                                            ))
+                                        .toList(),
+                                    onChanged: (v) => setState(
+                                        () => _prioridad = v ?? 'Media'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _fieldLabel('Dificultad'),
+                                  const SizedBox(height: 6),
+                                  DropdownButtonFormField<String>(
+                                    isExpanded: true,
+                                    initialValue: _dificultad,
+                                    decoration: _dec('Media'),
+                                    icon: const Icon(Icons.keyboard_arrow_down,
+                                        color: AppColors.textFaint),
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.inputText),
+                                    items: const ['Baja', 'Media', 'Alta']
+                                        .map((p) => DropdownMenuItem(
+                                              value: p,
+                                              child: Text(p,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis),
+                                            ))
+                                        .toList(),
+                                    onChanged: (v) => setState(
+                                        () => _dificultad = v ?? 'Media'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        _fieldLabel('Fecha Límite'),
+                        const SizedBox(height: 6),
+                        GestureDetector(
+                          onTap: _pickFecha,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: AppColors.inputBg,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.inputBorder),
+                            ),
+                            child: Text(
+                              _fechaLimite == null
+                                  ? 'dd/mm/aaaa'
+                                  : '${_fechaLimite!.day.toString().padLeft(2, '0')}/${_fechaLimite!.month.toString().padLeft(2, '0')}/${_fechaLimite!.year}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _fechaLimite == null
+                                    ? AppColors.inputPlaceholder
+                                    : AppColors.inputText,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+
+                        if (_error != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.errorBg,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.errorBorder),
+                            ),
+                            child: Text(_error!,
+                                style: const TextStyle(
+                                    color: AppColors.errorText, fontSize: 12)),
+                          ),
+                        ],
+                        const SizedBox(height: 18),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 46,
+                                child: OutlinedButton(
+                                  onPressed: _loading
+                                      ? null
+                                      : () => Navigator.pop(context),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8),
+                                    side: const BorderSide(
+                                        color: AppColors.cardBorder),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(16)),
+                                  ),
+                                  child: const Text('Cancelar',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: SizedBox(
+                                height: 46,
+                                child: ElevatedButton(
+                                  onPressed: _loading ? null : _submit,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.navy,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(16)),
+                                  ),
+                                  child: _loading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white))
+                                      : Text(
+                                          _isEdit
+                                              ? 'Guardar Cambios'
+                                              : 'Crear Orden',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14)),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -966,10 +1029,66 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
     );
   }
 
-  /// Fila de un material ya agregado a la orden. El campo de cantidad
-  /// nunca deja escribir/guardar más unidades que el stock disponible
-  /// (s.material.stockActual): si el usuario escribe un número mayor,
-  /// se corrige automáticamente al máximo permitido.
+  /// Dropdown de materiales extraído a su propio método para poder
+  /// reutilizarlo tanto en el layout horizontal como en el compacto.
+  Widget _dropdownMateriales() {
+    return DropdownButtonFormField<MaterialItem>(
+      isExpanded: true,
+      key: ValueKey(_clienteSeleccionado?.idUsuario),
+      initialValue: _materialParaAgregar,
+      decoration: _dec(
+        _isEdit
+            ? 'Material principal: ${widget.orden?.nombreMaterial ?? 'sin nombre'}'
+            : _clienteSeleccionado == null
+                ? 'Selecciona un cliente primero'
+                : (_loadingMateriales
+                    ? 'Cargando...'
+                    : (_materialesDisponiblesParaAgregar.isEmpty
+                        ? (_materialesCliente.isEmpty
+                            ? 'Este cliente no tiene materiales'
+                            : 'Ya agregaste todos los materiales con stock')
+                        : '+ Agregar material...')),
+      ),
+      icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textFaint),
+      style: const TextStyle(fontSize: 13, color: AppColors.inputText),
+      items: _materialesDisponiblesParaAgregar
+          .map((m) => DropdownMenuItem(
+                value: m,
+                child: Text(
+                  '${m.nombre} · Stock: ${m.stockActual} ${m.unidad}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ))
+          .toList(),
+      onChanged:
+          (_isEdit || _clienteSeleccionado == null || _loadingMateriales)
+              ? null
+              : (v) => setState(() => _materialParaAgregar = v),
+    );
+  }
+
+  Widget _campoNumeroFase() {
+    return TextFormField(
+      controller: _numeroFaseCtrl,
+      keyboardType: TextInputType.number,
+      textAlign: TextAlign.center,
+      decoration: _dec('Fase'),
+      style: const TextStyle(fontSize: 13, color: AppColors.inputText),
+    );
+  }
+
+  Widget _campoDescripcionFase() {
+    return TextFormField(
+      controller: _descripcionFaseCtrl,
+      decoration: _dec('Descripción de la fase'),
+      style: const TextStyle(fontSize: 13, color: AppColors.inputText),
+    );
+  }
+
+  /// Fila de una fase ya agregada. Los iconos de mover/eliminar usan
+  /// densidad compacta y tamaños acotados para no desbordar cuando el
+  /// nombre del operario es largo.
   Widget _buildFaseSeleccionadaRow(int index, _OperarioFaseSeleccionado fase) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -986,6 +1105,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
               Expanded(
                 child: Text(
                   fase.operario.nombreCompleto,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 12.5,
@@ -994,20 +1114,31 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                   ),
                 ),
               ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                onPressed: index == 0 ? null : () => _moverFase(index, -1),
-                icon: const Icon(Icons.keyboard_arrow_up, size: 18),
-                color: AppColors.textMuted,
+              SizedBox(
+                width: 30,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: index == 0 ? null : () => _moverFase(index, -1),
+                  icon: const Icon(Icons.keyboard_arrow_up, size: 18),
+                  color: AppColors.textMuted,
+                ),
               ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                onPressed: index == _fasesSeleccionadas.length - 1
-                    ? null
-                    : () => _moverFase(index, 1),
-                icon: const Icon(Icons.keyboard_arrow_down, size: 18),
-                color: AppColors.textMuted,
+              SizedBox(
+                width: 30,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: index == _fasesSeleccionadas.length - 1
+                      ? null
+                      : () => _moverFase(index, 1),
+                  icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+                  color: AppColors.textMuted,
+                ),
               ),
+              const SizedBox(width: 4),
               GestureDetector(
                 onTap: () => _quitarFase(fase),
                 child: Container(
@@ -1070,6 +1201,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(s.material.nombre,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         fontSize: 12.5,
@@ -1077,6 +1209,8 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                         color: AppColors.textPrimary)),
                 Text(
                     'Disponible: ${s.material.stockActual} ${s.material.unidad}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         fontSize: 10.5, color: AppColors.textFaint)),
               ],
