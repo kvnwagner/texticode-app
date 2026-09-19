@@ -54,14 +54,21 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     });
     try {
       final data = await _repo.getUsuarios();
+      // El backend (igual que para GestionUsuarios.vue) devuelve TODOS
+      // los usuarios, activos e inactivos. La web los filtra en
+      // cargarDatos() con .filter(u => u.Estado === 'activo') antes de
+      // mostrarlos; hacemos lo mismo aquí para que un usuario eliminado
+      // (soft delete -> Estado = 'inactivo') desaparezca también en
+      // el móvil.
+      final activos = data.where((u) => u.isActivo).toList();
       // Los más nuevos primero según Fecha_Registro, así el usuario
       // recién creado aparece de primeras en la lista sin necesidad
       // de scrollear hasta abajo. fechaRegistro es un String? ISO, se
       // parsea a DateTime para comparar bien (si viene nulo o
       // inválido, se manda al final con una fecha mínima).
-      data.sort((a, b) => _fechaRegistroDt(b).compareTo(_fechaRegistroDt(a)));
+      activos.sort((a, b) => _fechaRegistroDt(b).compareTo(_fechaRegistroDt(a)));
       if (!mounted) return;
-      setState(() => _usuarios = data);
+      setState(() => _usuarios = activos);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));

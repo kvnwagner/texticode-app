@@ -39,7 +39,7 @@ class _NewUserSheetState extends State<NewUserSheet> {
   static final RegExp _emailRegex = RegExp(
     r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$",
   );
-  static final RegExp _telefonoRegex = RegExp(r'^\d{1,10}$');
+  static final RegExp _telefonoRegex = RegExp(r'^\d{10}$');
   static final RegExp _mayuscula = RegExp(r'[A-Z]');
   static final RegExp _numero = RegExp(r'[0-9]');
   static final RegExp _especial = RegExp(r'[^A-Za-z0-9]');
@@ -70,11 +70,18 @@ class _NewUserSheetState extends State<NewUserSheet> {
 
   String? _validarTelefono(String? v) {
     final value = (v ?? '').trim();
-    if (value.isEmpty) return null; // el teléfono es opcional
+    if (value.isEmpty) return 'El teléfono es requerido';
     if (!_telefonoRegex.hasMatch(value)) {
-      return 'Teléfono inválido (solo números, máximo 10 dígitos)';
+      return 'El teléfono debe tener 10 dígitos';
     }
     return null;
+  }
+
+  /// Convierte los 10 dígitos que digitó el usuario (ej: "3001234567")
+  /// al formato con el que se guarda, igual que en la web
+  /// (GestionUsuarios.vue): "+57 300 123 4567".
+  String _formatearTelefono(String digitos) {
+    return '+57 ${digitos.substring(0, 3)} ${digitos.substring(3, 6)} ${digitos.substring(6, 10)}';
   }
 
   String? _validarContrasena(String? v) {
@@ -153,7 +160,7 @@ class _NewUserSheetState extends State<NewUserSheet> {
         nombreUsuario: _usuarioCtrl.text.trim(),
         contrasena: _passCtrl.text,
         correo: _correoCtrl.text.trim(),
-        telefono: _telefonoCtrl.text.trim(),
+        telefono: _formatearTelefono(_telefonoCtrl.text.trim()),
       );
       if (!mounted) return;
       widget.onCreated();
@@ -391,7 +398,6 @@ class _NewUserSheetState extends State<NewUserSheet> {
                   const SizedBox(height: 14),
                   _field(
                     label: 'Teléfono',
-                    helper: '(opcional)',
                     controller: _telefonoCtrl,
                     hint: '3001234567',
                     keyboardType: TextInputType.phone,

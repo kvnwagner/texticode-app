@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import '../../data/models/usuario_model.dart';
@@ -42,7 +43,16 @@ class _EditUserSheetState extends State<EditUserSheet> {
     _nombreCtrl = TextEditingController(text: u.nombreCompleto);
     _usuarioCtrl = TextEditingController(text: u.nombreUsuario);
     _correoCtrl = TextEditingController(text: u.correo ?? '');
-    _telefonoCtrl = TextEditingController(text: u.telefono ?? '');
+    // El teléfono puede venir ya formateado como "+57 300 123 4567"
+    // (guardado así por este mismo formulario o por la web) o como
+    // solo dígitos si es un registro antiguo. En ambos casos, al
+    // editar solo mostramos los 10 dígitos locales; el "+57 " se
+    // vuelve a anteponer al guardar (_formatearTelefono).
+    final telefonoDigitos = (u.telefono ?? '').replaceAll(RegExp(r'\D'), '');
+    final telefonoLocal = (telefonoDigitos.length == 12 && telefonoDigitos.startsWith('57'))
+        ? telefonoDigitos.substring(2)
+        : telefonoDigitos;
+    _telefonoCtrl = TextEditingController(text: telefonoLocal);
     // Busca la key del mapa que coincida con el Id_Rol actual del usuario.
     _rolSeleccionado = _rolIds.entries
         .firstWhere(
@@ -59,6 +69,13 @@ class _EditUserSheetState extends State<EditUserSheet> {
     _correoCtrl.dispose();
     _telefonoCtrl.dispose();
     super.dispose();
+  }
+
+  /// Convierte los 10 dígitos que digitó el usuario (ej: "3001234567")
+  /// al formato con el que se guarda, igual que en la web
+  /// (GestionUsuarios.vue): "+57 300 123 4567".
+  String _formatearTelefono(String digitos) {
+    return '+57 ${digitos.substring(0, 3)} ${digitos.substring(3, 6)} ${digitos.substring(6, 10)}';
   }
 
   Future<void> _submit() async {
@@ -78,7 +95,7 @@ class _EditUserSheetState extends State<EditUserSheet> {
         nombreCompleto: _nombreCtrl.text.trim(),
         nombreUsuario: _usuarioCtrl.text.trim(),
         correo: _correoCtrl.text.trim(),
-        telefono: _telefonoCtrl.text.trim(),
+        telefono: _formatearTelefono(_telefonoCtrl.text.trim()),
         estado: widget.usuario.estado, // no se toca desde este formulario
         contrasena: null, // null = no cambia la contraseña
       );
@@ -125,6 +142,7 @@ class _EditUserSheetState extends State<EditUserSheet> {
     required TextEditingController controller,
     required String hint,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return Column(
@@ -152,6 +170,7 @@ class _EditUserSheetState extends State<EditUserSheet> {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           decoration: _dec(hint),
           style: const TextStyle(fontSize: 13, color: AppColors.inputText),
           validator: validator,
@@ -312,8 +331,19 @@ class _EditUserSheetState extends State<EditUserSheet> {
                   _field(
                     label: 'Teléfono',
                     controller: _telefonoCtrl,
-                    hint: '+57 300 000 0000',
+                    hint: '3001234567',
                     keyboardType: TextInputType.phone,
+                    // Solo dígitos y máximo 10, igual que en new_user_sheet.dart.
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
+                    validator: (v) {
+                      final value = (v ?? '').trim();
+                      if (value.isEmpty) return 'El teléfono es requerido';
+                      if (value.length != 10) return 'El teléfono debe tener 10 dígitos';
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 14),
                   _roleDropdown(),
