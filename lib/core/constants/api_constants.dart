@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'http://192.168.0.11:3001/api';
+  static const String baseUrl = 'http://192.168.10.35:3001/api';
 
   static const String usuarios = '$baseUrl/usuarios';
   static const String auth = '$baseUrl/auth';
@@ -7,6 +7,7 @@ class ApiConstants {
   static const String comprobantes = '$baseUrl/comprobantes';
   static const String materiales = '$baseUrl/materiales';
   static const String eficiencia = '$baseUrl/eficiencia';
+  static const String cargaTrabajo = '$baseUrl/carga-trabajo';
 
   // Inventario reconstruido al final de un período ('YYYY-MM'), a
   // partir de la bitácora de movimientos (material_movimiento) del

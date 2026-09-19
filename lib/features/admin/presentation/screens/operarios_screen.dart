@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import '../../../operario/presentation/screens/operario_shared_widgets.dart'; // SearchBox / FilterDropdown
-import '../../data/models/usuario_model.dart';
-import '../../data/models/orden_model.dart';
 import '../../data/models/eficiencia_operario_model.dart';
-import '../../data/repositories/usuario_repository.dart';
-import '../../data/repositories/orden_repository.dart';
+import '../../data/models/carga_trabajo_model.dart';
 import '../../data/repositories/eficiencia_repository.dart';
+import '../../data/repositories/carga_trabajo_repository.dart';
 import '../widgets/reassign_orders_view.dart';
 import '../widgets/eficiencia_ranking_card.dart';
 import '../widgets/eficiencia_detail_sheet.dart';
-
+import '../widgets/carga_detail_sheet.dart';
 
 enum _RendimientoFiltro { todos, alto, medio, bajo }
 
@@ -23,13 +21,10 @@ class OperariosScreen extends StatefulWidget {
 }
 
 class _OperariosScreenState extends State<OperariosScreen> {
-  // ── Carga de Trabajo (SIN CAMBIOS) ──
-  final _usuarioRepo = UsuarioRepository();
-  final _ordenRepo = OrdenRepository();
-  static const int _capacidadDefault = 5;
+  // ── Carga de Trabajo (AHORA VIENE DEL BACKEND, igual que la web) ──
+  final _cargaRepo = CargaTrabajoRepository();
 
-  List<Usuario> _operarios = [];
-  List<Orden> _ordenes = [];
+  CargaTrabajoResultado? _cargaResultado;
   bool _loading = true;
   String? _error;
 
@@ -40,7 +35,12 @@ class _OperariosScreenState extends State<OperariosScreen> {
   // de "Reasignación de Órdenes" (ya no es un sheet emergente).
   bool _mostrarReasignacion = false;
 
-  // ── Eficiencia (NUEVO) ──
+  // ── Sugerencias de reasignación (solo se cargan al entrar a esa vista) ──
+  List<SugerenciaCarga> _sugerencias = [];
+  bool _loadingSugerencias = false;
+  String? _errorSugerencias;
+
+  // ── Eficiencia (sin cambios) ──
   final _eficienciaRepo = EficienciaRepository();
   List<EficienciaOperario> _eficienciaOperarios = [];
   bool _loadingEficiencia = true;
@@ -55,23 +55,16 @@ class _OperariosScreenState extends State<OperariosScreen> {
     _cargarEficiencia();
   }
 
-  // ── CARGA (usuarios + ordenes, sin cambios) ──
+  // ── CARGA DE TRABAJO (ahora desde /api/carga-trabajo) ──
   Future<void> _cargar() async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final resultados = await Future.wait([
-        _usuarioRepo.getUsuarios(),
-        _ordenRepo.getOrdenes(),
-      ]);
+      final data = await _cargaRepo.getCarga();
       if (!mounted) return;
-      setState(() {
-        _operarios =
-            (resultados[0] as List<Usuario>).where((u) => u.isOperario).toList();
-        _ordenes = resultados[1] as List<Orden>;
-      });
+      setState(() => _cargaResultado = data);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -80,23 +73,41 @@ class _OperariosScreenState extends State<OperariosScreen> {
     }
   }
 
-  List<_CargaOperario> get _cargas {
-    return _operarios.map((op) {
-      final asignadas =
-          _ordenes.where((o) => o.idOperario == op.idUsuario).toList();
-      final activas = asignadas.where((o) => !o.isCompletada).length;
-      final completadas = asignadas.where((o) => o.isCompletada).length;
-      return _CargaOperario(
-        usuario: op,
-        activas: activas,
-        completadas: completadas,
-        totalAsignadas: asignadas.length,
-        capacidad: _capacidadDefault,
-      );
-    }).toList();
+  List<CargaOperario> get _operarios => _cargaResultado?.operarios ?? [];
+
+  int get _totalOrdenesActivas =>
+      _operarios.fold<int>(0, (a, o) => a + o.ordenesActivas);
+
+  // ── SUGERENCIAS (solo cuando se entra a "Reasignar Órdenes") ──
+  Future<void> _cargarSugerencias() async {
+    setState(() {
+      _loadingSugerencias = true;
+      _errorSugerencias = null;
+    });
+    try {
+      final data = await _cargaRepo.getSugerencias();
+      if (!mounted) return;
+      setState(() => _sugerencias = data);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorSugerencias = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loadingSugerencias = false);
+    }
   }
 
-  // ── EFICIENCIA (nuevo) ──
+  void _abrirReasignacion() {
+    setState(() => _mostrarReasignacion = true);
+    _cargarSugerencias();
+  }
+
+  void _onCambioReasignacion() {
+    // Tras reasignar, la carga y las sugerencias restantes cambian.
+    _cargar();
+    _cargarSugerencias();
+  }
+
+  // ── EFICIENCIA (sin cambios) ──
   Future<void> _cargarEficiencia() async {
     setState(() {
       _loadingEficiencia = true;
@@ -147,16 +158,19 @@ class _OperariosScreenState extends State<OperariosScreen> {
   @override
   Widget build(BuildContext context) {
     if (_mostrarReasignacion) {
-      final cargas = _cargas;
       return Container(
         color: AppColors.pageBg,
-        child: ReassignOrdersView(
-          sobrecargados: cargas.where((c) => c.isSobrecargado).map((c) => c.usuario).toList(),
-          disponibles: cargas.where((c) => !c.isSobrecargado).map((c) => c.usuario).toList(),
-          ordenes: _ordenes,
-          onChanged: _cargar,
-          onBack: () => setState(() => _mostrarReasignacion = false),
-        ),
+        child: _loadingSugerencias
+            ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+            : _errorSugerencias != null
+                ? _buildErrorSugerencias()
+                : ReassignOrdersView(
+                    sobrecargados: _cargaResultado?.sobrecargados ?? [],
+                    sugerencias: _sugerencias,
+                    disponibles: _cargaResultado?.disponibles ?? [],
+                    onChanged: _onCambioReasignacion,
+                    onBack: () => setState(() => _mostrarReasignacion = false),
+                  ),
       );
     }
 
@@ -166,8 +180,41 @@ class _OperariosScreenState extends State<OperariosScreen> {
     );
   }
 
+  Widget _buildErrorSugerencias() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
+            const SizedBox(height: 12),
+            Text(_errorSugerencias!,
+                textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton(
+                  onPressed: () => setState(() => _mostrarReasignacion = false),
+                  child: const Text('Volver'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _cargarSugerencias,
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.navy),
+                  child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ════════════════════════════════════════════
-  // VISTA EFICIENCIA (nueva, réplica de la web)
+  // VISTA EFICIENCIA (sin cambios)
   // ════════════════════════════════════════════
 
   Widget _buildEficienciaBody() {
@@ -182,8 +229,6 @@ class _OperariosScreenState extends State<OperariosScreen> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   children: [
-                    _buildTitle(),
-                    const SizedBox(height: 16),
                     _buildSegmented(),
                     const SizedBox(height: 16),
                     _buildBusquedaYFiltro(),
@@ -373,14 +418,14 @@ class _OperariosScreenState extends State<OperariosScreen> {
   }
 
   // ════════════════════════════════════════════
-  // VISTA CARGA DE TRABAJO — SIN CAMBIOS (solo se movió a este método)
+  // VISTA CARGA DE TRABAJO — AHORA USA CargaOperario DEL BACKEND
   // ════════════════════════════════════════════
 
   Widget _buildCargaBody() {
-    final cargas = _cargas;
-    final disponibles = cargas.where((c) => !c.isSobrecargado).length;
-    final sobrecargados = cargas.where((c) => c.isSobrecargado).length;
-    final ordenesActivas = _ordenes.where((o) => !o.isCompletada).length;
+    final resumen = _cargaResultado?.resumen;
+    final disponibles = resumen?.disponibles ?? 0;
+    final sobrecargados = resumen?.sobrecargados ?? 0;
+    final ordenesActivas = _totalOrdenesActivas;
 
     return _loading
         ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
@@ -393,37 +438,19 @@ class _OperariosScreenState extends State<OperariosScreen> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   children: [
-                    _buildTitle(),
-                    const SizedBox(height: 16),
                     _buildSegmented(),
                     const SizedBox(height: 16),
                     _buildStats(disponibles, sobrecargados, ordenesActivas),
                     const SizedBox(height: 16),
-                    _buildReasignarButton(cargas),
+                    _buildReasignarButton(sobrecargados),
                     const SizedBox(height: 20),
-                    _buildSectionHeader(cargas.length),
+                    _buildSectionHeader(_operarios.length),
                     const SizedBox(height: 4),
-                    if (cargas.isEmpty) _buildEmpty(),
-                    ...cargas.map(_buildCargaCard),
+                    if (_operarios.isEmpty) _buildEmpty(),
+                    ..._operarios.map(_buildCargaCard),
                   ],
                 ),
               );
-  }
-
-  Widget _buildTitle() {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Eficiencia',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        SizedBox(height: 2),
-        Text('Gestión de Operarios',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-        SizedBox(height: 2),
-        Text('Monitorea el rendimiento y carga de trabajo en tiempo real.',
-            style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
-      ],
-    );
   }
 
   Widget _buildSegmented() {
@@ -438,7 +465,7 @@ class _OperariosScreenState extends State<OperariosScreen> {
       child: Row(
         children: [
           _segmentButton('Rendimiento & Eficiencia', 0),
-          _segmentButton('Carga Laboral', 1),
+          _segmentButton('Carga de Trabajo', 1),
         ],
       ),
     );
@@ -503,15 +530,12 @@ class _OperariosScreenState extends State<OperariosScreen> {
     );
   }
 
-  Widget _buildReasignarButton(List<_CargaOperario> cargas) {
-    final sobrecargados = cargas.where((c) => c.isSobrecargado).toList();
+  Widget _buildReasignarButton(int sobrecargados) {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: sobrecargados.isEmpty
-            ? null
-            : () => setState(() => _mostrarReasignacion = true),
+        onPressed: sobrecargados == 0 ? null : _abrirReasignacion,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.navy,
           disabledBackgroundColor: AppColors.navy.withValues(alpha: 0.4),
@@ -550,18 +574,43 @@ class _OperariosScreenState extends State<OperariosScreen> {
     );
   }
 
-  // ✅ CAMBIO: la card ahora sigue el mismo patrón visual que las demás
-  // cards de la app (stats de Usuarios, Inventario, Producción, etc.):
-  // ClipRRect + Row con una franja de color (Container 3.5px) pegada al
-  // borde izquierdo, seguida del contenido con su propio padding. Antes
-  // el padding: EdgeInsets.all(14) envolvía todo el contenido, así que
-  // no había espacio para pintar esa franja sin invadir el resto del
-  // diseño.
-  Widget _buildCargaCard(_CargaOperario c) {
-    final av = AppColors.avatarPalette[c.usuario.idUsuario % AppColors.avatarPalette.length];
-    final estadoColor = c.isSobrecargado ? AppColors.errorText : AppColors.iconActive;
-    final estadoBg = c.isSobrecargado ? AppColors.errorBg : AppColors.badgeOpGreenBg;
-    final estadoLabel = c.isSobrecargado ? 'Sobrecargado' : 'Disponible';
+  Color _estadoColor(CargaOperario c) {
+    if (c.esSobrecargado) return AppColors.errorText;
+    if (c.esDisponible) return AppColors.iconActive;
+    return AppColors.iconOp; // normal
+  }
+
+  Color _estadoBg(CargaOperario c) {
+    if (c.esSobrecargado) return AppColors.errorBg;
+    if (c.esDisponible) return AppColors.badgeOpGreenBg;
+    return AppColors.badgeOpBlueBg; // normal
+  }
+
+  String _estadoLabel(CargaOperario c) {
+    if (c.esSobrecargado) return 'Sobrecargado';
+    if (c.esDisponible) return 'Disponible';
+    return 'Normal';
+  }
+
+  /// Abre el detalle del operario (mismo contenido que el modal de la web).
+  void _verDetalle(CargaOperario c) {
+    final av = AppColors.avatarPalette[c.idUsuario % AppColors.avatarPalette.length];
+    CargaDetailSheet.show(
+      context,
+      operario: c,
+      estadoLabel: _estadoLabel(c),
+      estadoColor: _estadoColor(c),
+      estadoBg: _estadoBg(c),
+      avatarBg: av['bg']!,
+      avatarText: av['text']!,
+    );
+  }
+
+  Widget _buildCargaCard(CargaOperario c) {
+    final av = AppColors.avatarPalette[c.idUsuario % AppColors.avatarPalette.length];
+    final estadoColor = _estadoColor(c);
+    final estadoBg = _estadoBg(c);
+    final estadoLabel = _estadoLabel(c);
 
     return Padding(
       padding: const EdgeInsets.only(top: 10),
@@ -575,70 +624,100 @@ class _OperariosScreenState extends State<OperariosScreen> {
           ),
           child: IntrinsicHeight(
             child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(width: 3.5, color: estadoColor),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AvatarWidget(initials: c.usuario.initials, size: 40, bg: av['bg']!, text: av['text']!),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(width: 3.5, color: estadoColor),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ── Fila 1: avatar · nombre + resumen · ojo ──
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(c.usuario.nombreCompleto,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                          fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration:
-                                      BoxDecoration(color: estadoBg, borderRadius: BorderRadius.circular(20)),
-                                  child: Text(estadoLabel,
-                                      style:
-                                          TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: estadoColor)),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 3),
-                            Text('${c.activas} órdenes · capacidad ${c.capacidad}',
-                                style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
-                            const SizedBox(height: 10),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: LinearProgressIndicator(
-                                value: (c.percent / 100).clamp(0, 1),
-                                minHeight: 6,
-                                backgroundColor: AppColors.cardBorder,
-                                valueColor: AlwaysStoppedAnimation(estadoColor),
+                            AvatarWidget(initials: c.initials, size: 42, bg: av['bg']!, text: av['text']!),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    c.nombreCompleto,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    '${c.ordenesActivas} órdenes activas · ${c.fasesActivas} fases',
+                                    style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Text('${c.percent}% capacidad',
-                                  style: const TextStyle(fontSize: 10, color: AppColors.textFaint)),
-                            ),
+                            const SizedBox(width: 8),
+                            _verDetalleButton(c),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        // ── Fila 2: estado · vencidas · alta prioridad (en línea) ──
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            _miniBadge(estadoLabel, estadoColor, estadoBg),
+                            if (c.ordenesVencidas > 0)
+                              _miniBadge(
+                                '${c.ordenesVencidas} vencida${c.ordenesVencidas == 1 ? '' : 's'}',
+                                AppColors.errorText,
+                                AppColors.errorBg,
+                              ),
+                            if (c.ordenesAltaPrioridad > 0)
+                              _miniBadge(
+                                '${c.ordenesAltaPrioridad} alta prioridad',
+                                AppColors.iconClient,
+                                AppColors.badgeOpBlueBg,
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  /// Botón circular del ojo (mismo estilo que el de las órdenes de producción).
+  Widget _verDetalleButton(CargaOperario c) {
+    return Material(
+      color: AppColors.pageBg,
+      shape: const CircleBorder(side: BorderSide(color: AppColors.cardBorder)),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () => _verDetalle(c),
+        child: const SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(Icons.visibility_outlined, size: 18, color: AppColors.navy),
+        ),
+      ),
+    );
+  }
+
+  Widget _miniBadge(String texto, Color fg, Color bg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      child: Text(texto, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: fg)),
     );
   }
 
@@ -732,26 +811,4 @@ class _EficienciaStatItem {
   final IconData icon;
   final Color color;
   _EficienciaStatItem(this.label, this.value, this.icon, this.color);
-}
-
-/// Métricas de carga calculadas en el cliente a partir de
-/// Usuario (rol Operario) + las Ordenes asignadas a él. Sin cambios.
-class _CargaOperario {
-  final Usuario usuario;
-  final int activas;
-  final int completadas;
-  final int totalAsignadas;
-  final int capacidad;
-
-  _CargaOperario({
-    required this.usuario,
-    required this.activas,
-    required this.completadas,
-    required this.totalAsignadas,
-    required this.capacidad,
-  });
-
-  int get percent => capacidad == 0 ? 0 : ((activas / capacidad) * 100).round();
-  bool get isSobrecargado => activas > capacidad;
-  int get eficiencia => totalAsignadas == 0 ? 0 : ((completadas / totalAsignadas) * 100).round();
 }
