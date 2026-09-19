@@ -230,30 +230,44 @@ class ComprobantePdfService {
                         ),
                       ),
                       pw.Expanded(
-                        child: pw.Column(
-                          crossAxisAlignment:
-                              pw.CrossAxisAlignment.start,
-                          children: [
-                            _label('FECHA DE EMISIÓN'),
-                            pw.SizedBox(height: 4),
-                            pw.Text(
-                              fechaHoy,
-                              style: const pw.TextStyle(
-                                fontSize: 10,
-                                color: _negro,
-                              ),
+                        child: pw.Container(
+                          // Línea separadora a los lados, igual que
+                          // .cp-info-bloque--center en GestionClientes.vue
+                          // (border-left + border-right). Con esto, la
+                          // columna de CLIENTE queda separada de FECHA y
+                          // FECHA queda separada de ESTADO DEL PEDIDO.
+                          padding: const pw.EdgeInsets.symmetric(horizontal: 14),
+                          decoration: const pw.BoxDecoration(
+                            border: pw.Border(
+                              left: pw.BorderSide(color: _grisLinea),
+                              right: pw.BorderSide(color: _grisLinea),
                             ),
-                            pw.SizedBox(height: 12),
-                            _label('FECHA DE ENTREGA'),
-                            pw.SizedBox(height: 4),
-                            pw.Text(
-                              comprobante.fechaCorta,
-                              style: const pw.TextStyle(
-                                fontSize: 10,
-                                color: _negro,
+                          ),
+                          child: pw.Column(
+                            crossAxisAlignment:
+                                pw.CrossAxisAlignment.start,
+                            children: [
+                              _label('FECHA DE EMISIÓN'),
+                              pw.SizedBox(height: 4),
+                              pw.Text(
+                                fechaHoy,
+                                style: const pw.TextStyle(
+                                  fontSize: 10,
+                                  color: _negro,
+                                ),
                               ),
-                            ),
-                          ],
+                              pw.SizedBox(height: 12),
+                              _label('FECHA DE ENTREGA'),
+                              pw.SizedBox(height: 4),
+                              pw.Text(
+                                comprobante.fechaCorta,
+                                style: const pw.TextStyle(
+                                  fontSize: 10,
+                                  color: _negro,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       pw.Expanded(

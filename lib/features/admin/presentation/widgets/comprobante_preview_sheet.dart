@@ -239,7 +239,13 @@ class ComprobantePreviewSheet extends StatelessWidget {
                               Text('Tel: $clienteTel',
                                   style: const TextStyle(fontSize: 12, color: _ComprobanteColors.grisTexto)),
                             ],
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 14),
+                            // Línea separadora entre Cliente y las fechas,
+                            // igual que en GestionClientes.vue (ahí es una
+                            // línea vertical entre columnas; aquí, al estar
+                            // apilado, es horizontal).
+                            Container(height: 1, color: _ComprobanteColors.grisLinea),
+                            const SizedBox(height: 14),
                             Row(
                               children: [
                                 Expanded(
