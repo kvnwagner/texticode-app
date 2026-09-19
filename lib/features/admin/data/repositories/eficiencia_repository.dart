@@ -4,15 +4,22 @@ import '../../../../core/constants/api_constants.dart';
 import '../models/eficiencia_operario_model.dart';
 
 class EficienciaRepository {
+  /// [periodo] opcional, formato 'YYYY-MM'. Cuando se pasa, el backend
+  /// calcula las métricas (prendas/día, completadas, retrasadas,
+  /// rendimiento) solo con las órdenes cuya Fecha_Limite cae en ese
+  /// mes, en vez del acumulado histórico completo. Mismo parámetro que
+  /// ya usa getEficienciaOperarios en la web (api.js).
   Future<List<EficienciaOperario>> getOperarios({
     String? rendimiento,
     String? estado,
     int? limite,
+    String? periodo,
   }) async {
     final query = <String, String>{
       if (rendimiento != null) 'rendimiento': rendimiento,
       if (estado != null) 'estado': estado,
       if (limite != null) 'limite': '$limite',
+      if (periodo != null) 'periodo': periodo,
     };
 
     final uri = Uri.parse('${ApiConstants.eficiencia}/operarios')

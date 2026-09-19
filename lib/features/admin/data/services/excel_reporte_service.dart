@@ -9,17 +9,32 @@ class ExcelReporteService {
   static const _grisBgHex = '#F9FAFB';
   static const _blancoHex = '#FFFFFF';
 
+  // Mismos 3 estados y mismos tonos que ya usa Reportes.vue en la web
+  // (verde/naranja/rojo pastel), para que el PDF/Excel se vea igual
+  // sin importar desde dónde se genere.
+  static const Map<String, List<String>> _estadoColores = {
+    'Completada': ['#D1FAE5', '#065F46'],
+    'En Proceso': ['#FEF3C7', '#92400E'],
+    'Retrasada':  ['#FEE2E2', '#991B1B'],
+  };
+
   /// [titulo] se usa como nombre de la hoja (ej. "Pedidos").
   /// [headers]/[filas] arman la tabla — todo texto, tal como llega.
   /// [columnWidths] permite dar más espacio a columnas de texto largo
   /// (ej. "Producto"/"Cliente") y menos a columnas cortas (ej.
   /// "Progreso"/"Stock"). Si no se pasa, o su largo no coincide con
   /// [headers], se usa 22 para todas como antes.
+  /// [estadoColumnIndex] es el índice (0-based) de la columna "Estado"
+  /// dentro de [headers]/cada fila. Cuando se pasa, esa columna se
+  /// pinta según el valor (Completada/En Proceso/Retrasada) en vez de
+  /// usar el zebra genérico. Pásalo null si el reporte no tiene una
+  /// columna de estado (ej. Eficiencia, Inventario).
   static List<int> generar({
     required String titulo,
     required List<String> headers,
     required List<List<String>> filas,
     List<double>? columnWidths,
+    int? estadoColumnIndex,
   }) {
     final excel = Excel.createExcel();
 
@@ -57,15 +72,30 @@ class ExcelReporteService {
     }
     sheet.setRowHeight(0, 22);
 
-    // ── Filas de datos, con zebra en las filas impares ──
+    // ── Filas de datos, con zebra en las filas impares — salvo la
+    // columna de Estado, que se pinta según su valor. ──
     for (var row = 0; row < filas.length; row++) {
       final esImpar = row % 2 == 1;
       for (var col = 0; col < filas[row].length; col++) {
         final cell = sheet.cell(
           CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1),
         );
-        cell.value = TextCellValue(filas[row][col]);
-        if (esImpar) cell.cellStyle = zebraStyle;
+        final valor = filas[row][col];
+        cell.value = TextCellValue(valor);
+
+        final colores = (estadoColumnIndex != null && col == estadoColumnIndex)
+            ? _estadoColores[valor]
+            : null;
+        if (colores != null) {
+          cell.cellStyle = CellStyle(
+            bold: true,
+            fontColorHex: ExcelColor.fromHexString(colores[1]),
+            backgroundColorHex: ExcelColor.fromHexString(colores[0]),
+            horizontalAlign: HorizontalAlign.Center,
+          );
+        } else if (esImpar) {
+          cell.cellStyle = zebraStyle;
+        }
       }
     }
 

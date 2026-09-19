@@ -49,12 +49,18 @@ class _TablaReporte {
 
   final List<int> columnFlex;
 
+  /// Índice (0-based) de la columna "Estado" en [headers]/cada fila de
+  /// [filas], si el reporte tiene una. Null en Eficiencia/Inventario,
+  /// que no tienen esa columna.
+  final int? estadoColumnIndex;
+
   const _TablaReporte({
     required this.titulo,
     required this.subtitulo,
     required this.headers,
     required this.filas,
     required this.columnFlex,
+    this.estadoColumnIndex,
   });
 
   List<double> get columnWidthsExcel =>
@@ -132,25 +138,9 @@ class _ReportesScreenState extends State<ReportesScreen> {
     });
     try {
       final ordenes = await _ordenRepo.getOrdenes();
-      List<MaterialItem> materiales = [];
-      try {
-        materiales = await _materialRepo.getMateriales();
-      } catch (_) {}
-      List<EficienciaOperario> operarios = [];
-      String? errorOperarios;
-      try {
-        operarios = await _eficienciaRepo.getOperarios();
-      } catch (e) {
-        errorOperarios = e.toString().replaceFirst('Exception: ', '');
-        // ignore: avoid_print
-        print('EficienciaRepository.getOperarios() falló: $e');
-      }
       if (!mounted) return;
       setState(() {
         _ordenes = ordenes;
-        _materiales = materiales;
-        _operarios = operarios;
-        _errorOperarios = errorOperarios;
         final clavesActuales = <String>{
           for (final o in ordenes)
             if (_mesKeyDe(o) != null) _mesKeyDe(o)!,
@@ -159,11 +149,67 @@ class _ReportesScreenState extends State<ReportesScreen> {
           _mesFiltro = '';
         }
       });
+      // Eficiencia e Inventario se cargan aparte (mismas funciones que
+      // usa el selector de mes al cambiar de período), para no
+      // duplicar la lógica de "con período" vs "datos actuales".
+      await Future.wait([
+        _actualizarEficienciaPorPeriodo(),
+        _actualizarInventarioPorPeriodo(),
+      ]);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  /// Trae la eficiencia de operarios para el período actualmente
+  /// seleccionado (_mesFiltro). Sin filtro, trae el acumulado histórico
+  /// completo (comportamiento de siempre). No toca _loading/_error de
+  /// arriba a propósito: se llama también al cambiar de mes desde el
+  /// dropdown, y ahí no queremos que toda la pantalla parpadee a un
+  /// spinner de carga completa, solo esta tarjeta.
+  Future<void> _actualizarEficienciaPorPeriodo() async {
+    try {
+      final operarios = await _eficienciaRepo.getOperarios(
+        periodo: _mesFiltro.isEmpty ? null : _mesFiltro,
+      );
+      if (!mounted) return;
+      setState(() {
+        _operarios = operarios;
+        _errorOperarios = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      setState(() {
+        _operarios = [];
+        _errorOperarios = msg;
+      });
+      // ignore: avoid_print
+      print('EficienciaRepository.getOperarios() falló: $e');
+    }
+  }
+
+  /// Trae el inventario para el período actualmente seleccionado. Sin
+  /// filtro, trae el stock actual (foto del momento, como siempre).
+  /// Con un mes elegido, reconstruye el inventario de ese mes a partir
+  /// de la bitácora de movimientos — solo hay datos reales desde que
+  /// se activó esa migración en adelante; un mes anterior a eso
+  /// legítimamente devuelve una lista vacía, no un error.
+  Future<void> _actualizarInventarioPorPeriodo() async {
+    try {
+      final materiales = _mesFiltro.isEmpty
+          ? await _materialRepo.getMateriales()
+          : await _materialRepo.getHistorialInventario(_mesFiltro);
+      if (!mounted) return;
+      setState(() => _materiales = materiales);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _materiales = []);
+      // ignore: avoid_print
+      print('Carga de inventario falló: $e');
     }
   }
 
@@ -193,6 +239,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
               ])
           .toList(),
       columnFlex: const [2, 3, 3, 3, 2, 2],
+      estadoColumnIndex: 4,
     );
   }
 
@@ -215,54 +262,63 @@ class _ReportesScreenState extends State<ReportesScreen> {
               ])
           .toList(),
       columnFlex: const [2, 3, 3, 3, 2, 2],
+      estadoColumnIndex: 4,
     );
   }
 
-  _TablaReporte _tablaEficiencia() => _TablaReporte(
-        titulo: 'Eficiencia Operaria',
-        subtitulo: _errorOperarios != null
-            ? 'Error al cargar: $_errorOperarios · Datos actuales'
-            : _operarios.isEmpty
-                ? 'Sin datos de operarios · Datos actuales'
-                : '${_operarios.length} operarios evaluados · Datos actuales',
-        headers: const [
-          'Operario',
-          'Rendimiento',
-          'Prendas/Día',
-          'Unidades Producidas',
-          'Completadas',
-          'Retrasadas',
-        ],
-        filas: _operarios
-            .map((o) => [
-                  o.nombreCompleto,
-                  o.rendimiento,
-                  o.prendasPorDia.toStringAsFixed(1),
-                  '${o.totalUnidadesProducidas}',
-                  '${o.ordenesCompletadas}',
-                  '${o.ordenesEnRetraso}',
-                ])
-            .toList(),
-        columnFlex: const [3, 2, 2, 2, 2, 2],
-      );
+  _TablaReporte _tablaEficiencia() {
+    final sufijo = _mesFiltro.isEmpty ? 'Datos actuales' : _periodoLabel;
+    return _TablaReporte(
+      titulo: 'Eficiencia Operaria',
+      subtitulo: _errorOperarios != null
+          ? 'Error al cargar: $_errorOperarios · $sufijo'
+          : _operarios.isEmpty
+              ? 'Sin datos de operarios · $sufijo'
+              : '${_operarios.length} operarios evaluados · $sufijo',
+      headers: const [
+        'Operario',
+        'Rendimiento',
+        'Prendas/Día',
+        'Unidades Producidas',
+        'Completadas',
+        'Retrasadas',
+      ],
+      filas: _operarios
+          .map((o) => [
+                o.nombreCompleto,
+                o.rendimiento,
+                o.prendasPorDia.toStringAsFixed(1),
+                '${o.totalUnidadesProducidas}',
+                '${o.ordenesCompletadas}',
+                '${o.ordenesEnRetraso}',
+              ])
+          .toList(),
+      columnFlex: const [3, 2, 2, 2, 2, 2],
+    );
+  }
 
-  _TablaReporte _tablaInventario() => _TablaReporte(
-        titulo: 'Inventario',
-        subtitulo: _materiales.isEmpty
-            ? 'Sin materiales registrados · Datos actuales'
-            : '${_materiales.length} materiales en inventario · Datos actuales',
-        headers: const ['Material', 'Categoría', 'Stock', 'Mínimo', 'Máximo'],
-        filas: _materiales
-            .map((m) => [
-                  m.nombre,
-                  m.categoria,
-                  '${m.stockActual} ${m.unidad}',
-                  '${m.stockMinimo}',
-                  '${m.stockMaximo}',
-                ])
-            .toList(),
-        columnFlex: const [3, 2, 2, 1, 1],
-      );
+  _TablaReporte _tablaInventario() {
+    final sufijo = _mesFiltro.isEmpty ? 'Datos actuales' : _periodoLabel;
+    return _TablaReporte(
+      titulo: 'Inventario',
+      subtitulo: _materiales.isEmpty
+          ? (_mesFiltro.isEmpty
+              ? 'Sin materiales registrados · $sufijo'
+              : 'Sin datos de inventario para este período · $sufijo')
+          : '${_materiales.length} materiales en inventario · $sufijo',
+      headers: const ['Material', 'Categoría', 'Stock', 'Mínimo', 'Máximo'],
+      filas: _materiales
+          .map((m) => [
+                m.nombre,
+                m.categoria,
+                '${m.stockActual} ${m.unidad}',
+                '${m.stockMinimo}',
+                '${m.stockMaximo}',
+              ])
+          .toList(),
+      columnFlex: const [3, 2, 2, 1, 1],
+    );
+  }
 
   bool _exportando = false;
 
@@ -277,6 +333,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
         headers: t.headers,
         filas: t.filas,
         columnFlex: t.columnFlex,
+        estadoColumnIndex: t.estadoColumnIndex,
       ),
     );
   }
@@ -290,6 +347,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
         headers: t.headers,
         filas: t.filas,
         columnFlex: t.columnFlex,
+        estadoColumnIndex: t.estadoColumnIndex,
       );
       await Printing.layoutPdf(onLayout: (_) => bytes, name: nombreArchivo);
     } catch (e) {
@@ -324,6 +382,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
       headers: t.headers,
       filas: t.filas,
       columnWidths: t.columnWidthsExcel,
+      estadoColumnIndex: t.estadoColumnIndex,
     );
     await _compartirBytes(bytes, nombreArchivo);
   }
@@ -633,7 +692,11 @@ class _ReportesScreenState extends State<ReportesScreen> {
               borderRadius: BorderRadius.circular(14),
               side: const BorderSide(color: AppColors.cardBorder),
             ),
-            onSelected: (v) => setState(() => _mesFiltro = v),
+            onSelected: (v) {
+              setState(() => _mesFiltro = v);
+              _actualizarEficienciaPorPeriodo();
+              _actualizarInventarioPorPeriodo();
+            },
             itemBuilder: (context) {
               final meses = _mesesDisponibles;
               return [
@@ -845,6 +908,7 @@ class _ReportePdfPreviewSheet extends StatefulWidget {
   final List<String> headers;
   final List<List<String>> filas;
   final List<int> columnFlex;
+  final int? estadoColumnIndex;
 
   const _ReportePdfPreviewSheet({
     required this.titulo,
@@ -852,6 +916,7 @@ class _ReportePdfPreviewSheet extends StatefulWidget {
     required this.headers,
     required this.filas,
     required this.columnFlex,
+    this.estadoColumnIndex,
   });
 
   @override
@@ -875,6 +940,7 @@ class _ReportePdfPreviewSheetState extends State<_ReportePdfPreviewSheet> {
       headers: widget.headers,
       filas: widget.filas,
       columnFlex: widget.columnFlex,
+      estadoColumnIndex: widget.estadoColumnIndex,
     );
   }
 

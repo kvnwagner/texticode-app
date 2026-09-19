@@ -17,7 +17,7 @@ class UserActionSheet extends StatelessWidget {
     final av = AppColors.avatarPalette[usuario.idUsuario % AppColors.avatarPalette.length];
 
     Future<void> eliminar() async {
-      // ✅ FIX: mostramos el diálogo de confirmación ANTES de cerrar el
+      // FIX: mostramos el diálogo de confirmación ANTES de cerrar el
       // sheet (se apila encima, usando el context mientras sigue montado).
       // Antes se hacía Navigator.pop(context) primero y luego se usaba
       // ese mismo context (ya inválido) para showDialog, lo que hacía
@@ -46,7 +46,12 @@ class UserActionSheet extends StatelessWidget {
 
       if (confirm == true) {
         try {
-          await repo.eliminarUsuario(usuario.idUsuario);
+          // FIX: antes se llamaba a repo.eliminarUsuario(), que hace un
+          // DELETE definitivo en la base de datos. La web (GestionUsuarios.vue)
+          // nunca borra al usuario: lo marca como Estado = 'inactivo' (soft
+          // delete). Usamos repo.inactivarUsuario() para que el móvil se
+          // comporte igual que la web en este aspecto.
+          await repo.inactivarUsuario(usuario.idUsuario);
           onChanged();
         } catch (e) {
           if (context.mounted) {

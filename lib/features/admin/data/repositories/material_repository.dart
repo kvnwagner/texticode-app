@@ -49,6 +49,21 @@ class MaterialRepository {
     throw Exception('No se pudieron cargar las alertas de stock.');
   }
 
+  /// Inventario reconstruido al final de [periodo] (formato 'YYYY-MM'),
+  /// a partir de la bitácora de movimientos del backend. Solo hay datos
+  /// reales desde que se activó esa migración en adelante — un mes
+  /// anterior a eso legítimamente devuelve una lista vacía, no un error.
+  Future<List<MaterialItem>> getHistorialInventario(String periodo) async {
+    final uri = Uri.parse(ApiConstants.materialesHistorial)
+        .replace(queryParameters: {'periodo': periodo});
+    final res = await http.get(uri);
+    if (res.statusCode == 200) {
+      final List data = jsonDecode(res.body);
+      return data.map((e) => MaterialItem.fromJson(e)).toList();
+    }
+    throw Exception('No se pudo cargar el historial de inventario (${res.statusCode}).');
+  }
+
   Future<void> crearMaterial({
     required String nombre,
     required String categoria,
