@@ -20,8 +20,10 @@ class NewOrderSheet extends StatefulWidget {
 
 /// Un material elegido en el formulario + la cantidad que se va a usar
 /// de él. Solo vive en memoria mientras se arma la orden; al enviar,
-/// cada uno se registra vía OrdenMaterialRepository.agregarMaterial y
-/// se descuenta del inventario real (MaterialRepository.actualizarMaterial).
+/// cada uno se registra vía OrdenMaterialRepository.agregarMaterial,
+/// que ahora también descuenta el stock del lado del servidor (dentro
+/// de la misma transacción que crea la asignación) — ya no hace falta
+/// una llamada aparte a MaterialRepository.actualizarMaterial para eso.
 ///
 /// [cantidadCtrl] permite mostrar/corregir en pantalla el valor cuando
 /// el usuario intenta escribir más unidades de las que hay en stock.
@@ -427,25 +429,17 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
       }
 
       for (final s in _materialesSeleccionados) {
+        // El descuento de stock ya ocurre del lado del servidor, dentro
+        // de la misma transacción de esta llamada (ver orden_material.js:
+        // POST /). Ya NO se llama aparte a _materialRepo.actualizarMaterial
+        // para restar el stock — eso duplicaría el descuento. Si el
+        // servidor responde con stock insuficiente (por ejemplo, otra
+        // orden lo consumió justo antes), esta llamada lanza una
+        // excepción que cae en el catch de abajo y se muestra al usuario.
         await _ordenMaterialRepo.agregarMaterial(
           idOrden: idOrden,
           idProducto: s.material.idMaterial,
           cantidadUsada: s.cantidad,
-        );
-
-        // Descuenta del inventario real lo que se usó en esta orden,
-        // tanto en la app como en Supabase (PUT /api/materiales/:id).
-        final nuevoStock = (s.material.stockActual - s.cantidad)
-            .clamp(0, s.material.stockMaximo);
-        await _materialRepo.actualizarMaterial(
-          id: s.material.idMaterial,
-          nombre: s.material.nombre,
-          categoria: s.material.categoria,
-          stockActual: nuevoStock,
-          unidad: s.material.unidad,
-          stockMinimo: s.material.stockMinimo,
-          stockMaximo: s.material.stockMaximo,
-          idCliente: s.material.idCliente,
         );
       }
 

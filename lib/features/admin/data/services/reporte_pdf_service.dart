@@ -14,6 +14,20 @@ class ReportePdfService {
   static const _grisLinea = PdfColor.fromInt(0xFFE5E7EB);
   static const _azulClaro = PdfColor.fromInt(0xFF93C5FD);
 
+  // Mismos 3 estados y mismos tonos que ya usa Reportes.vue en la web
+  // (verde/naranja/rojo pastel), para que el PDF se vea igual sin
+  // importar desde dónde se genere.
+  static const Map<String, PdfColor> _estadoBg = {
+    'Completada': PdfColor.fromInt(0xFFD1FAE5),
+    'En Proceso': PdfColor.fromInt(0xFFFEF3C7),
+    'Retrasada':  PdfColor.fromInt(0xFFFEE2E2),
+  };
+  static const Map<String, PdfColor> _estadoFg = {
+    'Completada': PdfColor.fromInt(0xFF065F46),
+    'En Proceso': PdfColor.fromInt(0xFF92400E),
+    'Retrasada':  PdfColor.fromInt(0xFF991B1B),
+  };
+
   /// [columnFlex] son pesos relativos por columna (mismo largo que
   /// [headers]), ej. [2, 3, 3, 3, 2, 2]. Sin esto, la tabla autoajusta
   /// cada columna según su contenido y con reportes de varias columnas
@@ -26,6 +40,7 @@ class ReportePdfService {
     required List<String> headers,
     required List<List<String>> filas,
     List<int>? columnFlex,
+    int? estadoColumnIndex,
   }) async {
     final doc = pw.Document();
 
@@ -250,54 +265,44 @@ class ReportePdfService {
             padding: const pw.EdgeInsets.symmetric(
               horizontal: 32,
             ),
-            child: pw.TableHelper.fromTextArray(
-              headers: headers,
-              data: filas,
-
-              border: null,
-
+            child: pw.Table(
               columnWidths: columnWidths,
-
-              headerDecoration: const pw.BoxDecoration(
-                color: _azul,
-              ),
-
-              headerStyle: pw.TextStyle(
-                fontSize: 7.5,
-                fontWeight: pw.FontWeight.bold,
-                color: PdfColors.white,
-                letterSpacing: 0.5,
-              ),
-
-              headerPadding: const pw.EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 8,
-              ),
-
-              // Antes solo se definía cellAlignment: el header quedaba
-              // centrado por defecto mientras las celdas iban a la
-              // izquierda, lo que hacía ver la tabla desalineada.
-              headerAlignment: pw.Alignment.centerLeft,
-
-              cellStyle: const pw.TextStyle(
-                fontSize: 9,
-                color: _negro,
-              ),
-
-              cellPadding: const pw.EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 8,
-              ),
-
-              cellAlignment: pw.Alignment.centerLeft,
-
-              rowDecoration: const pw.BoxDecoration(
-                color: PdfColors.white,
-              ),
-
-              oddRowDecoration: const pw.BoxDecoration(
-                color: _grisBg,
-              ),
+              border: null,
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: _azul),
+                  children: headers
+                      .map((h) => pw.Padding(
+                            padding: const pw.EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            child: pw.Text(
+                              h,
+                              style: pw.TextStyle(
+                                fontSize: 7.5,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ))
+                      .toList(),
+                ),
+                for (var r = 0; r < filas.length; r++)
+                  pw.TableRow(
+                    decoration: pw.BoxDecoration(
+                      color: r.isOdd ? _grisBg : PdfColors.white,
+                    ),
+                    children: [
+                      for (var c = 0; c < filas[r].length; c++)
+                        _celda(
+                          filas[r][c],
+                          esEstado: estadoColumnIndex != null && c == estadoColumnIndex,
+                        ),
+                    ],
+                  ),
+              ],
             ),
           ),
 
@@ -307,6 +312,36 @@ class ReportePdfService {
     );
 
     return doc.save();
+  }
+
+  static pw.Widget _celda(String valor, {bool esEstado = false}) {
+    if (esEstado && _estadoBg.containsKey(valor)) {
+      return pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: pw.BoxDecoration(
+            color: _estadoBg[valor],
+            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+          ),
+          child: pw.Text(
+            valor,
+            style: pw.TextStyle(
+              fontSize: 8,
+              fontWeight: pw.FontWeight.bold,
+              color: _estadoFg[valor],
+            ),
+          ),
+        ),
+      );
+    }
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: pw.Text(
+        valor,
+        style: const pw.TextStyle(fontSize: 9, color: _negro),
+      ),
+    );
   }
 
   static pw.Widget _label(String text) {
