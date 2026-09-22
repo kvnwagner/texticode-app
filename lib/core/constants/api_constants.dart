@@ -1,5 +1,10 @@
 class ApiConstants {
-  static const String baseUrl = 'http://192.168.1.9:3001/api';
+  // Base URL de la API del backend. Puede sobreescribirse al compilar/ejecutar:
+  // flutter run --dart-define=API_BASE_URL=http://192.168.0.7:3001/api
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://192.168.0.7:3001/api',
+  );
 
   static const String usuarios = '$baseUrl/usuarios';
   static const String auth = '$baseUrl/auth';
@@ -31,17 +36,14 @@ class ApiConstants {
   // Sign-In entrega un idToken (+ opcionalmente un serverAuthCode)
   // que el backend valida contra Google y responde EXACTAMENTE con
   // el mismo formato que POST /api/auth/login: { token, usuario }.
-  //
-  // ⚠️ Verifica este path contra tu backend real. Si tu Express ya
-  // expone otro nombre para el login de Google (por ejemplo
-  // "/auth/google/token" o "/auth/google/verify"), solo cambia esta
-  // línea — el resto de la app no depende del nombre exacto.
   static const String googleMobileLogin = '$auth/google/mobile';
 
-  // Web Client ID de Google OAuth. Se pasa al ejecutar/compilar:
+  // Web Client ID de Google OAuth. Puede pasarse por --dart-define o usar el valor por defecto:
   // flutter run --dart-define=GOOGLE_WEB_CLIENT_ID=xxxxx.apps.googleusercontent.com
-  static const String googleWebClientId =
-      String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue: '3072212776-4tak504hvbj221drivoa905fd86tsh20.apps.googleusercontent.com',
+  );
 
   // ============================================================
   // GOOGLE CALENDAR

@@ -155,6 +155,49 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
   }
 
+  Future<void> _desvincularGoogle() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Desvincular Google Calendar'),
+        content: const Text(
+            '¿Estás seguro de que deseas desvincular tu cuenta de Google Calendar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626)),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Desvincular'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true) return;
+
+    setState(() => _vinculandoGoogle = true);
+    try {
+      await _calendarRepo.disconnect();
+      await _googleAuthRepo.signOutGoogle();
+      setState(() => _googleConectado = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Google Calendar desvinculado correctamente.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _vinculandoGoogle = false);
+    }
+  }
+
   Future<void> _abrirEditarPerfil() async {
     if (_idUsuario == null || _idRol == null) return;
 
@@ -228,11 +271,16 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         _ActionButton(
                           icon: _GoogleIcon(),
                           label: _vinculandoGoogle
-                              ? 'Vinculando...'
+                              ? (_googleConectado
+                                  ? 'Desvinculando...'
+                                  : 'Vinculando...')
                               : (_googleConectado
-                                  ? 'Google Calendar vinculado'
+                                  ? 'Desvincular Google Calendar'
                                   : 'Vincular con Google'),
-                          onTap: _vincularGoogle,
+                          isDanger: _googleConectado,
+                          onTap: _googleConectado
+                              ? _desvincularGoogle
+                              : _vincularGoogle,
                         ),
                         const SizedBox(height: 10),
                         _ActionButton(
@@ -495,9 +543,14 @@ class _ActionButton extends StatelessWidget {
   final Widget icon;
   final String label;
   final VoidCallback onTap;
+  final bool isDanger;
 
-  const _ActionButton(
-      {required this.icon, required this.label, required this.onTap});
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDanger = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -506,7 +559,8 @@ class _ActionButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.navy,
+          backgroundColor:
+              isDanger ? const Color(0xFFDC2626) : AppColors.navy,
           foregroundColor: Colors.white,
           elevation: 0,
           shape:

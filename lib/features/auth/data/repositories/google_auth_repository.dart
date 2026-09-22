@@ -80,15 +80,23 @@ class GoogleAuthRepository {
       throw Exception('No se pudo obtener el token de Google.');
     }
 
-    final res = await http.post(
-      Uri.parse(ApiConstants.googleMobileLogin),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'idToken': googleAuth.idToken,
-        'accessToken': googleAuth.accessToken,
-        'serverAuthCode': serverAuthCode,
-      }),
-    );
+    final http.Response res;
+    try {
+      res = await http.post(
+        Uri.parse(ApiConstants.googleMobileLogin),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'idToken': googleAuth.idToken,
+          'accessToken': googleAuth.accessToken,
+          'serverAuthCode': serverAuthCode,
+        }),
+      );
+    } catch (e) {
+      throw Exception(
+        'No se pudo conectar con el servidor en ${ApiConstants.baseUrl}. '
+        'Verifica que el backend esté corriendo y que el dispositivo esté en la misma red Wi-Fi.',
+      );
+    }
 
     final body = _tryDecode(res.body);
     if (res.statusCode != 200) {
