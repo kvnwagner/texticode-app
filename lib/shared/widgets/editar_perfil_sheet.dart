@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../../features/admin/data/repositories/usuario_repository.dart';
 
 /// Bottom sheet reutilizable para editar el perfil del usuario logueado
 /// (admin, operario o cliente). Llama directo a UsuarioRepository.actualizarUsuario,
 /// que ya habla contra tu backend real (usuarios.js -> Supabase).
+///
+/// La nueva contraseña (opcional) sigue EXACTAMENTE la misma regla que el
+/// formulario "Nuevo Usuario" de Gestión de Usuarios: mínimo 8 caracteres,
+/// una mayúscula, un número y un carácter especial, sin espacios.
 ///
 /// Uso:
 /// ```dart
@@ -74,8 +79,52 @@ class _EditarPerfilSheetState extends State<EditarPerfilSheet> {
   bool _guardando = false;
   String? _error;
 
+  // ── Validación de contraseña (misma regla que NewUserSheet) ───────────
+
+  static final RegExp _mayuscula = RegExp(r'[A-Z]');
+  static final RegExp _numero = RegExp(r'[0-9]');
+  static final RegExp _especial = RegExp(r'[^A-Za-z0-9]');
+
+  /// Devuelve null si la contraseña es válida. Aquí la contraseña es
+  /// OPCIONAL: vacío = "conservar la actual", por eso vacío es válido.
+  String? _validarContrasena(String? v) {
+    final value = v ?? '';
+    if (value.isEmpty) return null;
+    if (value.length < 8) return 'Mínimo 8 caracteres';
+    if (!_mayuscula.hasMatch(value)) return 'Debe tener al menos una mayúscula';
+    if (!_numero.hasMatch(value)) return 'Debe tener al menos un número';
+    if (!_especial.hasMatch(value)) {
+      return 'Debe tener al menos un carácter especial (@, #, \$, etc.)';
+    }
+    return null;
+  }
+
+  List<_PwdHint> get _passwordHints {
+    final pwd = _contrasenaCtrl.text;
+    return [
+      _PwdHint('Mínimo 8 caracteres', pwd.length >= 8),
+      _PwdHint('Una mayúscula', _mayuscula.hasMatch(pwd)),
+      _PwdHint('Un número', _numero.hasMatch(pwd)),
+      _PwdHint('Un carácter especial (@#\$…)', _especial.hasMatch(pwd)),
+    ];
+  }
+
+  bool get _contrasenaValida => _validarContrasena(_contrasenaCtrl.text) == null;
+
+  @override
+  void initState() {
+    super.initState();
+    // Refresca los chips de requisitos y el estado del botón en cada tecla.
+    _contrasenaCtrl.addListener(_onPasswordChanged);
+  }
+
+  void _onPasswordChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _contrasenaCtrl.removeListener(_onPasswordChanged);
     _nombreCtrl.dispose();
     _usuarioCtrl.dispose();
     _correoCtrl.dispose();
@@ -165,6 +214,8 @@ class _EditarPerfilSheetState extends State<EditarPerfilSheet> {
                 TextFormField(
                   controller: _contrasenaCtrl,
                   obscureText: _obscurePassword,
+                  // Sin espacios, igual que al crear un usuario.
+                  inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
                   decoration: InputDecoration(
                     labelText: 'Nueva contraseña (opcional)',
                     helperText: 'Déjalo vacío para conservar tu contraseña actual.',
@@ -178,12 +229,9 @@ class _EditarPerfilSheetState extends State<EditarPerfilSheet> {
                       onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return null; // vacío = no cambiar, válido
-                    if (v.trim().length < 6) return 'Debe tener al menos 6 caracteres';
-                    return null;
-                  },
+                  validator: _validarContrasena,
                 ),
+                _passwordHintsRow(),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
                   Text(_error!, style: const TextStyle(color: AppColors.errorText, fontSize: 12)),
@@ -192,9 +240,12 @@ class _EditarPerfilSheetState extends State<EditarPerfilSheet> {
                 SizedBox(
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: _guardando ? null : _guardar,
+                    // Deshabilitado mientras haya una contraseña nueva que
+                    // aún no cumple la regla (vacía = válido, no se cambia).
+                    onPressed: (_guardando || !_contrasenaValida) ? null : _guardar,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.navy,
+                      disabledBackgroundColor: AppColors.navy.withValues(alpha: 0.35),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -217,6 +268,36 @@ class _EditarPerfilSheetState extends State<EditarPerfilSheet> {
     );
   }
 
+  /// Chips de requisitos en vivo. Solo aparecen cuando el usuario empieza
+  /// a escribir una contraseña nueva.
+  Widget _passwordHintsRow() {
+    if (_contrasenaCtrl.text.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        spacing: 5,
+        runSpacing: 5,
+        children: _passwordHints.map((h) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: h.ok ? AppColors.badgeOpGreenBg : AppColors.searchBg,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '${h.ok ? '✓' : '✗'} ${h.label}',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: h.ok ? AppColors.badgeOpGreenText : AppColors.textFaint,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _field(TextEditingController ctrl, String label,
       {bool requerido = false, TextInputType? tipo}) {
     return TextFormField(
@@ -232,4 +313,10 @@ class _EditarPerfilSheetState extends State<EditarPerfilSheet> {
           : null,
     );
   }
+}
+
+class _PwdHint {
+  final String label;
+  final bool ok;
+  const _PwdHint(this.label, this.ok);
 }

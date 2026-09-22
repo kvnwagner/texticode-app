@@ -1,36 +1,46 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
-import '../../data/models/orden_model.dart';
-import '../../data/models/usuario_model.dart';
-import '../../data/repositories/orden_repository.dart';
+import '../../data/models/carga_trabajo_model.dart';
+import '../../data/repositories/carga_trabajo_repository.dart';
 
-/// Vista completa de "Reasignación de Órdenes" (reemplaza al antiguo
-/// ReassignOrdersSheet). Ya no es un modal emergente: vive dentro del
-/// mismo body de OperariosScreen, con botón de volver.
+const List<String> _kMesesCortos = [
+  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+  'jul', 'ago', 'sept', 'oct', 'nov', 'dic',
+];
+
+String _formatFecha(String raw) {
+  try {
+    final d = DateTime.parse(raw);
+    return '${d.day} de ${_kMesesCortos[d.month - 1]} de ${d.year}';
+  } catch (_) {
+    return raw;
+  }
+}
+
+/// Vista completa de "Reasignación de Órdenes".
 ///
-/// Flujo:
-///  1. Arriba se listan los operarios sobrecargados; se selecciona uno
-///     (tap sobre la tarjeta, comportamiento tipo radio).
-///  2. Debajo se listan las órdenes activas de ese operario.
-///  3. Cada orden trae sus "sugerencias disponibles" (los operarios con
-///     capacidad libre) con un botón "Reasignar" directo por sugerencia.
+/// La lista de arriba ("OPERARIO SOBRECARGADO") viene de [sobrecargados]
+/// (la clasificación real de GET /api/carga-trabajo).
 ///
-/// Reutiliza OrdenRepository.actualizarOrden — mismo patrón que
-/// EditUserSheet / NewOrderSheet: cambia solo Id_Operario y conserva el
-/// resto de la orden.
+/// Para el operario seleccionado, las órdenes que se muestran NO salen de
+/// [sugerencias] (eso solo trae los movimientos que el algoritmo pudo
+/// calcular con la capacidad libre del momento, y por eso antes se veían
+/// incompletas). Se piden TODAS sus fases/órdenes activas con
+/// GET /api/carga-trabajo/operarios/:id. El usuario elige manualmente a
+/// qué operario disponible reasignar cada orden.
 class ReassignOrdersView extends StatefulWidget {
-  final List<Usuario> sobrecargados;
-  final List<Usuario> disponibles;
-  final List<Orden> ordenes;
+  final List<CargaOperario> sobrecargados;
+  final List<SugerenciaCarga> sugerencias;
+  final List<CargaOperario> disponibles;
   final VoidCallback onChanged;
   final VoidCallback onBack;
 
   const ReassignOrdersView({
     super.key,
     required this.sobrecargados,
+    required this.sugerencias,
     required this.disponibles,
-    required this.ordenes,
     required this.onChanged,
     required this.onBack,
   });
@@ -40,63 +50,95 @@ class ReassignOrdersView extends StatefulWidget {
 }
 
 class _ReassignOrdersViewState extends State<ReassignOrdersView> {
-  final _repo = OrdenRepository();
-  Usuario? _seleccionado;
+  final _repo = CargaTrabajoRepository();
 
-  // ✅ FIX: antes solo se guardaba el Id_Orden en curso (`int? _reasignando`).
-  // Como una misma orden muestra VARIOS botones "Reasignar" (uno por cada
-  // operario sugerido), todos ellos comparaban contra ese mismo Id_Orden y
-  // por eso los tres se ponían en modo "cargando" a la vez, sin importar
-  // cuál tocaste. Ahora se guarda una llave compuesta "idOrden-idOperario"
-  // que identifica exactamente EL botón presionado, así que solo ese
-  // muestra el spinner.
+  int? _operarioSeleccionadoId;
+
+  // Detalle completo de órdenes del operario seleccionado.
+  List<OrdenActivaDetalle> _ordenesOperario = [];
+  bool _loadingOrdenes = false;
+  String? _errorOrdenes;
+
+  // Llave = "<item.key>-<idOperarioDestino>": identifica exactamente el
+  // botón "Reasignar" presionado.
   String? _reasignandoKey;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    if (widget.sobrecargados.isNotEmpty) _seleccionado = widget.sobrecargados.first;
+    if (widget.sobrecargados.isNotEmpty) {
+      _operarioSeleccionadoId = widget.sobrecargados.first.idUsuario;
+      _cargarOrdenesOperario(_operarioSeleccionadoId!);
+    }
   }
 
   @override
   void didUpdateWidget(covariant ReassignOrdersView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Si el operario seleccionado ya no está sobrecargado (p. ej. se
-    // reasignaron todas sus órdenes), cae al siguiente disponible.
-    final sigueSobrecargado = _seleccionado != null &&
-        widget.sobrecargados.any((u) => u.idUsuario == _seleccionado!.idUsuario);
-    if (!sigueSobrecargado) {
-      _seleccionado = widget.sobrecargados.isNotEmpty ? widget.sobrecargados.first : null;
+    final sigueExistiendo = _operarioSeleccionadoId != null &&
+        widget.sobrecargados.any((o) => o.idUsuario == _operarioSeleccionadoId);
+    if (!sigueExistiendo) {
+      final nuevoId = widget.sobrecargados.isNotEmpty ? widget.sobrecargados.first.idUsuario : null;
+      _operarioSeleccionadoId = nuevoId;
+      if (nuevoId != null) {
+        _cargarOrdenesOperario(nuevoId);
+      } else {
+        setState(() => _ordenesOperario = []);
+      }
     }
   }
 
-  int _activasDe(Usuario u) =>
-      widget.ordenes.where((o) => o.idOperario == u.idUsuario && !o.isCompletada).length;
+  void _seleccionarOperario(int id) {
+    if (id == _operarioSeleccionadoId) return;
+    setState(() => _operarioSeleccionadoId = id);
+    _cargarOrdenesOperario(id);
+  }
 
-  List<Orden> _ordenesDe(Usuario u) =>
-      widget.ordenes.where((o) => o.idOperario == u.idUsuario && !o.isCompletada).toList();
+  Future<void> _cargarOrdenesOperario(int idOperario) async {
+    setState(() {
+      _loadingOrdenes = true;
+      _errorOrdenes = null;
+    });
+    try {
+      final data = await _repo.getDetalleOperario(idOperario);
+      if (!mounted || idOperario != _operarioSeleccionadoId) return;
+      setState(() => _ordenesOperario = data);
+    } catch (e) {
+      if (!mounted || idOperario != _operarioSeleccionadoId) return;
+      setState(() => _errorOrdenes = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted && idOperario == _operarioSeleccionadoId) {
+        setState(() => _loadingOrdenes = false);
+      }
+    }
+  }
 
-  String _keyDe(Orden o, Usuario u) => '${o.idOrden}-${u.idUsuario}';
+  String _keyDe(OrdenActivaDetalle item, CargaOperario destino) => '${item.key}-${destino.idUsuario}';
 
-  Future<void> _reasignar(Orden o, Usuario nuevoOperario) async {
-    final key = _keyDe(o, nuevoOperario);
+  Future<void> _reasignar(OrdenActivaDetalle item, CargaOperario destino) async {
+    final key = _keyDe(item, destino);
     setState(() {
       _reasignandoKey = key;
       _error = null;
     });
     try {
-      await _repo.reasignarOperario(orden: o, nuevoIdOperario: nuevoOperario.idUsuario);
+      await _repo.reasignar(
+        idOrdenOperario: item.esFase ? item.idOrdenOperario : null,
+        idOrden: item.esFase ? null : item.idOrden,
+        idOperarioDestino: destino.idUsuario,
+      );
       widget.onChanged();
+      if (_operarioSeleccionadoId != null) {
+        // Refresca la lista de este operario (la orden reasignada debe desaparecer).
+        _cargarOrdenesOperario(_operarioSeleccionadoId!);
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Orden reasignada correctamente.')));
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
-      // Solo limpia el estado de carga si sigue siendo ESTE botón el que
-      // quedó marcado (evita que una reasignación termine "apagando" el
-      // spinner de otra que se haya disparado después).
       if (mounted && _reasignandoKey == key) {
         setState(() => _reasignandoKey = null);
       }
@@ -105,8 +147,9 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
 
   @override
   Widget build(BuildContext context) {
-    final seleccionado = _seleccionado;
-    final ordenesSeleccionado = seleccionado == null ? <Orden>[] : _ordenesDe(seleccionado);
+    final seleccionado = widget.sobrecargados
+        .cast<CargaOperario?>()
+        .firstWhere((o) => o?.idUsuario == _operarioSeleccionadoId, orElse: () => null);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -121,23 +164,32 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
         const SizedBox(height: 10),
         if (widget.sobrecargados.isEmpty) _buildSinSobrecargados(),
         ...widget.sobrecargados.map(
-          (u) => Padding(
+          (o) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: _buildOperarioCard(u, seleccionado: seleccionado?.idUsuario == u.idUsuario),
+            child: _buildOperarioCard(o, seleccionado: o.idUsuario == _operarioSeleccionadoId),
           ),
         ),
         if (seleccionado != null) ...[
           const SizedBox(height: 10),
           _buildSectionHeader(
-              'Órdenes de ${seleccionado.nombreCompleto.split(' ').first}', ordenesSeleccionado.length),
+              'Órdenes de ${seleccionado.nombreCompleto.split(' ').first}', _ordenesOperario.length),
           const SizedBox(height: 10),
-          if (ordenesSeleccionado.isEmpty) _buildSinOrdenes(),
-          ...ordenesSeleccionado.map(
-            (o) => Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: _buildOrdenCard(o),
+          if (_loadingOrdenes)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 30),
+              child: Center(child: CircularProgressIndicator(color: AppColors.navy)),
+            )
+          else if (_errorOrdenes != null)
+            _buildErrorOrdenes()
+          else if (_ordenesOperario.isEmpty)
+            _buildSinMovimientos()
+          else
+            ..._ordenesOperario.map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: _buildOrdenCard(item),
+              ),
             ),
-          ),
         ],
       ],
     );
@@ -197,36 +249,55 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
     );
   }
 
+  Widget _buildErrorOrdenes() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        children: [
+          const Icon(Icons.wifi_off_rounded, size: 30, color: AppColors.textFaint),
+          const SizedBox(height: 8),
+          Text(_errorOrdenes!,
+              textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: () => _cargarOrdenesOperario(_operarioSeleccionadoId!),
+            child: const Text('Reintentar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── OPERARIOS SOBRECARGADOS ──
 
-  Widget _buildOperarioCard(Usuario u, {required bool seleccionado}) {
-    final av = AppColors.avatarPalette[u.idUsuario % AppColors.avatarPalette.length];
+  Widget _buildOperarioCard(CargaOperario o, {required bool seleccionado}) {
+    final av = AppColors.avatarPalette[o.idUsuario % AppColors.avatarPalette.length];
     return GestureDetector(
-      onTap: () => setState(() => _seleccionado = u),
+      onTap: () => _seleccionarOperario(o.idUsuario),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: seleccionado ? AppColors.errorBg : AppColors.pageBg,
+          color: AppColors.errorBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: seleccionado ? AppColors.errorBorder : AppColors.cardBorder,
+            color: AppColors.errorBorder,
             width: seleccionado ? 1.4 : 1,
           ),
         ),
         child: Row(
           children: [
-            AvatarWidget(initials: u.initials, size: 38, bg: av['bg']!, text: av['text']!),
+            AvatarWidget(initials: o.initials, size: 38, bg: av['bg']!, text: av['text']!),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(u.nombreCompleto,
+                  Text(o.nombreCompleto,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                   const SizedBox(height: 2),
-                  Text('${_activasDe(u)} órdenes activas',
+                  Text('${o.ordenesActivas} órdenes activas',
                       style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted)),
                 ],
               ),
@@ -257,8 +328,10 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
   Widget _buildSectionHeader(String title, int count) {
     return Row(
       children: [
-        Text(title,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        Expanded(
+          child: Text(title,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        ),
         const SizedBox(width: 8),
         Container(
           width: 22,
@@ -272,15 +345,17 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
     );
   }
 
-  Widget _buildSinOrdenes() {
+  Widget _buildSinMovimientos() {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 20),
-      child: Text('Este operario no tiene órdenes activas.',
-          style: TextStyle(color: AppColors.textFaint, fontSize: 12)),
+      child: Text(
+        'Este operario no tiene fases u órdenes activas en este momento.',
+        style: TextStyle(color: AppColors.textFaint, fontSize: 12),
+      ),
     );
   }
 
-  Widget _buildOrdenCard(Orden o) {
+  Widget _buildOrdenCard(OrdenActivaDetalle m) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -295,7 +370,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(o.producto,
+                child: Text(m.producto,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
@@ -305,28 +380,31 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration:
                     BoxDecoration(color: AppColors.badgeOpBlueBg, borderRadius: BorderRadius.circular(20)),
-                child: Text(o.codigoOrden,
+                child: Text('ORD-${m.idOrden}',
                     style: const TextStyle(
                         fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.badgeOpBlueText)),
               ),
             ],
           ),
+          if (m.esFase) ...[
+            const SizedBox(height: 2),
+            Text(m.titulo,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted)),
+          ],
           const SizedBox(height: 4),
-          Text('Vence: ${o.fechaCorta} · ${o.progresoPorcentaje}% completado',
-              style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted)),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: o.progreso,
-              minHeight: 6,
-              backgroundColor: AppColors.cardBorder,
-              valueColor: const AlwaysStoppedAnimation(AppColors.navy),
-            ),
+          Text(
+            m.fechaLimite != null && m.fechaLimite!.isNotEmpty
+                ? 'Vence: ${_formatFecha(m.fechaLimite!)}${m.vencida ? ' · Vencida' : ''}'
+                : (m.vencida ? 'Vencida' : ''),
+            style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
           ),
+          const SizedBox(height: 12),
+          Container(height: 1, color: AppColors.cardBorder),
           const SizedBox(height: 14),
           const Text(
-            'SUGERENCIAS DISPONIBLES',
+            'REASIGNAR A',
             style: TextStyle(
                 fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.textFaint, letterSpacing: 0.4),
           ),
@@ -341,7 +419,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
             ...widget.disponibles.map(
               (u) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: _buildSugerenciaRow(o, u),
+                child: _buildSugerenciaRow(m, u),
               ),
             ),
         ],
@@ -349,12 +427,9 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
     );
   }
 
-  Widget _buildSugerenciaRow(Orden o, Usuario u) {
+  Widget _buildSugerenciaRow(OrdenActivaDetalle m, CargaOperario u) {
     final av = AppColors.avatarPalette[u.idUsuario % AppColors.avatarPalette.length];
-
-    // ✅ Ahora compara la llave compuesta "idOrden-idOperario": solo el
-    // botón de ESTE operario, para ESTA orden, entra en estado "loading".
-    final key = _keyDe(o, u);
+    final key = _keyDe(m, u);
     final loading = _reasignandoKey == key;
 
     return Container(
@@ -375,7 +450,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                Text('${_activasDe(u)} órdenes',
+                Text('${u.ordenesActivas} órdenes',
                     style: const TextStyle(fontSize: 10.5, color: AppColors.textFaint)),
               ],
             ),
@@ -384,7 +459,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
           SizedBox(
             height: 32,
             child: ElevatedButton(
-              onPressed: loading ? null : () => _reasignar(o, u),
+              onPressed: loading ? null : () => _reasignar(m, u),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.navy,
                 disabledBackgroundColor: AppColors.navy.withValues(alpha: 0.5),
@@ -399,8 +474,11 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
                       height: 14,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Reasignar',
-                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                  : const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Reasignar',
+                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                    ),
             ),
           ),
         ],

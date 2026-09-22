@@ -12,7 +12,8 @@ class ApiConstants {
   static const String comprobantes = '$baseUrl/comprobantes';
   static const String materiales = '$baseUrl/materiales';
   static const String eficiencia = '$baseUrl/eficiencia';
-
+  static const String cargaTrabajo = '$baseUrl/carga-trabajo';
+  
   // Inventario reconstruido al final de un período ('YYYY-MM'), a
   // partir de la bitácora de movimientos (material_movimiento) del
   // backend. Ver GET /materiales/reportes/historial en materiales.js.

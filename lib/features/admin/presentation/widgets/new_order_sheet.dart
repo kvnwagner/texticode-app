@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/orden_model.dart';
 import '../../data/repositories/orden_repository.dart';
@@ -337,6 +338,17 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
         setState(() => _error = 'No puede haber dos fases con el mismo número');
         return;
       }
+    }
+
+    // ── Cada material debe tener una cantidad mínima de 1 ──
+    for (final s in _materialesSeleccionados) {
+      final cant = int.tryParse(s.cantidadCtrl.text.trim()) ?? 0;
+      if (cant < 1) {
+        setState(() => _error =
+            'La cantidad de "${s.material.nombre}" debe ser mínimo 1.');
+        return;
+      }
+      s.cantidad = cant;
     }
 
     // ── Validación final de stock: por si el stock cambió entre que se
@@ -1216,6 +1228,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
             child: TextFormField(
               controller: s.cantidadCtrl,
               keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               textAlign: TextAlign.center,
               style:
                   const TextStyle(fontSize: 12.5, color: AppColors.inputText),
@@ -1226,18 +1239,32 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.inputBorder),
+                  // Borde rojo mientras la cantidad sea menor que 1
+                  borderSide: BorderSide(
+                    color: s.cantidad < 1
+                        ? AppColors.errorText
+                        : AppColors.inputBorder,
+                  ),
                 ),
               ),
               onChanged: (v) {
                 final maxDisponible = s.material.stockActual;
-                var parsed = int.tryParse(v) ?? 1;
-                if (parsed < 1) parsed = 1;
+
+                // Campo vacío: se deja borrar libremente (queda en 0 =
+                // inválido, y al crear la orden se pide mínimo 1).
+                if (v.isEmpty) {
+                  setState(() => s.cantidad = 0);
+                  return;
+                }
+
+                var parsed = int.tryParse(v) ?? 0;
                 if (parsed > maxDisponible) parsed = maxDisponible;
                 s.cantidad = parsed;
-                // Si el usuario escribió más de lo disponible, se
-                // corrige el texto visible al tope permitido.
-                if ('$parsed' != v) {
+
+                // Solo se corrige el texto si superó el stock o tiene
+                // ceros a la izquierda ("05" -> "5"). Ya no se fuerza
+                // un 1 al borrar.
+                if (parsed > 0 && '$parsed' != v) {
                   s.cantidadCtrl.value = TextEditingValue(
                     text: '$parsed',
                     selection:
