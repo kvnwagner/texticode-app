@@ -309,6 +309,12 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
           ],
         ),
         const SizedBox(height: 10),
+        // ✅ FIX: "Pausadas" se quitó — el backend (GET /eficiencia/operarios
+        // y /operarios/:id) nunca calcula "ordenes_pausadas", así que ese
+        // chip siempre mostraba 0 sin importar la realidad. En su lugar se
+        // muestra "Con Problema" (ordenes_con_problema), que el backend sí
+        // devuelve y que antes solo aparecía como badge dentro de cada
+        // orden expandida, sin resumen a nivel operario.
         Row(
           children: [
             _chipEstado('Completadas', '${_detalle?['ordenes_completadas'] ?? 0}',
@@ -316,7 +322,8 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
             const SizedBox(width: 8),
             _chipEstado('En Proceso', '${_detalle?['ordenes_en_proceso'] ?? 0}', AppColors.iconOp),
             const SizedBox(width: 8),
-            _chipEstado('Pausadas', '${_detalle?['ordenes_pausadas'] ?? 0}', AppColors.iconClient),
+            _chipEstado(
+                'Con Problema', '${_detalle?['ordenes_con_problema'] ?? 0}', AppColors.iconClient),
           ],
         ),
         const SizedBox(height: 20),
