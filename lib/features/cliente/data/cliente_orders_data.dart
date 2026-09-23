@@ -11,7 +11,7 @@ class ClienteOrdersData {
 
   static const List<FaqItem> faq = [
     FaqItem(
-      question: '¿Cómo hago seguimiento a mi pedido?',
+      question: '¿Cómo puedo ver el progreso de mi pedido?',
       answer:
           "Accede a la sección 'Mis Pedidos' desde el menú inferior. Ahí verás el estado y porcentaje de avance de cada orden.",
     ),

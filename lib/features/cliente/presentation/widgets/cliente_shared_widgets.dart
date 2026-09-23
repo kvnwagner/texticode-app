@@ -102,71 +102,89 @@ class ClienteSectionHeader extends StatelessWidget {
   }
 }
 
+/// Card de estadística del cliente. Ahora es tocable: si se pasa [onTap],
+/// funciona como filtro (equivalente a las cards de "Gestión de Usuarios"
+/// / "Gestión de Producción" en el panel admin). [active] resalta el
+/// borde y el fondo cuando esta card es el filtro actualmente aplicado.
 class ClienteStatCard extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
   final Color color;
+  final VoidCallback? onTap;
+  final bool active;
+
   const ClienteStatCard({
     super.key,
     required this.icon,
     required this.value,
     required this.label,
     required this.color,
+    this.onTap,
+    this.active = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.pageBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.cardBorder),
-        ),
-        child: Row(
-          children: [
-            Container(width: 3.5, color: color),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(value,
-                              style: TextStyle(
-                                  fontSize: 22, fontWeight: FontWeight.bold, color: color)),
-                          const SizedBox(height: 3),
-                          Text(label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textMuted)),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(icon, size: 15, color: color),
-                    ),
-                  ],
-                ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              color: active ? color.withValues(alpha: 0.07) : AppColors.pageBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: active ? color : AppColors.cardBorder,
+                width: active ? 1.4 : 1,
               ),
             ),
-          ],
+            child: Row(
+              children: [
+                Container(width: 3.5, color: color),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(value,
+                                  style: TextStyle(
+                                      fontSize: 22, fontWeight: FontWeight.bold, color: color)),
+                              const SizedBox(height: 3),
+                              Text(label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.textMuted)),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: active ? 0.16 : 0.08),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(active ? Icons.check_rounded : icon, size: 15, color: color),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -217,9 +235,8 @@ class ClienteOrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = statusColors(orden);
     final priority = priorityColors(orden);
-    final progressColor = orden.isCompletada ? AppColors.iconActive : AppColors.purple;
-    // Lista real de materiales: si no se pasó explícitamente, cae a
-    // orden.materiales (que en la práctica suele venir vacío).
+    final progressColor = status.$2;
+
     final materialesReales = materiales ?? orden.materiales;
 
     return GestureDetector(
