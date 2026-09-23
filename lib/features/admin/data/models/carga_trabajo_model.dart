@@ -2,7 +2,6 @@
 /// (carga-trabajo del backend). La carga cuenta FASES activas (y órdenes
 /// antiguas sin fases); la clasificación (sobrecargado / normal /
 /// disponible) la calcula el backend, la app solo la muestra.
-
 class CargaOperario {
   final int idUsuario;
   final String nombreCompleto;
