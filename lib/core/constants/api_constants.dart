@@ -3,7 +3,7 @@ class ApiConstants {
   // flutter run --dart-define=API_BASE_URL=http://192.168.0.7:3001/api
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.0.7:3001/api',
+    defaultValue: 'http://192.168.0.11:3001/api',
   );
 
   static const String usuarios = '$baseUrl/usuarios';
@@ -28,6 +28,11 @@ class ApiConstants {
   // a una misma orden (Id_Orden, Id_Producto, Cantidad_Usada).
   static const String ordenMaterial = '$baseUrl/orden-material';
   static const String ordenOperario = '$baseUrl/orden-operario';
+
+  // Correos transaccionales vía SendGrid (routes/notificaciones.js):
+  // cambios de estado al cliente, comprobante de entrega, y tarea
+  // asignada al operario cuando se le agrega una fase nueva.
+  static const String notificaciones = '$baseUrl/notificaciones';
 
   // ============================================================
   // GOOGLE AUTH (móvil)
