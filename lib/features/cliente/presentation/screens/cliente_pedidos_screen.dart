@@ -25,6 +25,10 @@ class ClientePedidosScreen extends StatefulWidget {
   State<ClientePedidosScreen> createState() => _ClientePedidosScreenState();
 }
 
+/// El filtro por estado ahora se controla SOLO tocando las cards de
+/// estadísticas (Total / En proceso / Completados / En retraso) —
+/// mismo patrón que produccion_screen.dart / admin_home_screen.dart.
+/// Ya no existen los chips de filtro aparte.
 enum _EstadoFiltro { todos, retrasada, enProceso, completada }
 
 class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
@@ -104,38 +108,19 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
     }
   }
 
-  String _label(_EstadoFiltro f) {
-    switch (f) {
-      case _EstadoFiltro.todos:
-        return 'Todos';
-      case _EstadoFiltro.retrasada:
-        return 'En retraso';
-      case _EstadoFiltro.enProceso:
-        return 'En proceso';
-      case _EstadoFiltro.completada:
-        return 'Completada';
-    }
-  }
-
-  Color _color(_EstadoFiltro f) {
-    switch (f) {
-      case _EstadoFiltro.todos:
-        return AppColors.navy;
-      case _EstadoFiltro.retrasada:
-        return AppColors.errorText;
-      case _EstadoFiltro.enProceso:
-        return AppColors.purple;
-      case _EstadoFiltro.completada:
-        return AppColors.iconActive;
-    }
-  }
-
   /// Alterna la expansión de una card. Si había otra abierta, se cierra
   /// automáticamente (comportamiento de acordeón: solo una a la vez).
   void _toggleExpanded(int idOrden) {
     setState(() {
       _expandedOrdenId = _expandedOrdenId == idOrden ? null : idOrden;
     });
+  }
+
+  /// Toca una card de estadística: si ya era el filtro activo, lo quita
+  /// (vuelve a "todos"); si no, lo aplica. Igual que las cards de
+  /// Usuarios/Producción en el panel admin.
+  void _toggleFiltro(_EstadoFiltro f) {
+    setState(() => _filter = _filter == f ? _EstadoFiltro.todos : f);
   }
 
   Future<void> _descargarPdf(Orden orden) async {
@@ -157,13 +142,24 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
     }
   }
 
+  /// Las 4 cards de estadísticas, ahora tocables: cada una es su propio
+  /// filtro. "Total pedidos" siempre limpia el filtro al tocarla.
   Widget _buildStats() {
+    final items = <(IconData, String, String, Color, _EstadoFiltro)>[
+      (Icons.shopping_bag_outlined, '$_total', 'Total pedidos', AppColors.navy, _EstadoFiltro.todos),
+      (Icons.autorenew_rounded, '$_enProceso', 'En proceso', const Color.fromARGB(255, 8, 29, 181), _EstadoFiltro.enProceso),
+      (Icons.check_circle_outline, '$_completadas', 'Completados', AppColors.iconActive,
+          _EstadoFiltro.completada),
+      (Icons.warning_amber_rounded, '$_retrasadas', 'En retraso', AppColors.errorText,
+          _EstadoFiltro.retrasada),
+    ];
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: 4,
+        itemCount: items.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           mainAxisSpacing: 12,
@@ -171,15 +167,53 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
           mainAxisExtent: 78,
         ),
         itemBuilder: (context, i) {
-          final items = [
-            (Icons.shopping_bag_outlined, '$_total', 'Total pedidos', AppColors.navy),
-            (Icons.autorenew_rounded, '$_enProceso', 'En proceso', AppColors.purple),
-            (Icons.check_circle_outline, '$_completadas', 'Completados', AppColors.iconActive),
-            (Icons.warning_amber_rounded, '$_retrasadas', 'En retraso', AppColors.errorText),
-          ];
-          final (icon, value, label, color) = items[i];
-          return ClienteStatCard(icon: icon, value: value, label: label, color: color);
+          final (icon, value, label, color, filtro) = items[i];
+          // "Total pedidos" queda marcada como activa cuando no hay
+          // ningún filtro aplicado, igual que en produccion_screen.dart.
+          final activa = filtro == _EstadoFiltro.todos
+              ? _filter == _EstadoFiltro.todos
+              : _filter == filtro;
+          return ClienteStatCard(
+            icon: icon,
+            value: value,
+            label: label,
+            color: color,
+            active: activa,
+            onTap: () => _toggleFiltro(filtro),
+          );
         },
+      ),
+    );
+  }
+
+  Widget _buildSearch() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      child: Container(
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: AppColors.searchBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.search, size: 18, color: AppColors.textFaint),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                onChanged: (v) => setState(() => _query = v),
+                decoration: const InputDecoration(
+                  hintText: 'Buscar por nombre o código...',
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+                style: const TextStyle(fontSize: 13, color: AppColors.inputText),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -200,69 +234,10 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
           title: 'Mis Pedidos',
           subtitle: 'Seguimiento y estado',
         ),
-        // ⬅️ nuevo — stat cards que antes solo estaban en el dashboard eliminado.
-        if (!widget.loading && widget.error == null) _buildStats(),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-          child: Container(
-            height: 42,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: AppColors.searchBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.cardBorder, width: 1.5),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.search, size: 18, color: AppColors.textFaint),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    onChanged: (v) => setState(() => _query = v),
-                    decoration: const InputDecoration(
-                      hintText: 'Buscar por nombre o código...',
-                      border: InputBorder.none,
-                      isDense: true,
-                    ),
-                    style: const TextStyle(fontSize: 13, color: AppColors.inputText),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 40,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: _EstadoFiltro.values.map((f) {
-              final active = _filter == f;
-              final col = _color(f);
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: GestureDetector(
-                  onTap: () => setState(() => _filter = f),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: active ? col : col.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: active ? col : col.withValues(alpha: 0.25)),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(_label(f),
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: active ? Colors.white : col)),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(height: 8),
+        // ── Todo lo demás vive en UN solo ListView: la barra de
+        // búsqueda, las cards de estadísticas (que ahora funcionan
+        // como filtro) y la lista de pedidos. Así el scroll mueve toda
+        // la pantalla en vez de solo la lista de abajo. ──
         Expanded(
           child: widget.loading
               ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
@@ -274,41 +249,46 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
                         await widget.onRefresh();
                         await _cargarMaterialesDeOrdenes(widget.ordenes);
                       },
-                      child: filtered.isEmpty
-                          ? ListView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              children: const [
-                                Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 60),
-                                  child: Column(
-                                    children: [
-                                      Icon(Icons.search_off, size: 32, color: AppColors.textFaint),
-                                      SizedBox(height: 8),
-                                      Text('No se encontraron pedidos',
-                                          style: TextStyle(
-                                              fontSize: 13, color: AppColors.textFaint)),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: 16),
+                        children: [
+                          const SizedBox(height: 8),
+                          _buildSearch(),
+                          _buildStats(),
+                          const SizedBox(height: 4),
+                          if (filtered.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 60),
+                              child: Column(
+                                children: [
+                                  Icon(Icons.search_off, size: 32, color: AppColors.textFaint),
+                                  SizedBox(height: 8),
+                                  Text('No se encontraron pedidos',
+                                      style: TextStyle(
+                                          fontSize: 13, color: AppColors.textFaint)),
+                                ],
+                              ),
                             )
-                          : ListView.builder(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                              itemCount: filtered.length,
-                              itemBuilder: (context, i) {
-                                final orden = filtered[i];
-                                final isExpanded = _expandedOrdenId == orden.idOrden;
-                                return ClienteOrderCard(
-                                  orden: orden,
-                                  materiales: _materialesPorOrden[orden.idOrden],
-                                  expanded: isExpanded,
-                                  onTap: () => _toggleExpanded(orden.idOrden),
-                                  onDownloadPdf: () => _descargarPdf(orden),
-                                  downloading: _descargandoOrdenId == orden.idOrden,
-                                );
-                              },
+                          else
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Column(
+                                children: filtered.map((orden) {
+                                  final isExpanded = _expandedOrdenId == orden.idOrden;
+                                  return ClienteOrderCard(
+                                    orden: orden,
+                                    materiales: _materialesPorOrden[orden.idOrden],
+                                    expanded: isExpanded,
+                                    onTap: () => _toggleExpanded(orden.idOrden),
+                                    onDownloadPdf: () => _descargarPdf(orden),
+                                    downloading: _descargandoOrdenId == orden.idOrden,
+                                  );
+                                }).toList(),
+                              ),
                             ),
+                        ],
+                      ),
                     ),
         ),
       ],
