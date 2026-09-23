@@ -192,7 +192,7 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
                 children: [
                   Expanded(
                     child: Text(
-                      _isEdit ? 'Editar MaterialItem' : 'Agregar Nuevo MaterialItem',
+                      _isEdit ? 'Editar Material' : 'Agregar Nuevo Material',
                       style: const TextStyle(
                           fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                     ),
@@ -376,7 +376,7 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
                               width: 16,
                               child: CircularProgressIndicator(
                                   strokeWidth: 2, color: Colors.white))
-                          : Text(_isEdit ? 'Guardar Cambios' : 'Agregar MaterialItem',
+                          : Text(_isEdit ? 'Guardar Cambios' : 'Agregar Material',
                               style: const TextStyle(
                                   fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
