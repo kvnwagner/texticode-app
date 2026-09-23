@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../data/repositories/auth_repository.dart';
 
 /// Muestra el bottom sheet de "Recuperar contraseña".
 /// Llamar con: `showForgotPasswordSheet(context)`
@@ -24,12 +25,45 @@ class _ForgotPasswordSheet extends StatefulWidget {
 
 class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
   final _emailController = TextEditingController();
+  final _authRepository = AuthRepository();
   bool _sent = false;
+  bool _loading = false;
+  String? _error;
 
   @override
   void dispose() {
     _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _enviarRecuperacion() async {
+    final emailVal = _emailController.text.trim();
+
+    final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+    if (emailVal.isEmpty || !emailRegex.hasMatch(emailVal)) {
+      setState(() => _error = 'Ingresa un correo válido.');
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      await _authRepository.solicitarRecuperacion(emailVal);
+      if (!mounted) return;
+      setState(() {
+        _sent = true;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString().replaceFirst('Exception: ', '');
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -102,9 +136,13 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
+          onChanged: (_) {
+            if (_error != null) setState(() => _error = null);
+          },
+          decoration: InputDecoration(
             hintText: 'tu@correo.com',
-            prefixIcon: Icon(Icons.mail_outline, size: 18, color: AppColors.iconDefault),
+            prefixIcon: const Icon(Icons.mail_outline, size: 18, color: AppColors.iconDefault),
+            errorText: _error,
           ),
         ),
         const SizedBox(height: 16),
@@ -112,7 +150,7 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
           width: double.infinity,
           height: 44,
           child: ElevatedButton(
-            onPressed: () => setState(() => _sent = true),
+            onPressed: _loading ? null : _enviarRecuperacion,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.navy,
               foregroundColor: Colors.white,
@@ -121,8 +159,17 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
               ),
               elevation: 0,
             ),
-            child: const Text('Enviar enlace',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+            child: _loading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text('Enviar enlace',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
           ),
         ),
         const SizedBox(height: 8),

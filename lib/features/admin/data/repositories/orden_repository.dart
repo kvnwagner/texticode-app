@@ -203,6 +203,45 @@ class OrdenRepository {
     }
   }
 
+  /// POST /api/notificaciones/tarea — envía el correo al operario cuando
+  /// se le asigna una fase nueva. Réplica exacta de lo que hace la web
+  /// (composable useNotificaciones -> notificarTarea) después de crear
+  /// cada fase con OrdenOperarioRepository.agregarFase(). Si esto falla,
+  /// NO se relanza la excepción: la orden y la fase ya quedaron creadas
+  /// correctamente en la base de datos, así que un fallo de correo no
+  /// debe tumbar el flujo completo de guardado.
+  Future<void> notificarTarea({
+    required String operarioEmail,
+    required String operarioNombre,
+    required String tarea,
+    required int ordenId,
+    String? prioridad,
+    String? fechaLimite,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('${ApiConstants.notificaciones}/tarea'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'operarioEmail': operarioEmail,
+          'operarioNombre': operarioNombre,
+          'tarea': tarea,
+          'ordenId': ordenId,
+          'prioridad': prioridad,
+          'fechaLimite': fechaLimite,
+        }),
+      );
+      if (res.statusCode != 200) {
+        // Silenciosamente logueado; no interrumpe el flujo de creación.
+        // ignore: avoid_print
+        print('[notificarTarea] respuesta no-200: ${res.statusCode} ${res.body}');
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('[notificarTarea] error de red: $e');
+    }
+  }
+
   Map<String, dynamic>? _tryDecode(String body) {
     try {
       return jsonDecode(body) as Map<String, dynamic>;

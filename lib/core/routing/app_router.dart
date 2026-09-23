@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/domain/models/user_role.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/cambiar_contrasena_screen.dart';
 import '../../features/admin/presentation/screens/main_shell.dart';
 import '../../features/operario/presentation/screens/operario_home_screen.dart';
 import '../../features/cliente/presentation/screens/cliente_home_screen.dart';
@@ -12,6 +13,7 @@ class AppRoutes {
 
   static const String login = '/';
   static const String home = '/home';
+  static const String cambiarContrasena = '/cambiar-contrasena';
 }
 
 /// Configuración central de navegación con go_router.
@@ -20,6 +22,10 @@ class AppRoutes {
 /// (state.extra), tal como antes se pasaba con `arguments` en el
 /// Navigator clásico:
 ///   context.go(AppRoutes.home, extra: usuario.role);
+///
+/// La ruta `/cambiar-contrasena` recibe el token como query param
+/// (?token=xxx), tal como llega desde el deep link
+/// texticode://cambiar-contrasena?token=xxx.
 class AppRouter {
   AppRouter._();
 
@@ -35,6 +41,13 @@ class AppRouter {
         builder: (context, state) {
           final role = state.extra as UserRole?;
           return _homeForRole(role);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.cambiarContrasena,
+        builder: (context, state) {
+          final token = state.uri.queryParameters['token'] ?? '';
+          return CambiarContrasenaScreen(token: token);
         },
       ),
     ],

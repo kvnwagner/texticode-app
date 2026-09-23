@@ -44,6 +44,55 @@ class AuthRepository {
     return usuario;
   }
 
+  /// POST /api/auth/recuperar-contrasena — dispara el envío del correo de
+  /// recuperación (mismo endpoint que usa LoginView.vue en la web).
+  /// El backend SIEMPRE responde 200 con un mensaje genérico, exista o no
+  /// el correo (para no filtrar qué correos están registrados), así que
+  /// aquí solo distinguimos error de red / error 5xx de un envío "ok".
+  Future<void> solicitarRecuperacion(String email) async {
+    final res = await http.post(
+      Uri.parse('${ApiConstants.auth}/recuperar-contrasena'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email.trim()}),
+    );
+
+    final body = _tryDecode(res.body);
+
+    if (res.statusCode != 200) {
+      throw Exception(
+        body?['mensaje'] ?? 'No se pudo enviar el correo de recuperación.',
+      );
+    }
+    // 200 => "Si el correo está registrado, recibirás el enlace."
+  }
+
+  /// GET /api/auth/validar-token?token=xxx — se llama al abrir el deep link,
+  /// para saber antes de mostrar el formulario si el token sigue vigente
+  /// (evita que el usuario escriba una contraseña nueva y recién ahí se
+  /// entere de que el enlace ya expiró).
+  Future<bool> validarToken(String token) async {
+    final res = await http.get(
+      Uri.parse('${ApiConstants.auth}/validar-token?token=$token'),
+    );
+    return res.statusCode == 200;
+  }
+
+  /// POST /api/auth/cambiar-contrasena — establece la nueva contraseña
+  /// usando el token de un solo uso del correo de recuperación.
+  Future<void> cambiarContrasena(String token, String nuevaPassword) async {
+    final res = await http.post(
+      Uri.parse('${ApiConstants.auth}/cambiar-contrasena'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'token': token, 'nuevaPassword': nuevaPassword}),
+    );
+
+    final body = _tryDecode(res.body);
+
+    if (res.statusCode != 200) {
+      throw Exception(body?['mensaje'] ?? 'No se pudo cambiar la contraseña.');
+    }
+  }
+
   /// Guarda token + usuario en almacenamiento seguro. Se usa desde
   /// login() normal Y desde GoogleAuthRepository.signIn(), así ambos
   /// métodos de login dejan la sesión exactamente en el mismo estado

@@ -420,6 +420,23 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
             numeroFase: numeroFase,
             descripcionFase: descripcion,
           );
+
+          // Notifica al operario por correo (misma lógica que la web).
+          if (fase.operario.correo != null &&
+              fase.operario.correo!.isNotEmpty) {
+            await _repo.notificarTarea(
+              operarioEmail: fase.operario.correo!,
+              operarioNombre: fase.operario.nombreCompleto,
+              tarea: descripcion.isNotEmpty
+                  ? descripcion
+                  : (_productoCtrl.text.trim().isNotEmpty
+                      ? _productoCtrl.text.trim()
+                      : 'Nueva fase asignada'),
+              ordenId: idOrden,
+              prioridad: _prioridad,
+              fechaLimite: fecha,
+            );
+          }
         } else {
           await _ordenOperarioRepo.actualizarFase(
             idOrdenOperario: fase.idOrdenOperario!,
