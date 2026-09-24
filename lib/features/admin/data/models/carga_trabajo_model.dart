@@ -88,7 +88,27 @@ class CargaTrabajoResultado {
   CargaTrabajoResultado({required this.resumen, required this.operarios});
 
   List<CargaOperario> get sobrecargados => operarios.where((o) => o.esSobrecargado).toList();
-  List<CargaOperario> get disponibles => operarios.where((o) => o.esDisponible).toList();
+
+  /// Operarios que pueden recibir una reasignación en la pantalla
+  /// "Reasignación de Órdenes": CUALQUIERA que no esté sobrecargado
+  /// (tanto los que el backend marca 'disponible' como los 'normal').
+  ///
+  /// ⚠️ Antes este getter solo incluía a los 'disponible' estrictos
+  /// (carga <= limite_disponible del backend), así que un operario con
+  /// carga "normal" — por ejemplo Daniel con 5 órdenes activas, cuando
+  /// limite_disponible es 4 — nunca aparecía como opción para reasignar
+  /// en el móvil, aunque en la versión web SÍ se ofrece como destino
+  /// (la web solo excluye a quienes YA están sobrecargados, no exige
+  /// además estar por debajo de limite_disponible). Con este cambio el
+  /// móvil queda alineado con ese mismo criterio de la web.
+  ///
+  /// Se ordenan de menor a mayor carga para sugerir primero a quien
+  /// tiene más espacio libre.
+  List<CargaOperario> get disponibles {
+    final noSobrecargados = operarios.where((o) => !o.esSobrecargado).toList();
+    noSobrecargados.sort((a, b) => a.ordenesActivas.compareTo(b.ordenesActivas));
+    return noSobrecargados;
+  }
 }
 
 /// Una fase u orden activa individual de UN operario (detalle completo,
