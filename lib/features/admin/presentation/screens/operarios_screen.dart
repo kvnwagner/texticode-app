@@ -98,6 +98,11 @@ class _OperariosScreenState extends State<OperariosScreen> {
 
   void _abrirReasignacion() {
     setState(() => _mostrarReasignacion = true);
+    // Refresca también la carga (de ahí sale "disponibles"), no solo las
+    // sugerencias: si el estado de los operarios cambió desde que se
+    // cargó la pestaña (p. ej. alguien completó una fase, o se reasignó
+    // algo desde la web), aquí es donde había quedado desactualizado.
+    _cargar();
     _cargarSugerencias();
   }
 
