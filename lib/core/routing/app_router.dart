@@ -6,6 +6,7 @@ import '../../features/auth/presentation/screens/cambiar_contrasena_screen.dart'
 import '../../features/admin/presentation/screens/main_shell.dart';
 import '../../features/operario/presentation/screens/operario_home_screen.dart';
 import '../../features/cliente/presentation/screens/cliente_home_screen.dart';
+import '../../features/superadmin/presentation/screens/superadmin_home_screen.dart';
 
 /// Rutas nombradas de la app (usadas con go_router vía context.go / context.push).
 class AppRoutes {
@@ -58,6 +59,8 @@ class AppRouter {
 
   static Widget _homeForRole(UserRole? role) {
     switch (role) {
+      case UserRole.superadmin:
+        return const SuperadminHomeScreen();
       case UserRole.admin:
         return const MainShell();
       case UserRole.operario:

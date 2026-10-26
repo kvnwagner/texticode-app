@@ -1,22 +1,26 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/network/api_client.dart';
 import '../models/comprobante_model.dart';
 
 /// Habla directo con tu backend Express (comprobantes.js).
 class ComprobanteRepository {
   Future<List<Comprobante>> getComprobantes() async {
-    final res = await http.get(Uri.parse(ApiConstants.comprobantes));
+    final res = await http.get(Uri.parse(ApiConstants.comprobantes),
+        headers: await ApiClient.headers());
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
       return data.map((e) => Comprobante.fromJson(e)).toList();
     }
-    throw Exception('No se pudieron cargar los comprobantes (${res.statusCode}).');
+    throw Exception(
+        'No se pudieron cargar los comprobantes (${res.statusCode}).');
   }
 
   Future<List<Comprobante>> getComprobantesPorCliente(int idCliente) async {
-    final res = await http
-        .get(Uri.parse('${ApiConstants.comprobantes}/cliente/$idCliente'));
+    final res = await http.get(
+        Uri.parse('${ApiConstants.comprobantes}/cliente/$idCliente'),
+        headers: await ApiClient.headers());
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
       return data.map((e) => Comprobante.fromJson(e)).toList();
@@ -32,7 +36,7 @@ class ComprobanteRepository {
   }) async {
     final res = await http.put(
       Uri.parse('${ApiConstants.comprobantes}/$id'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiClient.headers(),
       body: jsonEncode({
         'Estado': estado,
         'Fecha_Limite': fechaLimite,

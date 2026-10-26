@@ -1,23 +1,29 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/network/api_client.dart';
 import '../models/material_model.dart';
 
 /// Habla directo con tu backend Express (materiales.js), que a su vez
 /// habla con Supabase. Mismo patrón exacto que orden_repository.dart.
 class MaterialRepository {
   Future<List<MaterialItem>> getMateriales() async {
-    final res = await http.get(Uri.parse(ApiConstants.materiales));
+    final res = await http.get(Uri.parse(ApiConstants.materiales),
+        headers: await ApiClient.headers());
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
       return data.map((e) => MaterialItem.fromJson(e)).toList();
     }
-    throw Exception('No se pudieron cargar los materiales (${res.statusCode}).');
+    throw Exception(
+        'No se pudieron cargar los materiales (${res.statusCode}).');
   }
 
   Future<MaterialItem> getMaterial(int id) async {
-    final res = await http.get(Uri.parse('${ApiConstants.materiales}/$id'));
-    if (res.statusCode == 200) return MaterialItem.fromJson(jsonDecode(res.body));
+    final res = await http.get(Uri.parse('${ApiConstants.materiales}/$id'),
+        headers: await ApiClient.headers());
+    if (res.statusCode == 200) {
+      return MaterialItem.fromJson(jsonDecode(res.body));
+    }
     throw Exception('MaterialItem no encontrado.');
   }
 
@@ -27,21 +33,24 @@ class MaterialRepository {
   /// no el catálogo completo. Pega contra
   /// GET /api/practica/clientes/:Id_Cliente/materiales.
   Future<List<MaterialItem>> getMaterialesPorCliente(int idCliente) async {
-    final res =
-        await http.get(Uri.parse('${ApiConstants.practica}/clientes/$idCliente/materiales'));
+    final res = await http.get(
+        Uri.parse('${ApiConstants.practica}/clientes/$idCliente/materiales'),
+        headers: await ApiClient.headers());
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
       return data.map((e) => MaterialItem.fromJson(e)).toList();
     }
-    throw Exception('No se pudieron cargar los materiales del cliente (${res.statusCode}).');
+    throw Exception(
+        'No se pudieron cargar los materiales del cliente (${res.statusCode}).');
   }
 
   /// Usa el endpoint dedicado de alertas del backend en vez de filtrar
   /// en el cliente, para que la regla de negocio (Stock_Actual <=
   /// Stock_Minimo) viva en un solo lugar.
   Future<List<MaterialItem>> getAlertasStockBajo() async {
-    final res =
-        await http.get(Uri.parse('${ApiConstants.materiales}/alertas/stock-bajo'));
+    final res = await http.get(
+        Uri.parse('${ApiConstants.materiales}/alertas/stock-bajo'),
+        headers: await ApiClient.headers());
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
       return data.map((e) => MaterialItem.fromJson(e)).toList();
@@ -56,12 +65,13 @@ class MaterialRepository {
   Future<List<MaterialItem>> getHistorialInventario(String periodo) async {
     final uri = Uri.parse(ApiConstants.materialesHistorial)
         .replace(queryParameters: {'periodo': periodo});
-    final res = await http.get(uri);
+    final res = await http.get(uri, headers: await ApiClient.headers());
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
       return data.map((e) => MaterialItem.fromJson(e)).toList();
     }
-    throw Exception('No se pudo cargar el historial de inventario (${res.statusCode}).');
+    throw Exception(
+        'No se pudo cargar el historial de inventario (${res.statusCode}).');
   }
 
   Future<void> crearMaterial({
@@ -75,7 +85,7 @@ class MaterialRepository {
   }) async {
     final res = await http.post(
       Uri.parse(ApiConstants.materiales),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiClient.headers(),
       body: jsonEncode({
         'Nombre_Material': nombre,
         'Categoria': categoria,
@@ -104,7 +114,7 @@ class MaterialRepository {
   }) async {
     final res = await http.put(
       Uri.parse('${ApiConstants.materiales}/$id'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiClient.headers(),
       body: jsonEncode({
         'Nombre_Material': nombre,
         'Categoria': categoria,
@@ -123,7 +133,8 @@ class MaterialRepository {
 
   /// Delete definitivo. Úsalo con cuidado.
   Future<void> eliminarMaterial(int id) async {
-    final res = await http.delete(Uri.parse('${ApiConstants.materiales}/$id'));
+    final res = await http.delete(Uri.parse('${ApiConstants.materiales}/$id'),
+        headers: await ApiClient.headers());
     if (res.statusCode != 200) {
       throw Exception('No se pudo eliminar el material.');
     }

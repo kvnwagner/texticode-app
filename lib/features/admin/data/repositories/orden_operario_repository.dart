@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/network/api_client.dart';
 import '../models/orden_operario_model.dart';
 
 class OrdenOperarioRepository {
@@ -14,7 +15,7 @@ class OrdenOperarioRepository {
   }) async {
     final res = await http.post(
       Uri.parse(ApiConstants.ordenOperario),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiClient.headers(),
       body: jsonEncode({
         'Id_Orden': idOrden,
         'Id_Operario': idOperario,
@@ -39,6 +40,7 @@ class OrdenOperarioRepository {
       Uri.parse(
         '${ApiConstants.ordenOperario}/orden/$idOrden',
       ),
+      headers: await ApiClient.headers(),
     );
 
     if (res.statusCode == 200) {
@@ -59,6 +61,7 @@ class OrdenOperarioRepository {
       Uri.parse(
         '${ApiConstants.ordenOperario}/operario/$idOperario',
       ),
+      headers: await ApiClient.headers(),
     );
 
     if (res.statusCode == 200) {
@@ -81,7 +84,7 @@ class OrdenOperarioRepository {
       Uri.parse(
         '${ApiConstants.ordenOperario}/$idOrdenOperario',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiClient.headers(),
       body: jsonEncode({
         if (numeroFase != null) 'Numero_Fase': numeroFase,
         if (descripcionFase != null) 'Descripcion_Fase': descripcionFase,
@@ -108,6 +111,7 @@ class OrdenOperarioRepository {
       Uri.parse(
         '${ApiConstants.ordenOperario}/$idOrdenOperario',
       ),
+      headers: await ApiClient.headers(),
     );
 
     if (res.statusCode != 200) {
@@ -125,7 +129,7 @@ class OrdenOperarioRepository {
       Uri.parse(
         '${ApiConstants.ordenOperario}/$idOrdenOperario/completar',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiClient.headers(),
       body: jsonEncode({
         if (nota != null && nota.trim().isNotEmpty)
           'Nota_Operario': nota.trim(),
@@ -142,9 +146,11 @@ class OrdenOperarioRepository {
   }
 
   Future<List<OrdenOperario>> getHistorialDeOperario(int idOperario) async {
-    final res = await http.get(Uri.parse(
-      '${ApiConstants.ordenOperario}/operario/$idOperario/historial',
-    ));
+    final res = await http.get(
+        Uri.parse(
+          '${ApiConstants.ordenOperario}/operario/$idOperario/historial',
+        ),
+        headers: await ApiClient.headers());
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
       return data.map((e) => OrdenOperario.fromJson(e)).toList();

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/network/api_client.dart';
 import '../models/eficiencia_operario_model.dart';
 
 class EficienciaRepository {
@@ -25,7 +26,7 @@ class EficienciaRepository {
     final uri = Uri.parse('${ApiConstants.eficiencia}/operarios')
         .replace(queryParameters: query.isEmpty ? null : query);
 
-    final res = await http.get(uri, headers: ApiConstants.eficienciaHeaders);
+    final res = await http.get(uri, headers: await ApiClient.headers());
 
     if (res.statusCode == 200) {
       final body = jsonDecode(res.body);
@@ -37,20 +38,23 @@ class EficienciaRepository {
 
   Future<Map<String, dynamic>> getOperarioDetalle(int idUsuario) async {
     final uri = Uri.parse('${ApiConstants.eficiencia}/operarios/$idUsuario');
-    final res = await http.get(uri, headers: ApiConstants.eficienciaHeaders);
+    final res = await http.get(uri, headers: await ApiClient.headers());
 
     if (res.statusCode == 200) {
       final body = jsonDecode(res.body);
       return body['data'] as Map<String, dynamic>;
     }
-    throw Exception('No se pudo cargar el detalle del operario (${res.statusCode}).');
+    throw Exception(
+        'No se pudo cargar el detalle del operario (${res.statusCode}).');
   }
 
   /// GET /api/eficiencia/operarios/:id/historial?periodo=semana|mes|trimestre
-  Future<EficienciaHistorial> getHistorial(int idUsuario, String periodo) async {
-    final uri = Uri.parse('${ApiConstants.eficiencia}/operarios/$idUsuario/historial')
-        .replace(queryParameters: {'periodo': periodo});
-    final res = await http.get(uri, headers: ApiConstants.eficienciaHeaders);
+  Future<EficienciaHistorial> getHistorial(
+      int idUsuario, String periodo) async {
+    final uri =
+        Uri.parse('${ApiConstants.eficiencia}/operarios/$idUsuario/historial')
+            .replace(queryParameters: {'periodo': periodo});
+    final res = await http.get(uri, headers: await ApiClient.headers());
 
     if (res.statusCode == 200) {
       final body = jsonDecode(res.body);
@@ -70,8 +74,7 @@ class EficienciaRepository {
     final res = await http.post(
       uri,
       headers: {
-        ...ApiConstants.eficienciaHeaders,
-        'Content-Type': 'application/json',
+        ...await ApiClient.headers(),
       },
       body: jsonEncode({
         'Id_Operario': idOperario,
@@ -88,8 +91,9 @@ class EficienciaRepository {
 
   /// DELETE /api/eficiencia/observaciones/:id
   Future<void> eliminarObservacion(int idObservacion) async {
-    final uri = Uri.parse('${ApiConstants.eficiencia}/observaciones/$idObservacion');
-    final res = await http.delete(uri, headers: ApiConstants.eficienciaHeaders);
+    final uri =
+        Uri.parse('${ApiConstants.eficiencia}/observaciones/$idObservacion');
+    final res = await http.delete(uri, headers: await ApiClient.headers());
     if (res.statusCode != 200) {
       throw Exception('No se pudo eliminar la observación.');
     }

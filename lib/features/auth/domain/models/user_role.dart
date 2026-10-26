@@ -1,10 +1,12 @@
 /// Roles soportados por Texticode.
 /// Coincide con los roles manejados en la versión web (admin / operario / cliente).
-enum UserRole { admin, operario, cliente }
+enum UserRole { superadmin, admin, operario, cliente }
 
 extension UserRoleX on UserRole {
   String get label {
     switch (this) {
+      case UserRole.superadmin:
+        return 'Superadministrador';
       case UserRole.admin:
         return 'Administrador';
       case UserRole.operario:

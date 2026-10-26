@@ -1,9 +1,9 @@
 class ApiConstants {
   // Base URL de la API del backend. Puede sobreescribirse al compilar/ejecutar:
-  // flutter run --dart-define=API_BASE_URL=http://192.168.1.61:3001/api
+  // flutter run --dart-define=API_BASE_URL=http://192.168.0.7:3001/api
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.0.11:3001/api',
+    defaultValue: '',
   );
 
   static const String usuarios = '$baseUrl/usuarios';
@@ -13,7 +13,7 @@ class ApiConstants {
   static const String materiales = '$baseUrl/materiales';
   static const String eficiencia = '$baseUrl/eficiencia';
   static const String cargaTrabajo = '$baseUrl/carga-trabajo';
-  
+
   // Inventario reconstruido al final de un período ('YYYY-MM'), a
   // partir de la bitácora de movimientos (material_movimiento) del
   // backend. Ver GET /materiales/reportes/historial en materiales.js.
@@ -48,7 +48,8 @@ class ApiConstants {
   // flutter run --dart-define=GOOGLE_WEB_CLIENT_ID=xxxxx.apps.googleusercontent.com
   static const String googleWebClientId = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
-    defaultValue: '3072212776-4tak504hvbj221drivoa905fd86tsh20.apps.googleusercontent.com',
+    defaultValue:
+        '3072212776-4tak504hvbj221drivoa905fd86tsh20.apps.googleusercontent.com',
   );
 
   // ============================================================
@@ -58,11 +59,4 @@ class ApiConstants {
   static const String calendarStatus = '$calendarBase/status';
   static const String calendarConnect = '$calendarBase/connect';
   static const String calendarSync = '$calendarBase/sync';
-
-  // Debe coincidir exactamente con API_KEY_EFICIENCIA del backend (.env).
-  static const String apiKeyEficiencia = 'texticode-2026';
-
-  static const Map<String, String> eficienciaHeaders = {
-    'x-api-key': apiKeyEficiencia,
-  };
 }

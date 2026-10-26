@@ -54,8 +54,7 @@ class CalendarRepository {
     );
     if (res.statusCode != 200) {
       final body = _tryDecode(res.body);
-      throw Exception(
-          body?['error'] ?? 'No se pudo vincular Google Calendar.');
+      throw Exception(body?['error'] ?? 'No se pudo vincular Google Calendar.');
     }
   }
 

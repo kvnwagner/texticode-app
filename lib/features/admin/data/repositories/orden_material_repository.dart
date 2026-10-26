@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/network/api_client.dart';
 
 /// Habla con /api/orden-material — la tabla intermedia orden_material
 /// que permite asociar VARIOS materiales a una misma orden
@@ -17,7 +18,7 @@ class OrdenMaterialRepository {
   }) async {
     final res = await http.post(
       Uri.parse(ApiConstants.ordenMaterial),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiClient.headers(),
       body: jsonEncode({
         'Id_Orden': idOrden,
         'Id_Producto': idProducto,
@@ -27,14 +28,17 @@ class OrdenMaterialRepository {
     if (res.statusCode != 201) {
       final body = _tryDecode(res.body);
       // El backend responde 409 si ese material ya estaba en la orden.
-      throw Exception(body?['error'] ?? 'No se pudo agregar el material a la orden.');
+      throw Exception(
+          body?['error'] ?? 'No se pudo agregar el material a la orden.');
     }
   }
 
   /// Materiales ya asociados a una orden (con su Cantidad_Usada).
   /// GET /api/orden-material/orden/:idOrden
   Future<List<Map<String, dynamic>>> getMaterialesDeOrden(int idOrden) async {
-    final res = await http.get(Uri.parse('${ApiConstants.ordenMaterial}/orden/$idOrden'));
+    final res = await http.get(
+        Uri.parse('${ApiConstants.ordenMaterial}/orden/$idOrden'),
+        headers: await ApiClient.headers());
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
       return data.cast<Map<String, dynamic>>();
@@ -50,7 +54,7 @@ class OrdenMaterialRepository {
   }) async {
     final res = await http.put(
       Uri.parse('${ApiConstants.ordenMaterial}/$idOrden/$idProducto'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiClient.headers(),
       body: jsonEncode({'Cantidad_Usada': cantidadUsada}),
     );
     if (res.statusCode != 200) {
@@ -59,9 +63,11 @@ class OrdenMaterialRepository {
   }
 
   /// DELETE /api/orden-material/:idOrden/:idProducto
-  Future<void> eliminarMaterial({required int idOrden, required int idProducto}) async {
-    final res =
-        await http.delete(Uri.parse('${ApiConstants.ordenMaterial}/$idOrden/$idProducto'));
+  Future<void> eliminarMaterial(
+      {required int idOrden, required int idProducto}) async {
+    final res = await http.delete(
+        Uri.parse('${ApiConstants.ordenMaterial}/$idOrden/$idProducto'),
+        headers: await ApiClient.headers());
     if (res.statusCode != 200) {
       throw Exception('No se pudo quitar el material de la orden.');
     }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/network/api_client.dart';
 import '../models/usuario_model.dart';
 
 /// Habla directo con tu backend Express (usuarios.js), que a su vez
@@ -8,7 +9,8 @@ import '../models/usuario_model.dart';
 /// y va en tiempo real contra la base de datos real.
 class UsuarioRepository {
   Future<List<Usuario>> getUsuarios() async {
-    final res = await http.get(Uri.parse(ApiConstants.usuarios));
+    final res = await http.get(Uri.parse(ApiConstants.usuarios),
+        headers: await ApiClient.headers());
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
       return data.map((e) => Usuario.fromJson(e)).toList();
@@ -17,7 +19,8 @@ class UsuarioRepository {
   }
 
   Future<Usuario> getUsuario(int id) async {
-    final res = await http.get(Uri.parse('${ApiConstants.usuarios}/$id'));
+    final res = await http.get(Uri.parse('${ApiConstants.usuarios}/$id'),
+        headers: await ApiClient.headers());
     if (res.statusCode == 200) return Usuario.fromJson(jsonDecode(res.body));
     throw Exception('Usuario no encontrado.');
   }
@@ -33,7 +36,7 @@ class UsuarioRepository {
   }) async {
     final res = await http.post(
       Uri.parse(ApiConstants.usuarios),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiClient.headers(),
       body: jsonEncode({
         'Id_Rol': idRol,
         'Nombre_Completo': nombreCompleto,
@@ -62,7 +65,7 @@ class UsuarioRepository {
   }) async {
     final res = await http.put(
       Uri.parse('${ApiConstants.usuarios}/$id'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiClient.headers(),
       body: jsonEncode({
         'Id_Rol': idRol,
         'Nombre_Completo': nombreCompleto,
@@ -82,7 +85,9 @@ class UsuarioRepository {
   /// Soft delete: pone Estado = 'inactivo' (usa esto en vez de eliminar
   /// si quieres conservar historial, como en la mayoría de sistemas reales).
   Future<void> inactivarUsuario(int id) async {
-    final res = await http.patch(Uri.parse('${ApiConstants.usuarios}/$id/inactivar'));
+    final res = await http.patch(
+        Uri.parse('${ApiConstants.usuarios}/$id/inactivar'),
+        headers: await ApiClient.headers());
     if (res.statusCode != 200) {
       throw Exception('No se pudo inactivar el usuario.');
     }
@@ -90,7 +95,8 @@ class UsuarioRepository {
 
   /// Delete definitivo (DELETE FROM usuario ...). Úsalo con cuidado.
   Future<void> eliminarUsuario(int id) async {
-    final res = await http.delete(Uri.parse('${ApiConstants.usuarios}/$id'));
+    final res = await http.delete(Uri.parse('${ApiConstants.usuarios}/$id'),
+        headers: await ApiClient.headers());
     if (res.statusCode != 200) {
       throw Exception('No se pudo eliminar el usuario.');
     }

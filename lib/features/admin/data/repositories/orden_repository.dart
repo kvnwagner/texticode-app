@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/network/api_client.dart';
 import '../models/orden_model.dart';
 
 /// Habla directo con tu backend Express (ordenes.js), que a su vez
@@ -8,16 +9,18 @@ import '../models/orden_model.dart';
 /// y va en tiempo real contra la base de datos real.
 class OrdenRepository {
   Future<List<Orden>> getOrdenes() async {
-    final res = await http.get(Uri.parse(ApiConstants.ordenes));
-    if (res.statusCode == 200) {
-      final List data = jsonDecode(res.body);
-      return data.map((e) => Orden.fromJson(e)).toList();
-    }
-    throw Exception('No se pudieron cargar las órdenes (${res.statusCode}).');
+    final List data = await ApiClient.get('/ordenes');
+    return data.map((e) => Orden.fromJson(e)).toList();
+  }
+
+  Future<List<Orden>> getOrdenesDeCliente(int idCliente) async {
+    final List data = await ApiClient.get('/ordenes/cliente/$idCliente');
+    return data.map((e) => Orden.fromJson(e)).toList();
   }
 
   Future<Orden> getOrden(int id) async {
-    final res = await http.get(Uri.parse('${ApiConstants.ordenes}/$id'));
+    final res = await http.get(Uri.parse('${ApiConstants.ordenes}/$id'),
+        headers: await ApiClient.headers());
     if (res.statusCode == 200) return Orden.fromJson(jsonDecode(res.body));
     throw Exception('Orden no encontrada.');
   }
@@ -45,7 +48,7 @@ class OrdenRepository {
   }) async {
     final res = await http.post(
       Uri.parse(ApiConstants.ordenes),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiClient.headers(),
       body: jsonEncode({
         'Id_Cliente': idCliente,
         'Id_Material': idMaterial,
@@ -95,7 +98,7 @@ class OrdenRepository {
   }) async {
     final res = await http.put(
       Uri.parse('${ApiConstants.ordenes}/$id'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiClient.headers(),
       body: jsonEncode({
         'Id_Cliente': idCliente,
         'Id_Material': idMaterial,
@@ -124,7 +127,7 @@ class OrdenRepository {
   Future<void> actualizarEstado(int id, String estado) async {
     final res = await http.patch(
       Uri.parse('${ApiConstants.ordenes}/$id/estado'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiClient.headers(),
       body: jsonEncode({'Estado': estado}),
     );
     if (res.statusCode != 200) {
@@ -197,7 +200,8 @@ class OrdenRepository {
 
   /// Delete definitivo. Úsalo con cuidado.
   Future<void> eliminarOrden(int id) async {
-    final res = await http.delete(Uri.parse('${ApiConstants.ordenes}/$id'));
+    final res = await http.delete(Uri.parse('${ApiConstants.ordenes}/$id'),
+        headers: await ApiClient.headers());
     if (res.statusCode != 200) {
       throw Exception('No se pudo eliminar la orden.');
     }
@@ -221,7 +225,7 @@ class OrdenRepository {
     try {
       final res = await http.post(
         Uri.parse('${ApiConstants.notificaciones}/tarea'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await ApiClient.headers(),
         body: jsonEncode({
           'operarioEmail': operarioEmail,
           'operarioNombre': operarioNombre,
@@ -234,7 +238,8 @@ class OrdenRepository {
       if (res.statusCode != 200) {
         // Silenciosamente logueado; no interrumpe el flujo de creación.
         // ignore: avoid_print
-        print('[notificarTarea] respuesta no-200: ${res.statusCode} ${res.body}');
+        print(
+            '[notificarTarea] respuesta no-200: ${res.statusCode} ${res.body}');
       }
     } catch (e) {
       // ignore: avoid_print
