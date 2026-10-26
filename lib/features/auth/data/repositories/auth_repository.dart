@@ -35,6 +35,16 @@ class AuthRepository {
       throw Exception(body?['error'] ?? 'No se pudo iniciar sesión.');
     }
 
+    if (body?['requiresEmpresaSelection'] == true) {
+      throw Exception(
+          'La cuenta tiene más de una empresa activa. Contacta al administrador.');
+    }
+    if (body?['token'] is! String ||
+        body?['usuario'] is! Map<String, dynamic>) {
+      throw Exception(
+          body?['error'] ?? 'La respuesta de inicio de sesión no es válida.');
+    }
+
     final token = body!['token'] as String;
     final usuarioJson = body['usuario'] as Map<String, dynamic>;
     final usuario = AuthUser.fromJson(usuarioJson);

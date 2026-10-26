@@ -30,12 +30,12 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
   bool _loading = true;
   String? _error;
 
-static const _icons = [
-  Icons.shopping_bag_outlined,
-  Icons.warning_amber_rounded, // ⬅️ debe estar aquí
-  Icons.support_agent_outlined,
-  Icons.person_outline_rounded,
-];
+  static const _icons = [
+    Icons.shopping_bag_outlined,
+    Icons.warning_amber_rounded, // ⬅️ debe estar aquí
+    Icons.support_agent_outlined,
+    Icons.person_outline_rounded,
+  ];
 
   @override
   void initState() {
@@ -54,9 +54,7 @@ static const _icons = [
         if (mounted) context.go(AppRoutes.login);
         return;
       }
-      final todas = await _ordenRepo.getOrdenes();
-      final propias =
-          todas.where((o) => o.idCliente == authUser.idUsuario).toList();
+      final propias = await _ordenRepo.getOrdenesDeCliente(authUser.idUsuario);
       if (!mounted) return;
       setState(() => _ordenes = propias);
     } catch (e) {
@@ -73,17 +71,17 @@ static const _icons = [
 
   @override
   Widget build(BuildContext context) {
-final pages = [
-  ClientePedidosScreen(
-    ordenes: _ordenes,
-    loading: _loading,
-    error: _error,
-    onRefresh: _cargar,
-  ),
-  const ClienteAlertasScreen(), // ⬅️ FALTABA ESTO
-  const ClienteSoporteScreen(),
-  ClientePerfilScreen(onLogout: _logout),
-];
+    final pages = [
+      ClientePedidosScreen(
+        ordenes: _ordenes,
+        loading: _loading,
+        error: _error,
+        onRefresh: _cargar,
+      ),
+      const ClienteAlertasScreen(), // ⬅️ FALTABA ESTO
+      const ClienteSoporteScreen(),
+      ClientePerfilScreen(onLogout: _logout),
+    ];
 
     return Scaffold(
       backgroundColor: AppColors.pageBg,
@@ -99,4 +97,3 @@ final pages = [
     );
   }
 }
-

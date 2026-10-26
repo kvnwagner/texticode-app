@@ -12,6 +12,8 @@ class AuthUser {
   final int idRol;
   final String rol;
   final String estado;
+  final int? idEmpresa;
+  final String? empresa;
 
   AuthUser({
     required this.idUsuario,
@@ -21,6 +23,8 @@ class AuthUser {
     required this.idRol,
     required this.rol,
     required this.estado,
+    this.idEmpresa,
+    this.empresa,
   });
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
@@ -32,6 +36,10 @@ class AuthUser {
       idRol: json['Id_Rol'] as int,
       rol: json['Rol'] as String? ?? '',
       estado: json['Estado'] as String? ?? '',
+      idEmpresa: json['Id_Empresa'] is int
+          ? json['Id_Empresa']
+          : int.tryParse('${json['Id_Empresa'] ?? ''}'),
+      empresa: json['Empresa'] as String? ?? json['Nombre_Empresa'] as String?,
     );
   }
 
@@ -41,6 +49,7 @@ class AuthUser {
   /// que getRuta() en LoginView.vue).
   UserRole get role {
     final rolLower = rol.toLowerCase();
+    if (rolLower.trim() == 'superadmin') return UserRole.superadmin;
     if (idRol == 1 || rolLower.contains('admin')) return UserRole.admin;
     if (idRol == 2 || rolLower.contains('operario')) return UserRole.operario;
     return UserRole.cliente;
