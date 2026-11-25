@@ -75,7 +75,7 @@ class _MainShellState extends State<MainShell> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
@@ -87,11 +87,15 @@ class _MainShellState extends State<MainShell> {
               borderRadius: BorderRadius.circular(12),
               child: Image.asset(
                 'assets/images/logo_texticode.png',
+                // En oscuro el logo va blanco, como en la web
+                // (filter: brightness(0) invert(0.95)).
+                color: AppColors.logoTint,
+                colorBlendMode: BlendMode.srcIn,
                 width: 46,
                 height: 46,
                 fit: BoxFit.cover,
                 filterQuality: FilterQuality.high,
-                errorBuilder: (context, error, stackTrace) => const AvatarWidget(
+                errorBuilder: (context, error, stackTrace) => AvatarWidget(
                   initials: 'TC',
                   size: 46,
                   bg: AppColors.navy,
@@ -101,7 +105,7 @@ class _MainShellState extends State<MainShell> {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text('Gestión de Usuarios',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -146,7 +150,7 @@ class _MainShellState extends State<MainShell> {
     const tabs = ['Usuarios', 'Clientes', 'Operarios'];
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
@@ -174,7 +178,7 @@ class _MainShellState extends State<MainShell> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-                      color: selected ? AppColors.navy : AppColors.textFaint,
+                      color: selected ? AppColors.brandText : AppColors.textFaint,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -191,4 +195,4 @@ class _MainShellState extends State<MainShell> {
       ),
     );
   }
-}
+}

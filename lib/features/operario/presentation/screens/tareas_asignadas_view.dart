@@ -91,7 +91,7 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
         ),
         Expanded(
           child: widget.loading
-              ? const Center(
+              ? Center(
                   child: CircularProgressIndicator(color: AppColors.navy))
               : widget.error != null
                   ? ErrorState(
@@ -201,7 +201,7 @@ class _StatsGrid extends StatelessWidget {
       _StatItem('Retrasadas', retrasadas, Icons.warning_amber_rounded,
           AppColors.errorText),
       _StatItem(
-          'Total', total, Icons.assignment_turned_in_outlined, AppColors.navy),
+          'Total', total, Icons.assignment_turned_in_outlined, AppColors.iconTotal),
     ];
     return GridView.builder(
       itemCount: stats.length,
@@ -229,7 +229,7 @@ class _StatCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.cardBorder),
         ),
@@ -257,7 +257,7 @@ class _StatCard extends StatelessWidget {
                           Text(
                             item.label,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               color: AppColors.textMuted,
                             ),

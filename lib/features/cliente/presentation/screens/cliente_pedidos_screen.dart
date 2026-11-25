@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/impresion_overlay.dart';
 import '../../../admin/data/models/orden_model.dart';
 import '../../../admin/data/repositories/orden_material_repository.dart';
 import '../../../operario/presentation/screens/operario_shared_widgets.dart' show ErrorState;
@@ -125,11 +126,20 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
 
   Future<void> _descargarPdf(Orden orden) async {
     setState(() => _descargandoOrdenId = orden.idOrden);
+    final codigo =
+        orden.codigoOrden.isEmpty ? '${orden.idOrden}' : orden.codigoOrden;
     try {
-      final bytes = await OrdenPdfService.generar(orden: orden);
-      await Printing.layoutPdf(
-        onLayout: (format) async => bytes,
-        name: 'pedido-${orden.codigoOrden.isEmpty ? orden.idOrden : orden.codigoOrden}.pdf',
+      // Animación de impresora, igual que "Pedidos y entregas" en la web.
+      await ImpresionOverlay.ejecutar(
+        context: context,
+        tipo: TipoImpresion.comprobante,
+        numero: codigo,
+        detalle: orden.producto,
+        generar: () => OrdenPdfService.generar(orden: orden),
+        entregar: (bytes) => Printing.layoutPdf(
+          onLayout: (format) async => bytes,
+          name: 'pedido-$codigo.pdf',
+        ),
       );
     } catch (e) {
       if (mounted) {
@@ -146,7 +156,7 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
   /// filtro. "Total pedidos" siempre limpia el filtro al tocarla.
   Widget _buildStats() {
     final items = <(IconData, String, String, Color, _EstadoFiltro)>[
-      (Icons.shopping_bag_outlined, '$_total', 'Total pedidos', AppColors.navy, _EstadoFiltro.todos),
+      (Icons.shopping_bag_outlined, '$_total', 'Total pedidos', AppColors.iconTotal, _EstadoFiltro.todos),
       (Icons.autorenew_rounded, '$_enProceso', 'En proceso', const Color.fromARGB(255, 8, 29, 181), _EstadoFiltro.enProceso),
       (Icons.check_circle_outline, '$_completadas', 'Completados', AppColors.iconActive,
           _EstadoFiltro.completada),
@@ -199,7 +209,7 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.search, size: 18, color: AppColors.textFaint),
+            Icon(Icons.search, size: 18, color: AppColors.textFaint),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
@@ -209,7 +219,7 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
                   border: InputBorder.none,
                   isDense: true,
                 ),
-                style: const TextStyle(fontSize: 13, color: AppColors.inputText),
+                style: TextStyle(fontSize: 13, color: AppColors.inputText),
               ),
             ),
           ],
@@ -240,7 +250,7 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
         // la pantalla en vez de solo la lista de abajo. ──
         Expanded(
           child: widget.loading
-              ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+              ? Center(child: CircularProgressIndicator(color: AppColors.navy))
               : widget.error != null
                   ? ErrorState(message: widget.error!, onRetry: widget.onRefresh)
                   : RefreshIndicator(
@@ -258,7 +268,7 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
                           _buildStats(),
                           const SizedBox(height: 4),
                           if (filtered.isEmpty)
-                            const Padding(
+                            Padding(
                               padding: EdgeInsets.symmetric(vertical: 60),
                               child: Column(
                                 children: [
@@ -294,4 +304,4 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
       ],
     );
   }
-}
+}

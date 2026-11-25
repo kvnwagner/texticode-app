@@ -5,6 +5,7 @@ import 'package:printing/printing.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
+import '../../../../shared/widgets/impresion_overlay.dart';
 
 import '../../data/models/comprobante_model.dart';
 import '../../data/models/usuario_model.dart';
@@ -121,15 +122,21 @@ class _ClientesScreenState extends State<ClientesScreen> {
     });
 
     try {
-      final Uint8List bytes = await ComprobantePdfService.generar(
-        comprobante: comprobante,
-        cliente: _clienteDe(comprobante),
-      );
-
-      await Printing.layoutPdf(
-        onLayout: (format) async => bytes,
-        name:
-            'comprobante-${comprobante.idComprobante.toString().padLeft(4, '0')}.pdf',
+      final numero = comprobante.idComprobante.toString().padLeft(4, '0');
+      // Animación de impresora, igual que en Gestión de Clientes de la web.
+      await ImpresionOverlay.ejecutar<Uint8List>(
+        context: context,
+        tipo: TipoImpresion.comprobante,
+        numero: 'COMP-$numero',
+        detalle: comprobante.cliente,
+        generar: () => ComprobantePdfService.generar(
+          comprobante: comprobante,
+          cliente: _clienteDe(comprobante),
+        ),
+        entregar: (bytes) => Printing.layoutPdf(
+          onLayout: (format) async => bytes,
+          name: 'comprobante-$numero.pdf',
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -165,7 +172,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
     return Container(
       color: AppColors.pageBg,
       child: _loading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(
                 color: AppColors.navy,
               ),
@@ -211,7 +218,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
         ),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.search,
               size: 18,
               color: AppColors.textFaint,
@@ -229,7 +236,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                   border: InputBorder.none,
                   isDense: true,
                 ),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   color: AppColors.inputText,
                 ),
@@ -248,7 +255,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -287,7 +294,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.pageBg,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: AppColors.cardBorder,
@@ -314,7 +321,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
             collapsedShape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
             ),
-            iconColor: AppColors.navy,
+            iconColor: AppColors.brandIcon,
             collapsedIconColor: AppColors.textMuted,
             title: Row(
               children: [
@@ -337,7 +344,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                         cliente.nombreCompleto,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
@@ -348,7 +355,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                         cliente.correo ?? 'Sin correo registrado',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           color: AppColors.textMuted,
                         ),
@@ -358,7 +365,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                         cliente.telefono ?? 'Sin teléfono registrado',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           color: AppColors.textFaint,
                         ),
@@ -373,24 +380,24 @@ class _ClientesScreenState extends State<ClientesScreen> {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.navy.withValues(alpha: 0.08),
+                    color: AppColors.brandTint.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.receipt_long_outlined,
                         size: 13,
-                        color: AppColors.navy,
+                        color: AppColors.brandIcon,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${comprobantesCliente.length}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.navy,
+                          color: AppColors.brandText,
                         ),
                       ),
                     ],
@@ -410,7 +417,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                     color: AppColors.searchBg,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Icon(
                         Icons.receipt_long_outlined,
@@ -459,7 +466,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
         right: insideCliente ? 0 : 16,
       ),
       decoration: BoxDecoration(
-        color: AppColors.pageBg,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: AppColors.cardBorder,
@@ -476,15 +483,15 @@ class _ClientesScreenState extends State<ClientesScreen> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: AppColors.navy.withValues(
+                color: AppColors.brandTint.withValues(
                   alpha: 0.08,
                 ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.receipt_long_outlined,
                 size: 19,
-                color: AppColors.navy,
+                color: AppColors.brandIcon,
               ),
             ),
             const SizedBox(width: 10),
@@ -496,7 +503,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                     'Comprobante #${comprobante.idComprobante.toString().padLeft(4, '0')}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
@@ -507,7 +514,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                     _textoFechaComprobante(comprobante),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       color: AppColors.textMuted,
                     ),
@@ -599,7 +606,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
         color: AppColors.iconActive.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
@@ -652,7 +659,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
           vertical: 28,
         ),
         decoration: BoxDecoration(
-          color: AppColors.pageBg,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: AppColors.cardBorder,
@@ -664,19 +671,19 @@ class _ClientesScreenState extends State<ClientesScreen> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: AppColors.navy.withValues(
+                color: AppColors.brandTint.withValues(
                   alpha: 0.08,
                 ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.people_outline,
                 size: 26,
-                color: AppColors.navy,
+                color: AppColors.brandIcon,
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'No hay clientes encontrados',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -686,7 +693,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
               ),
             ),
             const SizedBox(height: 5),
-            const Text(
+            Text(
               'No existen clientes que coincidan con la búsqueda.',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -718,14 +725,14 @@ class _ClientesScreenState extends State<ClientesScreen> {
                 ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.error_outline,
                 size: 30,
                 color: AppColors.iconClient,
               ),
             ),
             const SizedBox(height: 14),
-            const Text(
+            Text(
               'No se pudieron cargar los clientes',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -738,7 +745,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
             Text(
               _error ?? 'Ocurrió un error inesperado.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 color: AppColors.textMuted,
               ),
@@ -791,8 +798,8 @@ class _ComprobantePreviewSheet extends StatelessWidget {
       expand: false,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -813,7 +820,7 @@ class _ComprobantePreviewSheet extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Comprobante #${comprobante.idComprobante.toString().padLeft(4, '0')}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
@@ -821,7 +828,7 @@ class _ComprobantePreviewSheet extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close,
                         color: AppColors.textMuted,
                       ),
@@ -838,7 +845,7 @@ class _ComprobantePreviewSheet extends StatelessWidget {
                   ),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState != ConnectionState.done) {
-                      return const Center(
+                      return Center(
                         child: CircularProgressIndicator(
                           color: AppColors.navy,
                         ),
@@ -846,7 +853,7 @@ class _ComprobantePreviewSheet extends StatelessWidget {
                     }
 
                     if (snapshot.hasError || !snapshot.hasData) {
-                      return const Center(
+                      return Center(
                         child: Text(
                           'No se pudo generar la vista previa.',
                           style: TextStyle(
@@ -874,4 +881,4 @@ class _ComprobantePreviewSheet extends StatelessWidget {
       },
     );
   }
-}
+}

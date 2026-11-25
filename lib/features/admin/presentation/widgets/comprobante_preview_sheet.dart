@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/comprobante_model.dart';
 import '../../data/models/usuario_model.dart';
-import '../../../../core/theme/app_colors.dart';
 
 /// Vista previa del comprobante dentro de la app (icono de ojito).
 /// Replica el mismo diseño usado en el PDF (ComprobantePdfService):
@@ -63,22 +62,22 @@ class ComprobantePreviewSheet extends StatelessWidget {
   Color get _estadoBg {
     switch (comprobante.estado) {
       case 'Completada':
-        return AppColors.statusCompletedBg;
+        return const Color(0xFFDCFCE7);
       case 'Retrasada':
-        return AppColors.statusDelayedBg;
+        return const Color(0xFFFEF2F2);
       default: // 'En Proceso' o cualquier valor no reconocido
-        return AppColors.statusInProgressBg;
+        return const Color(0xFFEDE9FE);
     }
   }
 
   Color get _estadoTexto {
     switch (comprobante.estado) {
       case 'Completada':
-        return AppColors.statusCompletedText;
+        return const Color(0xFF15803D);
       case 'Retrasada':
-        return AppColors.statusDelayedText;
+        return const Color(0xFFDC2626);
       default:
-        return AppColors.statusInProgressText;
+        return const Color(0xFF7C3AED);
     }
   }
 
@@ -558,4 +557,4 @@ class _EstadoPill extends StatelessWidget {
       ),
     );
   }
-}
+}

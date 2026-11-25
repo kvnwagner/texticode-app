@@ -172,7 +172,7 @@ class _NewUserSheetState extends State<NewUserSheet> {
     }
   }
 
-  static const _labelStyle = TextStyle(
+  static TextStyle get _labelStyle => TextStyle(
     fontSize: 10,
     fontWeight: FontWeight.bold,
     letterSpacing: 0.6,
@@ -181,30 +181,30 @@ class _NewUserSheetState extends State<NewUserSheet> {
 
   InputDecoration _dec(String hint, {Widget? suffixIcon}) => InputDecoration(
     hintText: hint,
-    hintStyle: const TextStyle(color: AppColors.inputPlaceholder, fontSize: 13),
+    hintStyle: TextStyle(color: AppColors.inputPlaceholder, fontSize: 13),
     filled: true,
     fillColor: AppColors.inputBg,
     suffixIcon: suffixIcon,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.inputBorder),
+      borderSide: BorderSide(color: AppColors.inputBorder),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.inputBorder),
+      borderSide: BorderSide(color: AppColors.inputBorder),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.navy, width: 1.5),
+      borderSide: BorderSide(color: AppColors.inputFocusBorder, width: 1.5),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.errorText, width: 1),
+      borderSide: BorderSide(color: AppColors.errorText, width: 1),
     ),
     focusedErrorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.errorText, width: 1.5),
+      borderSide: BorderSide(color: AppColors.errorText, width: 1.5),
     ),
   );
 
@@ -230,7 +230,7 @@ class _NewUserSheetState extends State<NewUserSheet> {
               if (helper != null)
                 TextSpan(
                   text: '  $helper',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.normal,
                     letterSpacing: 0,
@@ -247,7 +247,7 @@ class _NewUserSheetState extends State<NewUserSheet> {
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
           decoration: _dec(hint, suffixIcon: suffixIcon),
-          style: const TextStyle(fontSize: 13, color: AppColors.inputText),
+          style: TextStyle(fontSize: 13, color: AppColors.inputText),
           validator: validator,
         ),
       ],
@@ -286,14 +286,14 @@ class _NewUserSheetState extends State<NewUserSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('ROL', style: _labelStyle),
+        Text('ROL', style: _labelStyle),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           initialValue: _rolSeleccionado,
           decoration: _dec('Selecciona un rol'),
-          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textFaint),
-          style: const TextStyle(fontSize: 13, color: AppColors.inputText),
-          hint: const Text('Selecciona un rol',
+          icon: Icon(Icons.keyboard_arrow_down, color: AppColors.textFaint),
+          style: TextStyle(fontSize: 13, color: AppColors.inputText),
+          hint: Text('Selecciona un rol',
               style: TextStyle(color: AppColors.inputPlaceholder, fontSize: 13)),
           items: _rolIds.keys
               .map((r) => DropdownMenuItem(value: r, child: Text(r)))
@@ -310,8 +310,8 @@ class _NewUserSheetState extends State<NewUserSheet> {
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: SafeArea(
@@ -339,7 +339,7 @@ class _NewUserSheetState extends State<NewUserSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Nuevo Usuario',
@@ -362,7 +362,7 @@ class _NewUserSheetState extends State<NewUserSheet> {
                             shape: BoxShape.circle,
                             border: Border.all(color: AppColors.cardBorder),
                           ),
-                          child: const Icon(Icons.close, size: 15, color: AppColors.textMuted),
+                          child: Icon(Icons.close, size: 15, color: AppColors.textMuted),
                         ),
                       ),
                     ],
@@ -438,7 +438,7 @@ class _NewUserSheetState extends State<NewUserSheet> {
                         border: Border.all(color: AppColors.errorBorder),
                       ),
                       child: Text(_error!,
-                          style: const TextStyle(color: AppColors.errorText, fontSize: 12)),
+                          style: TextStyle(color: AppColors.errorText, fontSize: 12)),
                     ),
                   ],
                   const SizedBox(height: 18),
@@ -450,11 +450,11 @@ class _NewUserSheetState extends State<NewUserSheet> {
                           child: OutlinedButton(
                             onPressed: _loading ? null : () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.cardBorder),
+                              side: BorderSide(color: AppColors.cardBorder),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
                             ),
-                            child: const FittedBox(
+                            child: FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text('Cancelar',
                                   maxLines: 1,
@@ -476,7 +476,7 @@ class _NewUserSheetState extends State<NewUserSheet> {
                             onPressed: (_loading || !_formValido) ? null : _submit,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.navy,
-                              disabledBackgroundColor: AppColors.navy.withValues(alpha: 0.35),
+                              disabledBackgroundColor: AppColors.brandTint.withValues(alpha: 0.35),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
                             ),
@@ -510,4 +510,4 @@ class _PwdHint {
   final String label;
   final bool ok;
   const _PwdHint(this.label, this.ok);
-}
+}

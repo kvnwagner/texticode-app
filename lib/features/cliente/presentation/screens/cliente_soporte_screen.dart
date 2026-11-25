@@ -70,7 +70,7 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -92,7 +92,7 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                         ),
                         Container(
                           padding: const EdgeInsets.all(16),
-                          color: AppColors.pageBg,
+                          color: AppColors.surface,
                           child: Column(
                             children: [
                               _ContactButton(
@@ -139,9 +139,9 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.support_agent, size: 16, color: AppColors.navy),
+                          Icon(Icons.support_agent, size: 16, color: AppColors.brandIcon),
                           SizedBox(width: 8),
                           Text('Horario de atención',
                               style: TextStyle(
@@ -170,7 +170,7 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                             color: isOpen
-                                ? AppColors.navy.withValues(alpha: 0.4)
+                                ? AppColors.brandTint.withValues(alpha: 0.4)
                                 : AppColors.cardBorder),
                       ),
                       clipBehavior: Clip.antiAlias,
@@ -182,13 +182,13 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                               color: isOpen
-                                  ? AppColors.navy.withValues(alpha: 0.05)
+                                  ? AppColors.brandTint.withValues(alpha: 0.05)
                                   : AppColors.pageBg,
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: Text(item.question,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w700,
                                             color: AppColors.textPrimary)),
@@ -196,7 +196,7 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                                   Icon(
                                     isOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                                     size: 18,
-                                    color: isOpen ? AppColors.navy : AppColors.textFaint,
+                                    color: isOpen ? AppColors.brandIcon : AppColors.textFaint,
                                   ),
                                 ],
                               ),
@@ -206,9 +206,9 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                              color: AppColors.navy.withValues(alpha: 0.03),
+                              color: AppColors.brandTint.withValues(alpha: 0.03),
                               child: Text(item.answer,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 12,
                                       height: 1.4,
                                       color: AppColors.textSecondary)),
@@ -229,18 +229,18 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
   Widget _scheduleRow(String day, String hours, {bool muted = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(day, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          Text(day, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           Text(hours,
               style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: muted ? AppColors.textFaint : AppColors.navy)),
+                  color: muted ? AppColors.textFaint : AppColors.brandText)),
         ],
       ),
     );
@@ -293,16 +293,16 @@ class _ContactButton extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(label,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                  Text(sub, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                  Text(sub, style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, size: 18, color: AppColors.textFaint),
+            Icon(Icons.chevron_right, size: 18, color: AppColors.textFaint),
           ],
         ),
       ),
     );
   }
-}
+}

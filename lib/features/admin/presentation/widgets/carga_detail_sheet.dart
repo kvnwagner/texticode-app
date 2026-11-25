@@ -57,7 +57,7 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
   bool _loading = true;
   String? _error;
 
-  static const _orange = Color(0xFFD97706);
+  static Color get _orange => AppColors.iconClient;
   static const _meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
 
   @override
@@ -138,8 +138,8 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
       expand: false,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: AppColors.pageBg,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: ListView(
@@ -170,11 +170,11 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(op.nombreCompleto,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
                         const SizedBox(height: 2),
                         Text('@${op.nombreUsuario}',
-                            style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                            style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
                         const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
@@ -189,7 +189,7 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.textMuted),
+                    icon: Icon(Icons.close_rounded, size: 20, color: AppColors.textMuted),
                   ),
                 ],
               ),
@@ -207,7 +207,7 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
               ),
               const SizedBox(height: 20),
 
-              const Text('Órdenes activas',
+              Text('Órdenes activas',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
               const SizedBox(height: 8),
 
@@ -221,7 +221,7 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
 
   Widget _buildLista() {
     if (_loading) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: 40),
         child: Center(child: CircularProgressIndicator(color: AppColors.navy)),
       );
@@ -232,11 +232,11 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
         padding: const EdgeInsets.symmetric(vertical: 24),
         child: Column(
           children: [
-            const Icon(Icons.wifi_off_rounded, size: 36, color: AppColors.textFaint),
+            Icon(Icons.wifi_off_rounded, size: 36, color: AppColors.textFaint),
             const SizedBox(height: 10),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _cargar,
@@ -249,7 +249,7 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
     }
 
     if (_ordenes.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: 32),
         child: Center(
           child: Text('Sin órdenes activas', style: TextStyle(fontSize: 13, color: AppColors.textFaint)),
@@ -278,7 +278,7 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.pageBg,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.cardBorder),
       ),
@@ -288,7 +288,7 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
           Text(label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 8.5, fontWeight: FontWeight.w600, letterSpacing: 0.3, color: AppColors.textMuted)),
           const SizedBox(height: 4),
           Text('$value', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
@@ -305,8 +305,10 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: vencida ? const Color(0xFFFFF1F1) : Colors.transparent,
-        border: isLast ? null : const Border(bottom: BorderSide(color: AppColors.cardBorder)),
+        color: vencida
+            ? (AppColors.isDark ? AppColors.darkDangerSoft : const Color(0xFFFFF1F1))
+            : Colors.transparent,
+        border: isLast ? null : Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,12 +317,12 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
           Row(
             children: [
               Text('#${o.idOrden}',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textMuted)),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textMuted)),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(o.producto,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
               ),
               const SizedBox(width: 8),
@@ -330,7 +332,7 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
           // Fase (solo si es fase)
           if (o.esFase) ...[
             const SizedBox(height: 3),
-            Text(o.titulo, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+            Text(o.titulo, style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
           ],
           const SizedBox(height: 8),
           // Estado · Fecha límite
@@ -340,7 +342,7 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               if (estado.isNotEmpty)
-                Text(estado, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                Text(estado, style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -382,12 +384,16 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
         bg = AppColors.errorBg;
         break;
       case 'media':
-        fg = const Color(0xFF92400E);
-        bg = const Color(0xFFFEF3C7);
+        fg = AppColors.priorityMediumText;
+        bg = AppColors.isDark
+            ? AppColors.darkWarningSoft
+            : const Color(0xFFFEF3C7);
         break;
       default:
         fg = AppColors.textSecondary;
-        bg = const Color(0xFFF1F5F9);
+        bg = AppColors.isDark
+            ? AppColors.darkCampos
+            : const Color(0xFFF1F5F9);
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -395,4 +401,4 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
       child: Text(prioridad, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: fg)),
     );
   }
-}
+}

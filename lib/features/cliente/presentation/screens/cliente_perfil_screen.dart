@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import '../../../../shared/widgets/editar_perfil_sheet.dart';
+import '../../../../shared/widgets/theme_toggle.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import '../../../auth/data/repositories/google_auth_repository.dart';
 import '../../../admin/data/repositories/calendar_repository.dart';
@@ -201,7 +202,7 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626)),
+                backgroundColor: AppColors.dangerSolid),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Desvincular'),
           ),
@@ -319,7 +320,7 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
           _buildHeader(),
           Expanded(
             child: _loading
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(
                       color: AppColors.navy,
                     ),
@@ -360,26 +361,28 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
                         const SizedBox(height: 10),
                         _ActionButton(
                           icon: _sincronizando
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 18,
                                   height: 18,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.white,
+                                    color: AppColors.perfilBotonFg,
                                   ),
                                 )
-                              : const Icon(
+                              : Icon(
                                   Icons.sync_rounded,
                                   size: 18,
-                                  color: Colors.white,
+                                  color: AppColors.perfilBotonFg,
                                 ),
                           label: _sincronizando
                               ? 'Sincronizando...'
                               : 'Sincronizar Ahora',
                           onTap: _sincronizar,
                         ),
+                        const SizedBox(height: 16),
+                        const ThemeModeSelector(),
                         const SizedBox(height: 28),
-                        const Divider(
+                        Divider(
                           height: 1,
                           color: AppColors.cardBorder,
                         ),
@@ -404,8 +407,8 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
         horizontal: 16,
         vertical: 12,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         border: Border(
           bottom: BorderSide(color: AppColors.cardBorder),
         ),
@@ -419,6 +422,10 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
               borderRadius: BorderRadius.circular(12),
               child: Image.asset(
                 'assets/images/logo_texticode.png',
+                // En oscuro el logo va blanco, como en la web
+                // (filter: brightness(0) invert(0.95)).
+                color: AppColors.logoTint,
+                colorBlendMode: BlendMode.srcIn,
                 width: 46,
                 height: 46,
                 fit: BoxFit.cover,
@@ -433,7 +440,7 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
               'Mi Perfil',
               maxLines: 1,
@@ -473,17 +480,18 @@ class _ProfileCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: AppColors.primaryGradient,
+          colors: AppColors.perfilCardGradient,
         ),
         borderRadius: BorderRadius.circular(22),
+        border: AppColors.isDark
+            ? Border.all(color: AppColors.perfilCardBorder)
+            : null,
         boxShadow: [
           BoxShadow(
-            color: AppColors.navy.withValues(
-              alpha: 0.25,
-            ),
+            color: AppColors.perfilCardShadow,
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -500,21 +508,19 @@ class _ProfileCard extends StatelessWidget {
                 height: 52,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(
-                    alpha: 0.14,
+                  // Igual que .perfil-avatar de la web
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: AppColors.perfilAvatarGradient,
                   ),
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(
-                      alpha: 0.2,
-                    ),
-                  ),
                 ),
                 child: Text(
                   initials,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                     fontSize: 18,
                   ),
                 ),
@@ -542,7 +548,7 @@ class _ProfileCard extends StatelessWidget {
                         color: AppColors.badgeClientBg,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Cliente',
                         style: TextStyle(
                           fontSize: 10,
@@ -728,11 +734,19 @@ class _ActionButton extends StatelessWidget {
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor:
-              isDanger ? const Color(0xFFDC2626) : AppColors.navy,
-          foregroundColor: Colors.white,
+              isDanger ? AppColors.perfilPeligroBg : AppColors.perfilBotonBg,
+          foregroundColor:
+              isDanger ? AppColors.perfilPeligroFg : AppColors.perfilBotonFg,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
+            side: AppColors.isDark
+                ? BorderSide(
+                    color: isDanger
+                        ? AppColors.perfilPeligroBorde
+                        : AppColors.perfilBotonBorde,
+                  )
+                : BorderSide.none,
           ),
         ),
         child: Row(
@@ -806,14 +820,14 @@ class _LogoutButton extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           backgroundColor: AppColors.errorBg,
-          side: const BorderSide(
+          side: BorderSide(
             color: AppColors.errorBorder,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
@@ -835,4 +849,4 @@ class _LogoutButton extends StatelessWidget {
       ),
     );
   }
-}
+}

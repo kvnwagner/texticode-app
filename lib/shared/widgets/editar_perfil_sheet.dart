@@ -176,8 +176,8 @@ class _EditarPerfilSheetState extends State<EditarPerfilSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
@@ -199,7 +199,7 @@ class _EditarPerfilSheetState extends State<EditarPerfilSheet> {
                     ),
                   ),
                 ),
-                const Text('Editar mi perfil',
+                Text('Editar mi perfil',
                     style: TextStyle(
                         fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                 const SizedBox(height: 18),
@@ -234,7 +234,7 @@ class _EditarPerfilSheetState extends State<EditarPerfilSheet> {
                 _passwordHintsRow(),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
-                  Text(_error!, style: const TextStyle(color: AppColors.errorText, fontSize: 12)),
+                  Text(_error!, style: TextStyle(color: AppColors.errorText, fontSize: 12)),
                 ],
                 const SizedBox(height: 20),
                 SizedBox(
@@ -245,7 +245,7 @@ class _EditarPerfilSheetState extends State<EditarPerfilSheet> {
                     onPressed: (_guardando || !_contrasenaValida) ? null : _guardar,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.navy,
-                      disabledBackgroundColor: AppColors.navy.withValues(alpha: 0.35),
+                      disabledBackgroundColor: AppColors.brandTint.withValues(alpha: 0.35),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -319,4 +319,4 @@ class _PwdHint {
   final String label;
   final bool ok;
   const _PwdHint(this.label, this.ok);
-}
+}
