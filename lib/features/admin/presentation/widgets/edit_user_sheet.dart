@@ -183,7 +183,7 @@ class _EditUserSheetState extends State<EditUserSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('ROL', style: _labelStyle),
+        Text('ROL', style: _labelStyle),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           initialValue: _rolSeleccionado,

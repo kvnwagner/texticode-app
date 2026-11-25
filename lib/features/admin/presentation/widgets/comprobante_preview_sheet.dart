@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/comprobante_model.dart';
 import '../../data/models/usuario_model.dart';
-import '../../../../core/theme/app_colors.dart';
 
 /// Vista previa del comprobante dentro de la app (icono de ojito).
 /// Replica el mismo diseño usado en el PDF (ComprobantePdfService):

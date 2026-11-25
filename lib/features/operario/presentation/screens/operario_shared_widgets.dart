@@ -227,15 +227,6 @@ class StatusBadge extends StatelessWidget {
   }
 }
 
-class ScaleStyle extends TextStyle {
-  const ScaleStyle()
-      : super(
-          fontSize: 9,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textFaint,
-        );
-}
-
 class EmptyState extends StatelessWidget {
   final String label;
 
