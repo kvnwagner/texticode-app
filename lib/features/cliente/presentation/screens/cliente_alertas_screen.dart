@@ -82,7 +82,7 @@ class _ClienteAlertasScreenState extends State<ClienteAlertasScreen> {
         ),
         Expanded(
           child: _loading
-              ? Center(
+              ? const Center(
                   child: CircularProgressIndicator(color: AppColors.navy))
               : _error != null
                   ? ErrorState(message: _error!, onRetry: _cargar)
@@ -109,7 +109,7 @@ class _ClienteAlertasScreenState extends State<ClienteAlertasScreen> {
                             count: _materiales.length,
                           ),
                           if (_materiales.isEmpty)
-                            Padding(
+                            const Padding(
                               padding: EdgeInsets.symmetric(vertical: 40),
                               child: Center(
                                 child: Text(
@@ -193,10 +193,10 @@ class _ClienteAlertasScreenState extends State<ClienteAlertasScreen> {
                 color: AppColors.errorBg,
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline,
+                    const Icon(Icons.error_outline,
                         size: 16, color: AppColors.errorText),
                     const SizedBox(width: 8),
-                    Expanded(
+                    const Expanded(
                       child: Text('Alertas de Inventario',
                           style: TextStyle(
                               fontSize: 13,
@@ -246,20 +246,20 @@ class _ClienteAlertasScreenState extends State<ClienteAlertasScreen> {
                           children: [
                             Text(m.nombre,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimary)),
                             const SizedBox(height: 2),
                             Text(m.categoria,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 10.5, color: AppColors.textMuted)),
                           ],
                         ),
                       ),
                       Text('${m.stockActual} ${m.unidad}',
-                          style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                          style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -304,7 +304,7 @@ class _ClienteAlertasScreenState extends State<ClienteAlertasScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.pageBg,
           border: Border.all(color: color.withValues(alpha: 0.35), width: 1.4),
           borderRadius: BorderRadius.circular(18),
         ),
@@ -330,13 +330,13 @@ class _ClienteAlertasScreenState extends State<ClienteAlertasScreen> {
                     children: [
                       Text(m.nombre,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textPrimary)),
                       const SizedBox(height: 2),
                       Text(m.categoria,
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 10.5, color: AppColors.textMuted)),
                     ],
                   ),
@@ -367,11 +367,11 @@ class _ClienteAlertasScreenState extends State<ClienteAlertasScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('${m.stockActual} ${m.unidad} disponibles',
-                    style: TextStyle(
+                    style: const TextStyle(
                         fontSize: 11, color: AppColors.textSecondary)),
                 Text('Mín ${m.stockMinimo} / Máx ${m.stockMaximo}',
                     style:
-                        TextStyle(fontSize: 10, color: AppColors.textFaint)),
+                        const TextStyle(fontSize: 10, color: AppColors.textFaint)),
               ],
             ),
           ],

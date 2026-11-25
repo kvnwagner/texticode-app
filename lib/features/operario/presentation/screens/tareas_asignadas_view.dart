@@ -91,7 +91,7 @@ class _TareasAsignadasViewState extends State<TareasAsignadasView> {
         ),
         Expanded(
           child: widget.loading
-              ? Center(
+              ? const Center(
                   child: CircularProgressIndicator(color: AppColors.navy))
               : widget.error != null
                   ? ErrorState(
@@ -229,7 +229,7 @@ class _StatCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.cardBorder),
         ),
@@ -257,7 +257,7 @@ class _StatCard extends StatelessWidget {
                           Text(
                             item.label,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 10,
                               color: AppColors.textMuted,
                             ),

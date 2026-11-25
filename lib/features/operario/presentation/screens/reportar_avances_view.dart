@@ -45,7 +45,7 @@ class _ReportarAvancesViewState extends State<ReportarAvancesView> {
         ),
         Expanded(
           child: widget.loading
-              ? Center(
+              ? const Center(
                   child: CircularProgressIndicator(color: AppColors.navy))
               : widget.error != null
                   ? ErrorState(
@@ -230,7 +230,7 @@ class _HistoryCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.cardBorder),
       ),
@@ -243,7 +243,7 @@ class _HistoryCard extends StatelessWidget {
             children: [
               Text(
                 fase.codigoOrden,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textFaint,
@@ -277,7 +277,7 @@ class _HistoryCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             fase.producto ?? 'Orden #${fase.idOrden}',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
@@ -286,7 +286,7 @@ class _HistoryCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             'Fase ${fase.numeroFase} completada',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
@@ -318,7 +318,7 @@ class _HistoryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Text(
+          const Text(
             'Registro de finalización',
             style: TextStyle(
               fontSize: 11,
@@ -368,7 +368,7 @@ class _TimelineRow extends StatelessWidget {
           width: 6,
           height: 6,
           margin: const EdgeInsets.only(top: 4),
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppColors.iconActive,
             shape: BoxShape.circle,
           ),
@@ -380,7 +380,7 @@ class _TimelineRow extends StatelessWidget {
             children: [
               Text(
                 date,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
@@ -390,7 +390,7 @@ class _TimelineRow extends StatelessWidget {
               Text(
                 text,
                 style:
-                    TextStyle(fontSize: 10, color: AppColors.textMuted),
+                    const TextStyle(fontSize: 10, color: AppColors.textMuted),
               ),
             ],
           ),
@@ -460,8 +460,8 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
+        decoration: const BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
@@ -479,7 +479,7 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'Completar fase',
                             style: TextStyle(
                               fontSize: 18,
@@ -492,7 +492,7 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                             '${fase.codigoOrden} — ${fase.producto ?? 'Orden #${fase.idOrden}'}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: const TextStyle(
                                 fontSize: 11, color: AppColors.textFaint),
                           ),
                         ],
@@ -505,13 +505,13 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                       icon: const Icon(Icons.close, size: 18),
                       style: IconButton.styleFrom(
                         foregroundColor: AppColors.textFaint,
-                        side: BorderSide(color: AppColors.cardBorder),
+                        side: const BorderSide(color: AppColors.cardBorder),
                       ),
                     ),
                   ],
                 ),
               ),
-              Divider(height: 1, color: AppColors.cardBorder),
+              const Divider(height: 1, color: AppColors.cardBorder),
 
               // ── Resumen de la fase a cerrar ──
               Padding(
@@ -553,7 +553,7 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                       const SizedBox(height: 10),
                       Text(
                         _error!,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: AppColors.errorText,
@@ -572,7 +572,7 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                                   : () => Navigator.of(context).pop(false),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.textSecondary,
-                                side: BorderSide(
+                                side: const BorderSide(
                                     color: AppColors.cardBorder),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
@@ -642,17 +642,17 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(fontSize: 12, color: AppColors.textFaint),
+      hintStyle: const TextStyle(fontSize: 12, color: AppColors.textFaint),
       filled: true,
       fillColor: AppColors.searchBg,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: AppColors.cardBorder),
+        borderSide: const BorderSide(color: AppColors.cardBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: AppColors.navy),
+        borderSide: const BorderSide(color: AppColors.navy),
       ),
     );
   }
@@ -674,7 +674,7 @@ class _SummaryItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 9,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.3,
@@ -684,7 +684,7 @@ class _SummaryItem extends StatelessWidget {
         const SizedBox(height: 3),
         Text(
           value,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w800,
             color: AppColors.textPrimary,
@@ -704,7 +704,7 @@ class _InputLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w700,
         color: AppColors.textSecondary,

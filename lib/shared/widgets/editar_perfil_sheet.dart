@@ -176,8 +176,8 @@ class _EditarPerfilSheetState extends State<EditarPerfilSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
+        decoration: const BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
@@ -199,7 +199,7 @@ class _EditarPerfilSheetState extends State<EditarPerfilSheet> {
                     ),
                   ),
                 ),
-                Text('Editar mi perfil',
+                const Text('Editar mi perfil',
                     style: TextStyle(
                         fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                 const SizedBox(height: 18),
@@ -234,7 +234,7 @@ class _EditarPerfilSheetState extends State<EditarPerfilSheet> {
                 _passwordHintsRow(),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
-                  Text(_error!, style: TextStyle(color: AppColors.errorText, fontSize: 12)),
+                  Text(_error!, style: const TextStyle(color: AppColors.errorText, fontSize: 12)),
                 ],
                 const SizedBox(height: 20),
                 SizedBox(

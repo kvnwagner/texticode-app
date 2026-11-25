@@ -199,7 +199,7 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
         ),
         child: Row(
           children: [
-            Icon(Icons.search, size: 18, color: AppColors.textFaint),
+            const Icon(Icons.search, size: 18, color: AppColors.textFaint),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
@@ -209,7 +209,7 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
                   border: InputBorder.none,
                   isDense: true,
                 ),
-                style: TextStyle(fontSize: 13, color: AppColors.inputText),
+                style: const TextStyle(fontSize: 13, color: AppColors.inputText),
               ),
             ),
           ],
@@ -240,7 +240,7 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
         // la pantalla en vez de solo la lista de abajo. ──
         Expanded(
           child: widget.loading
-              ? Center(child: CircularProgressIndicator(color: AppColors.navy))
+              ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
               : widget.error != null
                   ? ErrorState(message: widget.error!, onRetry: widget.onRefresh)
                   : RefreshIndicator(
@@ -258,7 +258,7 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
                           _buildStats(),
                           const SizedBox(height: 4),
                           if (filtered.isEmpty)
-                            Padding(
+                            const Padding(
                               padding: EdgeInsets.symmetric(vertical: 60),
                               child: Column(
                                 children: [

@@ -70,7 +70,7 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -92,7 +92,7 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                         ),
                         Container(
                           padding: const EdgeInsets.all(16),
-                          color: AppColors.surface,
+                          color: AppColors.pageBg,
                           child: Column(
                             children: [
                               _ContactButton(
@@ -139,7 +139,7 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      const Row(
                         children: [
                           Icon(Icons.support_agent, size: 16, color: AppColors.navy),
                           SizedBox(width: 8),
@@ -188,7 +188,7 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                                 children: [
                                   Expanded(
                                     child: Text(item.question,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w700,
                                             color: AppColors.textPrimary)),
@@ -208,7 +208,7 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                               color: AppColors.navy.withValues(alpha: 0.03),
                               child: Text(item.answer,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       fontSize: 12,
                                       height: 1.4,
                                       color: AppColors.textSecondary)),
@@ -229,13 +229,13 @@ class _ClienteSoporteScreenState extends State<ClienteSoporteScreen> {
   Widget _scheduleRow(String day, String hours, {bool muted = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(day, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          Text(day, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           Text(hours,
               style: TextStyle(
                   fontSize: 12,
@@ -293,13 +293,13 @@ class _ContactButton extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(label,
-                      style: TextStyle(
+                      style: const TextStyle(
                           fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                  Text(sub, style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                  Text(sub, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, size: 18, color: AppColors.textFaint),
+            const Icon(Icons.chevron_right, size: 18, color: AppColors.textFaint),
           ],
         ),
       ),

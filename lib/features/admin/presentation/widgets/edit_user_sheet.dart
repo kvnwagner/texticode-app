@@ -109,7 +109,7 @@ class _EditUserSheetState extends State<EditUserSheet> {
     }
   }
 
-  static TextStyle get _labelStyle => TextStyle(
+  static const _labelStyle = TextStyle(
     fontSize: 10,
     fontWeight: FontWeight.bold,
     letterSpacing: 0.6,
@@ -118,21 +118,21 @@ class _EditUserSheetState extends State<EditUserSheet> {
 
   InputDecoration _dec(String hint) => InputDecoration(
     hintText: hint,
-    hintStyle: TextStyle(color: AppColors.inputPlaceholder, fontSize: 13),
+    hintStyle: const TextStyle(color: AppColors.inputPlaceholder, fontSize: 13),
     filled: true,
     fillColor: AppColors.inputBg,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: AppColors.inputBorder),
+      borderSide: const BorderSide(color: AppColors.inputBorder),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: AppColors.inputBorder),
+      borderSide: const BorderSide(color: AppColors.inputBorder),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: AppColors.navy, width: 1.5),
+      borderSide: const BorderSide(color: AppColors.navy, width: 1.5),
     ),
   );
 
@@ -156,7 +156,7 @@ class _EditUserSheetState extends State<EditUserSheet> {
               if (helper != null)
                 TextSpan(
                   text: '  $helper',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.normal,
                     letterSpacing: 0,
@@ -172,7 +172,7 @@ class _EditUserSheetState extends State<EditUserSheet> {
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
           decoration: _dec(hint),
-          style: TextStyle(fontSize: 13, color: AppColors.inputText),
+          style: const TextStyle(fontSize: 13, color: AppColors.inputText),
           validator: validator,
         ),
       ],
@@ -183,13 +183,13 @@ class _EditUserSheetState extends State<EditUserSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('ROL', style: _labelStyle),
+        const Text('ROL', style: _labelStyle),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           initialValue: _rolSeleccionado,
           decoration: _dec('Selecciona un rol'),
-          icon: Icon(Icons.keyboard_arrow_down, color: AppColors.textFaint),
-          style: TextStyle(fontSize: 13, color: AppColors.inputText),
+          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textFaint),
+          style: const TextStyle(fontSize: 13, color: AppColors.inputText),
           items: _rolIds.keys
               .map((r) => DropdownMenuItem(value: r, child: Text(r)))
               .toList(),
@@ -225,16 +225,16 @@ class _EditUserSheetState extends State<EditUserSheet> {
                     children: [
                       Text(
                         _nombreCtrl.text.trim().isEmpty ? u.nombreCompleto : _nombreCtrl.text,
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary),
                       ),
                       Text('@${_usuarioCtrl.text.trim().isEmpty ? u.nombreUsuario : _usuarioCtrl.text}',
-                          style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                          style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
                       Text(
                         _correoCtrl.text.trim().isEmpty ? (u.correo ?? '') : _correoCtrl.text,
-                        style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                        style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                       ),
                     ],
                   ),
@@ -253,8 +253,8 @@ class _EditUserSheetState extends State<EditUserSheet> {
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
+        decoration: const BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: SafeArea(
@@ -281,7 +281,7 @@ class _EditUserSheetState extends State<EditUserSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Editar Usuario',
+                      const Text('Editar Usuario',
                           style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
@@ -296,7 +296,7 @@ class _EditUserSheetState extends State<EditUserSheet> {
                             shape: BoxShape.circle,
                             border: Border.all(color: AppColors.cardBorder),
                           ),
-                          child: Icon(Icons.close, size: 15, color: AppColors.textMuted),
+                          child: const Icon(Icons.close, size: 15, color: AppColors.textMuted),
                         ),
                       ),
                     ],
@@ -359,7 +359,7 @@ class _EditUserSheetState extends State<EditUserSheet> {
                         border: Border.all(color: AppColors.errorBorder),
                       ),
                       child: Text(_error!,
-                          style: TextStyle(color: AppColors.errorText, fontSize: 12)),
+                          style: const TextStyle(color: AppColors.errorText, fontSize: 12)),
                     ),
                   ],
                   const SizedBox(height: 18),
@@ -371,11 +371,11 @@ class _EditUserSheetState extends State<EditUserSheet> {
                           child: OutlinedButton(
                             onPressed: _loading ? null : () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: AppColors.cardBorder),
+                              side: const BorderSide(color: AppColors.cardBorder),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
                             ),
-                            child: Text('Cancelar',
+                            child: const Text('Cancelar',
                                 style: TextStyle(
                                     color: AppColors.textSecondary,
                                     fontWeight: FontWeight.w600,

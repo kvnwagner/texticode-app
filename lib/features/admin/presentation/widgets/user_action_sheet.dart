@@ -34,7 +34,7 @@ class UserActionSheet extends StatelessWidget {
                 child: const Text('Cancelar')),
             TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text('Eliminar', style: TextStyle(color: AppColors.errorText))),
+                child: const Text('Eliminar', style: TextStyle(color: AppColors.errorText))),
           ],
         ),
       );
@@ -73,8 +73,8 @@ class UserActionSheet extends StatelessWidget {
     }
 
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
+      decoration: const BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SafeArea(
@@ -101,12 +101,12 @@ class UserActionSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(usuario.nombreCompleto,
-                            style: TextStyle(
+                            style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimary)),
                         Text(usuario.correo ?? '',
-                            style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                            style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
                       ],
                     ),
                   ),
@@ -114,7 +114,7 @@ class UserActionSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            Divider(height: 1, color: AppColors.cardBorder),
+            const Divider(height: 1, color: AppColors.cardBorder),
             // "Ver perfil" eliminado.
             _ActionTile(
               icon: Icons.edit_outlined,
@@ -137,10 +137,10 @@ class UserActionSheet extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     backgroundColor: AppColors.searchBg,
-                    side: BorderSide(color: AppColors.cardBorder),
+                    side: const BorderSide(color: AppColors.cardBorder),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: Text('Cancelar',
+                  child: const Text('Cancelar',
                       style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w600)),
                 ),
               ),

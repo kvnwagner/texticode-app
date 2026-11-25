@@ -45,7 +45,7 @@ class TaskCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.cardBorder),
         ),
@@ -64,7 +64,7 @@ class TaskCard extends StatelessWidget {
                         children: [
                           Text(
                             orden.codigoOrden,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textFaint,
@@ -91,7 +91,7 @@ class TaskCard extends StatelessWidget {
                         orden.producto,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
@@ -104,7 +104,7 @@ class TaskCard extends StatelessWidget {
                           orden.descripcion!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 10, color: AppColors.textMuted),
                         ),
                       ],
@@ -114,7 +114,7 @@ class TaskCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               'Prendas: ${orden.cantidadActual}/${orden.cantidadTotal}',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textSecondary,
@@ -123,7 +123,7 @@ class TaskCard extends StatelessWidget {
                           ),
                           Text(
                             'Vence: ${orden.fechaCorta}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: AppColors.errorText,
@@ -142,12 +142,12 @@ class TaskCard extends StatelessWidget {
                                 (m) => Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.layers_outlined,
+                                    const Icon(Icons.layers_outlined,
                                         size: 12, color: AppColors.textFaint),
                                     const SizedBox(width: 4),
                                     Text(
                                       m,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                           fontSize: 10,
                                           color: AppColors.textMuted),
                                     ),
@@ -160,7 +160,7 @@ class TaskCard extends StatelessWidget {
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          Text(
+                          const Text(
                             'Progreso de fabricacion',
                             style: TextStyle(
                                 fontSize: 10, color: AppColors.textSecondary),
@@ -261,7 +261,7 @@ class FaseTaskCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.cardBorder),
         ),
@@ -280,7 +280,7 @@ class FaseTaskCard extends StatelessWidget {
                         children: [
                           Text(
                             fase.codigoOrden,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textFaint,
@@ -305,7 +305,7 @@ class FaseTaskCard extends StatelessWidget {
                         producto,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
@@ -316,7 +316,7 @@ class FaseTaskCard extends StatelessWidget {
                         'Fase ${fase.numeroFase}: ${fase.descripcionFase.isEmpty ? 'Sin descripcion' : fase.descripcionFase}',
                         maxLines: showDescription ? 2 : 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 10,
                           color: AppColors.textMuted,
                         ),
@@ -327,7 +327,7 @@ class FaseTaskCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               'Prendas fase: ${fase.cantidadRealizada}/$total',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textSecondary,
@@ -336,7 +336,7 @@ class FaseTaskCard extends StatelessWidget {
                           ),
                           Text(
                             'Vence: ${fase.fechaCorta}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: AppColors.errorText,
@@ -366,13 +366,13 @@ class FaseTaskCard extends StatelessWidget {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.layers_outlined,
+                                        const Icon(Icons.layers_outlined,
                                             size: 11,
                                             color: AppColors.textFaint),
                                         const SizedBox(width: 4),
                                         Text(
                                           nombre,
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                               fontSize: 10,
                                               color: AppColors.textMuted),
                                         ),
@@ -385,7 +385,7 @@ class FaseTaskCard extends StatelessWidget {
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          Text(
+                          const Text(
                             'Progreso de esta fase',
                             style: TextStyle(
                                 fontSize: 10, color: AppColors.textSecondary),

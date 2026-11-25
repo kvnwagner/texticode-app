@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:app_links/app_links.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'core/theme/theme_controller.dart';
 import 'core/constants/app_constants.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  // Carga el modo claro/oscuro guardado antes de pintar la primera pantalla.
-  await ThemeController.instance.init();
+void main() {
   runApp(const TexticodeApp());
 }
 
@@ -60,27 +55,11 @@ class _TexticodeAppState extends State<TexticodeApp> {
 
   @override
   Widget build(BuildContext context) {
-    final tema = ThemeController.instance;
-    return ListenableBuilder(
-      listenable: tema,
-      builder: (context, _) => MaterialApp.router(
-        title: AppConstants.appName,
-        debugShowCheckedModeBanner: false,
-        // AppColors ya devuelve la paleta del modo activo, por eso se
-        // entrega un solo tema según el modo actual.
-        theme: tema.isDark ? AppTheme.dark : AppTheme.light,
-        themeAnimationDuration: Duration.zero,
-        routerConfig: AppRouter.router,
-        builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-          // Íconos de la barra de estado legibles en ambos modos.
-          value: tema.isDark
-              ? SystemUiOverlayStyle.light
-                  .copyWith(statusBarColor: Colors.transparent)
-              : SystemUiOverlayStyle.dark
-                  .copyWith(statusBarColor: Colors.transparent),
-          child: ThemeRebuilder(child: child ?? const SizedBox.shrink()),
-        ),
-      ),
+    return MaterialApp.router(
+      title: AppConstants.appName,
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
+      routerConfig: AppRouter.router,
     );
   }
 }

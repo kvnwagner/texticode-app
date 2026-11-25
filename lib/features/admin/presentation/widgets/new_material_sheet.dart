@@ -151,7 +151,7 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
   Widget _label(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: Text(text,
-            style: TextStyle(
+            style: const TextStyle(
                 fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.labelColor)),
       );
 
@@ -160,7 +160,7 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Text(_errors[key]!,
-          style: TextStyle(fontSize: 10, color: AppColors.errorText)),
+          style: const TextStyle(fontSize: 10, color: AppColors.errorText)),
     );
   }
 
@@ -169,8 +169,8 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
+        decoration: const BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -185,7 +185,7 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
             ),
             Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
               ),
               child: Row(
@@ -193,7 +193,7 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
                   Expanded(
                     child: Text(
                       _isEdit ? 'Editar Material' : 'Agregar Nuevo Material',
-                      style: TextStyle(
+                      style: const TextStyle(
                           fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                     ),
                   ),
@@ -207,7 +207,7 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
                         border: Border.all(color: AppColors.cardBorder),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Icon(Icons.close, size: 15, color: AppColors.textMuted),
+                      child: const Icon(Icons.close, size: 15, color: AppColors.textMuted),
                     ),
                   ),
                 ],
@@ -223,7 +223,7 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
                     TextField(
                       controller: _nombreCtrl,
                       decoration: _dec(hint: 'Ej: Tela de Algodón', error: _errors['nombre']),
-                      style: TextStyle(fontSize: 13, color: AppColors.inputText),
+                      style: const TextStyle(fontSize: 13, color: AppColors.inputText),
                     ),
                     _errorText('nombre'),
                     const SizedBox(height: 16),
@@ -231,9 +231,9 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
                     DropdownButtonFormField<String>(
                       initialValue: _categoria,
                       decoration: _dec(hint: 'Selecciona categoría', error: _errors['categoria']),
-                      hint: Text('Selecciona categoría',
+                      hint: const Text('Selecciona categoría',
                           style: TextStyle(fontSize: 13, color: AppColors.iconDefault)),
-                      style: TextStyle(fontSize: 13, color: AppColors.inputText),
+                      style: const TextStyle(fontSize: 13, color: AppColors.inputText),
                       items: _categorias
                           .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                           .toList(),
@@ -252,7 +252,7 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
                                 controller: _stockCtrl,
                                 keyboardType: TextInputType.number,
                                 decoration: _dec(hint: '0'),
-                                style: TextStyle(fontSize: 13, color: AppColors.inputText),
+                                style: const TextStyle(fontSize: 13, color: AppColors.inputText),
                               ),
                             ],
                           ),
@@ -266,9 +266,9 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
                               DropdownButtonFormField<String>(
                                 initialValue: _unidad,
                                 decoration: _dec(hint: 'Unidad', error: _errors['unidad']),
-                                hint: Text('Unidad',
+                                hint: const Text('Unidad',
                                     style: TextStyle(fontSize: 13, color: AppColors.iconDefault)),
-                                style: TextStyle(fontSize: 13, color: AppColors.inputText),
+                                style: const TextStyle(fontSize: 13, color: AppColors.inputText),
                                 items: _unidades
                                     .map((u) => DropdownMenuItem(value: u, child: Text(u)))
                                     .toList(),
@@ -292,7 +292,7 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
                                 controller: _minCtrl,
                                 keyboardType: TextInputType.number,
                                 decoration: _dec(hint: '0'),
-                                style: TextStyle(fontSize: 13, color: AppColors.inputText),
+                                style: const TextStyle(fontSize: 13, color: AppColors.inputText),
                               ),
                             ],
                           ),
@@ -307,7 +307,7 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
                                 controller: _maxCtrl,
                                 keyboardType: TextInputType.number,
                                 decoration: _dec(hint: '0'),
-                                style: TextStyle(fontSize: 13, color: AppColors.inputText),
+                                style: const TextStyle(fontSize: 13, color: AppColors.inputText),
                               ),
                             ],
                           ),
@@ -327,7 +327,7 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
                         : DropdownButtonFormField<int?>(
                             initialValue: _idCliente,
                             decoration: _dec(hint: '— Sin cliente asignado —'),
-                            style: TextStyle(fontSize: 13, color: AppColors.inputText),
+                            style: const TextStyle(fontSize: 13, color: AppColors.inputText),
                             items: [
                               const DropdownMenuItem<int?>(
                                   value: null, child: Text('— Sin cliente asignado —')),
@@ -343,7 +343,7 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
             ),
             Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 border: Border(top: BorderSide(color: AppColors.cardBorder)),
               ),
               child: Row(
@@ -353,10 +353,10 @@ class _NewMaterialSheetState extends State<NewMaterialSheet> {
                       onPressed: _saving ? null : () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 13),
-                        side: BorderSide(color: AppColors.cardBorder, width: 1.5),
+                        side: const BorderSide(color: AppColors.cardBorder, width: 1.5),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
-                      child: Text('Cancelar',
+                      child: const Text('Cancelar',
                           style: TextStyle(
                               fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
                     ),

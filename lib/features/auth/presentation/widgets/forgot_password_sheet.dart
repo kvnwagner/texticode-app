@@ -8,7 +8,7 @@ Future<void> showForgotPasswordSheet(BuildContext context) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: AppColors.surface,
+    backgroundColor: Colors.white,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
@@ -107,10 +107,10 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
                 color: AppColors.navy.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(Icons.mail_outline, color: AppColors.navy, size: 20),
+              child: const Icon(Icons.mail_outline, color: AppColors.navy, size: 20),
             ),
             const SizedBox(width: 12),
-            Expanded(
+            const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -141,7 +141,7 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
           },
           decoration: InputDecoration(
             hintText: 'tu@correo.com',
-            prefixIcon: Icon(Icons.mail_outline, size: 18, color: AppColors.iconDefault),
+            prefixIcon: const Icon(Icons.mail_outline, size: 18, color: AppColors.iconDefault),
             errorText: _error,
           ),
         ),
@@ -180,12 +180,12 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
             onPressed: () => Navigator.of(context).pop(),
             style: OutlinedButton.styleFrom(
               backgroundColor: AppColors.inputBg,
-              side: BorderSide(color: AppColors.cardBorder),
+              side: const BorderSide(color: AppColors.cardBorder),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: Text('Cancelar',
+            child: const Text('Cancelar',
                 style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w600)),
           ),
         ),
@@ -198,14 +198,14 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 8),
-        Icon(Icons.check_circle, color: AppColors.iconActive, size: 48),
+        const Icon(Icons.check_circle, color: AppColors.iconActive, size: 48),
         const SizedBox(height: 12),
-        Text(
+        const Text(
           '¡Enlace enviado!',
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17, color: AppColors.headingDark),
         ),
         const SizedBox(height: 6),
-        Text(
+        const Text(
           'Revisa tu bandeja de entrada y sigue las instrucciones.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 13, color: AppColors.textMuted),

@@ -20,18 +20,16 @@ class EficienciaRankingCard extends StatelessWidget {
   });
 
   Color get _rankColor {
-    final oscuro = AppColors.isDark;
-    if (rank == 1) return oscuro ? AppColors.darkWarning : const Color(0xFF92400E);
-    if (rank == 2) return oscuro ? AppColors.darkTexto2 : const Color(0xFF475569);
-    if (rank == 3) return oscuro ? const Color(0xFFF0A878) : const Color(0xFF9A3412);
+    if (rank == 1) return const Color(0xFF92400E);
+    if (rank == 2) return const Color(0xFF475569);
+    if (rank == 3) return const Color(0xFF9A3412);
     return AppColors.textMuted;
   }
 
   Color get _rankBg {
-    final oscuro = AppColors.isDark;
-    if (rank == 1) return oscuro ? const Color(0x26E3B672) : const Color(0xFFFEF3C7);
-    if (rank == 2) return oscuro ? AppColors.darkSuperficieHover : const Color(0xFFF1F5F9);
-    if (rank == 3) return oscuro ? const Color(0x26F0A878) : const Color(0xFFFDE8D4);
+    if (rank == 1) return const Color(0xFFFEF3C7);
+    if (rank == 2) return const Color(0xFFF1F5F9);
+    if (rank == 3) return const Color(0xFFFDE8D4);
     return AppColors.searchBg;
   }
 
@@ -49,7 +47,7 @@ class EficienciaRankingCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.pageBg,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppColors.cardBorder),
         ),
@@ -76,10 +74,10 @@ class EficienciaRankingCard extends StatelessWidget {
                       Text(operario.nombreCompleto,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                       Text('@${operario.nombreUsuario}',
-                          style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                          style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
                     ],
                   ),
                 ),
@@ -96,7 +94,7 @@ class EficienciaRankingCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Text('Prendas / día',
+                const Text('Prendas / día',
                     style:
                         TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
                 const SizedBox(width: 8),
@@ -160,7 +158,7 @@ class _MiniMetric extends StatelessWidget {
       children: [
         Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color)),
         const SizedBox(height: 2),
-        Text(label, style: TextStyle(fontSize: 9, color: AppColors.textFaint)),
+        Text(label, style: const TextStyle(fontSize: 9, color: AppColors.textFaint)),
       ],
     );
   }

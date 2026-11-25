@@ -130,7 +130,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       child: Stack(
         children: [
           _loading
-              ? Center(
+              ? const Center(
               child: CircularProgressIndicator(color: AppColors.navy))
               : _error != null
               ? _buildError()
@@ -182,7 +182,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
         child: Row(
           children: [
-            Icon(Icons.search, size: 18, color: AppColors.textFaint),
+            const Icon(Icons.search, size: 18, color: AppColors.textFaint),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
@@ -192,7 +192,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   border: InputBorder.none,
                   isDense: true,
                 ),
-                style: TextStyle(fontSize: 13, color: AppColors.inputText),
+                style: const TextStyle(fontSize: 13, color: AppColors.inputText),
               ),
             ),
           ],
@@ -289,7 +289,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               Text(s.label,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
                                       color: AppColors.textMuted)),
@@ -328,7 +328,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       child: Row(
         children: [
           Text(title,
-              style: TextStyle(
+              style: const TextStyle(
                   fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           if (filtroActivo) ...[
             const SizedBox(width: 8),
@@ -350,7 +350,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: AppColors.cardBorder),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.close, size: 11, color: AppColors.textMuted),
@@ -374,8 +374,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     final isOp = u.isOperario;
     // Mismo gris que .badge-role.administrador en GestionUsuarios.vue (web),
     // para que el badge de Administrador se vea igual en ambas plataformas.
-    final adminBadgeBg = AppColors.statusPendingBg;
-    final adminBadgeText = AppColors.textSecondary;
+    const adminBadgeBg = Color(0xFFF3F4F6);
+    const adminBadgeText = Color(0xFF374151);
     final badgeBg =
     isOp ? AppColors.badgeOpBlueBg : (u.isAdmin ? adminBadgeBg : AppColors.badgeClientBg);
     final badgeText = isOp
@@ -388,7 +388,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.pageBg,
           border: Border.all(color: AppColors.cardBorder),
           borderRadius: BorderRadius.circular(18),
         ),
@@ -404,7 +404,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   Text(
                     u.nombreCompleto,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary),
@@ -413,15 +413,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   Text(
                     u.correo ?? '',
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+                    style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       Text(u.telefono ?? '',
-                          style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
                       const SizedBox(width: 6),
-                      Text('·', style: TextStyle(color: AppColors.cardBorder)),
+                      const Text('·', style: TextStyle(color: AppColors.cardBorder)),
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -452,7 +452,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   border: Border.all(color: AppColors.cardBorder),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.more_vert, size: 20, color: AppColors.textMuted),
+                child: const Icon(Icons.more_vert, size: 20, color: AppColors.textMuted),
               ),
             ),
           ],
@@ -462,7 +462,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildEmpty() {
-    return Padding(
+    return const Padding(
       padding: EdgeInsets.symmetric(vertical: 40),
       child: Column(
         children: [
@@ -482,13 +482,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
+            const Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
             const SizedBox(height: 12),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
             const SizedBox(height: 4),
-            Text(
+            const Text(
               'Verifica que tu backend Express siga corriendo en el puerto 3001\ny que la IP en api_constants.dart sea correcta.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textFaint, fontSize: 11),

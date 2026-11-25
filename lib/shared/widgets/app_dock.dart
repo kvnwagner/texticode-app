@@ -52,7 +52,7 @@ class _AppDockState extends State<AppDock> {
       child: Container(
         height: dockHeight,
         decoration: BoxDecoration(
-          color: AppColors.dockBg,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(color: AppColors.cardBorder),
           boxShadow: [

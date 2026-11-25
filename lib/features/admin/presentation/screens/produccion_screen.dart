@@ -168,7 +168,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
             child: Stack(
               children: [
                 _loading
-                    ? Center(
+                    ? const Center(
                         child: CircularProgressIndicator(color: AppColors.navy))
                     : _error != null
                         ? _buildError()
@@ -217,7 +217,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
@@ -246,7 +246,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          Expanded(
+          const Expanded(
             child: Text(
               'Gestión de Producción',
               maxLines: 1,
@@ -384,7 +384,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                                       s.label,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 10,
                                         height: 1.2,
                                         fontWeight: FontWeight.w500,
@@ -434,14 +434,14 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Row(
         children: [
-          Icon(Icons.settings_outlined,
+          const Icon(Icons.settings_outlined,
               size: 16, color: AppColors.textMuted),
           const SizedBox(width: 6),
           Expanded(
             child: Text(_tituloListaFiltrada,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary)),
@@ -459,7 +459,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: AppColors.cardBorder),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.close, size: 11, color: AppColors.textMuted),
@@ -523,7 +523,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.pageBg,
           border: Border.all(color: AppColors.cardBorder),
           borderRadius: BorderRadius.circular(18),
         ),
@@ -536,7 +536,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                   child: Text(o.codigoOrden,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textFaint)),
@@ -553,7 +553,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: AppColors.cardBorder),
                     ),
-                    child: Icon(Icons.visibility_outlined,
+                    child: const Icon(Icons.visibility_outlined,
                         size: 14, color: AppColors.navy),
                   ),
                 ),
@@ -573,7 +573,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: AppColors.cardBorder),
                     ),
-                    child: Icon(Icons.edit_outlined,
+                    child: const Icon(Icons.edit_outlined,
                         size: 14, color: AppColors.textMuted),
                   ),
                 ),
@@ -583,7 +583,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
             Text(o.producto,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary)),
@@ -594,7 +594,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                   'Vence: ${o.fechaCorta.isEmpty ? 'Sin fecha' : o.fechaCorta}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                       fontSize: 10, color: AppColors.textFaint)),
             ),
             const SizedBox(height: 10),
@@ -608,7 +608,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                       '${o.cantidadActual} de ${o.cantidadTotal} prendas',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                           fontSize: 11, color: AppColors.textSecondary)),
                 ),
                 const SizedBox(width: 8),
@@ -658,8 +658,8 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
         expand: false,
         builder: (context, scrollController) {
           return Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
+            decoration: const BoxDecoration(
+              color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
@@ -685,7 +685,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                             Text(o.codigoOrden,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.textFaint)),
@@ -693,7 +693,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                             Text(o.producto,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.textPrimary)),
@@ -701,7 +701,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close,
+                        icon: const Icon(Icons.close,
                             color: AppColors.textMuted),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
@@ -757,7 +757,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                                 '${o.cantidadActual} de ${o.cantidadTotal} prendas',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textSecondary)),
@@ -814,7 +814,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                             border: Border.all(color: AppColors.cardBorder),
                           ),
                           child: Text(o.descripcion!,
-                              style: TextStyle(
+                              style: const TextStyle(
                                   fontSize: 12,
                                   height: 1.4,
                                   color: AppColors.textSecondary)),
@@ -824,7 +824,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                       _detalleSectionTitle('Fases y operarios'),
                       const SizedBox(height: 8),
                       if (fases.isEmpty)
-                        Text('Sin fases asignadas',
+                        const Text('Sin fases asignadas',
                             style: TextStyle(
                                 fontSize: 12, color: AppColors.textFaint))
                       else
@@ -850,7 +850,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                                               BorderRadius.circular(20),
                                         ),
                                         child: Text('Fase ${f.numeroFase}',
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.bold,
                                                 color: AppColors
@@ -862,7 +862,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                                             f.nombreOperario ?? 'Operario',
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w700,
                                                 color: AppColors.textPrimary)),
@@ -871,7 +871,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                                       Text(f.estadoFaseLabel,
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.w600,
                                               color: AppColors.textMuted)),
@@ -880,14 +880,14 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                                   if (f.descripcionFase.trim().isNotEmpty) ...[
                                     const SizedBox(height: 6),
                                     Text(f.descripcionFase,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                             fontSize: 11,
                                             color: AppColors.textSecondary)),
                                   ],
                                   const SizedBox(height: 6),
                                   Text(
                                       'Cantidad realizada: ${f.cantidadRealizada}',
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                           fontSize: 10.5,
                                           color: AppColors.textFaint)),
                                 ],
@@ -897,7 +897,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                       _detalleSectionTitle('Materiales'),
                       const SizedBox(height: 8),
                       if (materiales.isEmpty)
-                        Text('Sin materiales asignados',
+                        const Text('Sin materiales asignados',
                             style: TextStyle(
                                 fontSize: 12, color: AppColors.textFaint))
                       else
@@ -915,7 +915,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
                                           Border.all(color: AppColors.cardBorder),
                                     ),
                                     child: Text(m,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w600,
                                             color: AppColors.textSecondary)),
@@ -935,7 +935,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
 
   Widget _detalleSectionTitle(String text) {
     return Text(text,
-        style: TextStyle(
+        style: const TextStyle(
             fontSize: 12.5,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.3,
@@ -971,7 +971,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
               SizedBox(
                 width: anchoLabel,
                 child: Text(label,
-                    style: TextStyle(
+                    style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textMuted)),
@@ -979,7 +979,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(value,
-                    style: TextStyle(
+                    style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary)),
@@ -992,7 +992,7 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
   }
 
   Widget _buildEmpty() {
-    return Padding(
+    return const Padding(
       padding: EdgeInsets.symmetric(vertical: 40),
       child: Column(
         children: [
@@ -1013,15 +1013,15 @@ class _ProduccionScreenState extends State<ProduccionScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wifi_off_rounded,
+            const Icon(Icons.wifi_off_rounded,
                 size: 40, color: AppColors.textFaint),
             const SizedBox(height: 12),
             Text(_error!,
                 textAlign: TextAlign.center,
                 style:
-                    TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                    const TextStyle(color: AppColors.textMuted, fontSize: 13)),
             const SizedBox(height: 4),
-            Text(
+            const Text(
               'Verifica que tu backend Express siga corriendo en el puerto 3001\ny que la IP en api_constants.dart sea correcta.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textFaint, fontSize: 11),

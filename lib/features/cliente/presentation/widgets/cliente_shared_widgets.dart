@@ -20,8 +20,8 @@ class ClienteLogoHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
+      decoration: const BoxDecoration(
+        color: Colors.white,
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
@@ -56,12 +56,12 @@ class ClienteLogoHeader extends StatelessWidget {
                 Text(title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: const TextStyle(
                         fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                 Text(subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                    style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
               ],
             ),
           ),
@@ -83,7 +83,7 @@ class ClienteSectionHeader extends StatelessWidget {
       child: Row(
         children: [
           Text(title,
-              style: TextStyle(
+              style: const TextStyle(
                   fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           if (count != null) ...[
             const SizedBox(width: 8),
@@ -162,7 +162,7 @@ class ClienteStatCard extends StatelessWidget {
                               Text(label,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       fontSize: 9.5,
                                       fontWeight: FontWeight.w500,
                                       color: AppColors.textMuted)),
@@ -247,7 +247,7 @@ class ClienteOrderCard extends StatelessWidget {
         curve: Curves.easeOut,
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: expanded ? AppColors.navy.withValues(alpha: 0.35) : AppColors.cardBorder,
@@ -334,7 +334,7 @@ class ClienteOrderCard extends StatelessWidget {
                                           border: Border.all(color: AppColors.cardBorder),
                                         ),
                                         child: Text(m,
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                                 fontSize: 9,
                                                 fontWeight: FontWeight.w600,
                                                 color: AppColors.textSecondary)),
@@ -348,7 +348,7 @@ class ClienteOrderCard extends StatelessWidget {
                             const SizedBox(height: 8),
                             Text(
                               orden.descripcion!,
-                              style: TextStyle(
+                              style: const TextStyle(
                                   fontSize: 12, height: 1.4, color: AppColors.textSecondary),
                             ),
                           ],
@@ -501,7 +501,7 @@ class ClienteOrderCard extends StatelessWidget {
                             const SizedBox(height: 10),
                             Container(
                               padding: const EdgeInsets.only(top: 10),
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 border: Border(top: BorderSide(color: AppColors.cardBorder)),
                               ),
                               child: Row(
@@ -512,7 +512,7 @@ class ClienteOrderCard extends StatelessWidget {
                                           ? 'Material: ${materialesReales.first}'
                                           : 'Material: —',
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.textSecondary,
@@ -523,7 +523,7 @@ class ClienteOrderCard extends StatelessWidget {
                                     orden.fechaCorta.isEmpty
                                         ? 'Sin fecha'
                                         : 'Entrega: ${orden.fechaCorta}',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.textFaint,
@@ -570,7 +570,7 @@ class _DetailRow extends StatelessWidget {
         SizedBox(
           width: 78,
           child: Text(label,
-              style: TextStyle(
+              style: const TextStyle(
                   fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
         ),
         Expanded(
@@ -578,7 +578,7 @@ class _DetailRow extends StatelessWidget {
             value,
             maxLines: multiline ? 3 : 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: const TextStyle(
                 fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
           ),
         ),
