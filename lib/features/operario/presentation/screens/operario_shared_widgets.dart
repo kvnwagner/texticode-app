@@ -17,8 +17,8 @@ class OperarioHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
@@ -55,7 +55,7 @@ class OperarioHeader extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
@@ -82,21 +82,21 @@ class SearchBox extends StatelessWidget {
       height: 36,
       child: TextField(
         onChanged: onChanged,
-        style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
+        style: TextStyle(fontSize: 12, color: AppColors.textPrimary),
         decoration: InputDecoration(
           hintText: hint,
           prefixIcon:
-              const Icon(Icons.search, size: 16, color: AppColors.textFaint),
+              Icon(Icons.search, size: 16, color: AppColors.textFaint),
           contentPadding: EdgeInsets.zero,
           filled: true,
           fillColor: AppColors.searchBg,
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
-            borderSide: const BorderSide(color: AppColors.cardBorder),
+            borderSide: BorderSide(color: AppColors.cardBorder),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
-            borderSide: const BorderSide(color: AppColors.navy),
+            borderSide: BorderSide(color: AppColors.navy),
           ),
         ),
       ),
@@ -123,7 +123,7 @@ class FilterDropdown<T> extends StatelessWidget {
       height: 34,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.cardBorder),
       ),
@@ -131,9 +131,9 @@ class FilterDropdown<T> extends StatelessWidget {
         child: DropdownButton<T>(
           value: value,
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded,
+          icon: Icon(Icons.keyboard_arrow_down_rounded,
               size: 16, color: AppColors.textFaint),
-          style: const TextStyle(fontSize: 10, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 10, color: AppColors.textPrimary),
           items: items.entries
               .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
               .toList(),
@@ -168,7 +168,7 @@ class SectionTitle extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
@@ -183,7 +183,7 @@ class SectionTitle extends StatelessWidget {
           ),
           child: Text(
             '$count $countLabel',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w700,
               color: AppColors.textMuted,
@@ -247,11 +247,11 @@ class EmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 44),
       child: Column(
         children: [
-          const Icon(Icons.assignment_outlined,
+          Icon(Icons.assignment_outlined,
               size: 34, color: AppColors.textFaint),
           const SizedBox(height: 8),
           Text(label,
-              style: const TextStyle(fontSize: 12, color: AppColors.textFaint)),
+              style: TextStyle(fontSize: 12, color: AppColors.textFaint)),
         ],
       ),
     );
@@ -272,13 +272,13 @@ class ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded,
+            Icon(Icons.wifi_off_rounded,
                 size: 40, color: AppColors.textFaint),
             const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
             ),
             const SizedBox(height: 16),
             ElevatedButton(

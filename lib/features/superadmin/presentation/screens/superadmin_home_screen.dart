@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
+import '../../../../shared/widgets/theme_toggle.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../data/repositories/superadmin_repository.dart';
@@ -11,11 +12,6 @@ import '../../data/repositories/superadmin_repository.dart';
 enum _Filtro { todos, activos, inactivos }
 
 // Colores de estado (mismo criterio que los badges de rol en AdminHomeScreen).
-const _verdeBadgeBg = Color(0xFFDCFCE7);
-const _verdeBadgeText = Color(0xFF166534);
-const _rojo = Color(0xFFDC2626);
-const _rojoBadgeBg = Color(0xFFFEE2E2);
-const _rojoBadgeText = Color(0xFF991B1B);
 
 // Header: ajusta la ruta del logo a la que usa el header de Gestión de Usuarios
 // (revisa la sección `assets:` de pubspec.yaml) y el título si quieres otro.
@@ -237,7 +233,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                   ? Icons.block_outlined
                   : Icons.check_circle_outline,
               label: active ? 'Desactivar' : 'Activar',
-              color: active ? _rojo : AppColors.iconActive,
+              color: active ? AppColors.errorText : AppColors.iconActive,
               onTap: () {
                 Navigator.pop(sheetContext);
                 _toggle(item);
@@ -263,7 +259,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
           child: Column(
             children: [
               if (admins.isEmpty)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 28),
                   child: Text('Esta empresa no tiene administradores.',
                       style:
@@ -278,7 +274,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.pageBg,
+                    color: AppColors.surface,
                     border: Border.all(color: AppColors.cardBorder),
                     borderRadius: BorderRadius.circular(18),
                   ),
@@ -296,21 +292,21 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                           children: [
                             Text('${admin['Nombre_Completo'] ?? ''}',
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimary)),
                             const SizedBox(height: 2),
                             Text('${admin['Correo'] ?? ''}',
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 10,
                                     color: AppColors.textMuted)),
                             const SizedBox(height: 4),
                             _badge(
                                 active ? 'Activo' : 'Inactivo',
-                                active ? _verdeBadgeBg : _rojoBadgeBg,
-                                active ? _verdeBadgeText : _rojoBadgeText),
+                                active ? AppColors.badgeOpGreenBg : AppColors.priorityHighBg,
+                                active ? AppColors.badgeOpGreenText : AppColors.priorityHighText),
                           ],
                         ),
                       ),
@@ -340,7 +336,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                               active ? Icons.block_outlined : Icons.check,
                               size: 18,
                               color:
-                                  active ? _rojo : AppColors.iconActive),
+                                  active ? AppColors.errorText : AppColors.iconActive),
                         ),
                       ),
                     ],
@@ -361,7 +357,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.pageBg,
+      color: AppColors.surface,
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -372,7 +368,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
             child: Stack(
               children: [
                 _loading
-                    ? const Center(
+                    ? Center(
                         child:
                             CircularProgressIndicator(color: AppColors.navy))
                     : _error != null
@@ -418,8 +414,8 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
@@ -428,14 +424,14 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
             _logoAsset,
             height: 36,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Text('TEXTICODE',
+            errorBuilder: (_, __, ___) => Text('TEXTICODE',
                 style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.navy)),
+                    color: AppColors.brandText)),
           ),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Text(
               _tituloHeader,
               maxLines: 1,
@@ -446,6 +442,8 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                   color: AppColors.textPrimary),
             ),
           ),
+          const ThemeToggleButton(size: 32),
+          const SizedBox(width: 8),
           GestureDetector(
             onTap: _logout,
             child: Container(
@@ -456,7 +454,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                 border: Border.all(color: AppColors.cardBorder),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.logout,
+              child: Icon(Icons.logout,
                   size: 18, color: AppColors.textMuted),
             ),
           ),
@@ -469,8 +467,8 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
   Widget _buildTabs() {
     const labels = ['Empresas', 'Roles'];
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
@@ -531,7 +529,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.search, size: 18, color: AppColors.textFaint),
+            Icon(Icons.search, size: 18, color: AppColors.textFaint),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
@@ -544,7 +542,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                   isDense: true,
                 ),
                 style:
-                    const TextStyle(fontSize: 13, color: AppColors.inputText),
+                    TextStyle(fontSize: 13, color: AppColors.inputText),
               ),
             ),
           ],
@@ -566,7 +564,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
       _StatItem(_isEmpresa ? 'Activas' : 'Activos', activos,
           Icons.check_circle_outline, AppColors.iconActive, _Filtro.activos),
       _StatItem(_isEmpresa ? 'Inactivas' : 'Inactivos', inactivos,
-          Icons.block_outlined, _rojo, _Filtro.inactivos),
+          Icons.block_outlined, AppColors.errorText, _Filtro.inactivos),
     ];
 
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
@@ -644,7 +642,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                               Text(s.label,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
                                       color: AppColors.textMuted)),
@@ -684,7 +682,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
       child: Row(
         children: [
           Text(title,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary)),
@@ -714,7 +712,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: AppColors.cardBorder),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.close, size: 11, color: AppColors.textMuted),
@@ -749,7 +747,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.pageBg,
+          color: AppColors.surface,
           border: Border.all(color: AppColors.cardBorder),
           borderRadius: BorderRadius.circular(18),
         ),
@@ -768,14 +766,14 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                 children: [
                   Text(name,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary)),
                   const SizedBox(height: 2),
                   Text(subtitle,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 10, color: AppColors.textMuted)),
                   const SizedBox(height: 4),
                   Row(
@@ -784,12 +782,12 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                         Flexible(
                           child: Text(commercial,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 10,
                                   color: AppColors.textSecondary)),
                         ),
                         const SizedBox(width: 6),
-                        const Text('·',
+                        Text('·',
                             style: TextStyle(color: AppColors.cardBorder)),
                         const SizedBox(width: 6),
                       ],
@@ -797,8 +795,8 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                         _isEmpresa
                             ? (active ? 'Activa' : 'Inactiva')
                             : (active ? 'Activo' : 'Inactivo'),
-                        active ? _verdeBadgeBg : _rojoBadgeBg,
-                        active ? _verdeBadgeText : _rojoBadgeText,
+                        active ? AppColors.badgeOpGreenBg : AppColors.priorityHighBg,
+                        active ? AppColors.badgeOpGreenText : AppColors.priorityHighText,
                       ),
                     ],
                   ),
@@ -816,7 +814,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                   border: Border.all(color: AppColors.cardBorder),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.more_vert,
+                child: Icon(Icons.more_vert,
                     size: 20, color: AppColors.textMuted),
               ),
             ),
@@ -831,14 +829,14 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
       padding: const EdgeInsets.symmetric(vertical: 40),
       child: Column(
         children: [
-          const Icon(Icons.search_off, size: 32, color: AppColors.textFaint),
+          Icon(Icons.search_off, size: 32, color: AppColors.textFaint),
           const SizedBox(height: 8),
           Text(
               _isEmpresa
                   ? 'No se encontraron empresas'
                   : 'No se encontraron roles',
               style:
-                  const TextStyle(color: AppColors.textFaint, fontSize: 13)),
+                  TextStyle(color: AppColors.textFaint, fontSize: 13)),
         ],
       ),
     );
@@ -851,15 +849,15 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded,
+            Icon(Icons.wifi_off_rounded,
                 size: 40, color: AppColors.textFaint),
             const SizedBox(height: 12),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppColors.textMuted, fontSize: 13)),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Verifica que tu backend Express siga corriendo en el puerto 3001\ny que la IP en api_constants.dart sea correcta.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textFaint, fontSize: 11),
@@ -921,8 +919,8 @@ class _SheetShell extends StatelessWidget {
       padding:
           EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SafeArea(
@@ -947,7 +945,7 @@ class _SheetShell extends StatelessWidget {
                 Text(title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary)),
@@ -965,17 +963,18 @@ class _SheetShell extends StatelessWidget {
 class _ActionRow extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
+  final Color? color;
   final VoidCallback onTap;
   const _ActionRow({
     required this.icon,
     required this.label,
     required this.onTap,
-    this.color = AppColors.textPrimary,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? AppColors.textPrimary;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
@@ -984,7 +983,7 @@ class _ActionRow extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-            color: AppColors.pageBg,
+            color: AppColors.surface,
             border: Border.all(color: AppColors.cardBorder),
             borderRadius: BorderRadius.circular(16),
           ),
@@ -1088,11 +1087,11 @@ class _FormSheetState extends State<_FormSheet> {
         controller: c,
         obscureText: obscure,
         keyboardType: type,
-        style: const TextStyle(fontSize: 13, color: AppColors.inputText),
+        style: TextStyle(fontSize: 13, color: AppColors.inputText),
         decoration: InputDecoration(
           labelText: label,
           labelStyle:
-              const TextStyle(fontSize: 12, color: AppColors.textMuted),
+              TextStyle(fontSize: 12, color: AppColors.textMuted),
           filled: true,
           fillColor: AppColors.searchBg,
           isDense: true,
@@ -1135,7 +1134,7 @@ class _FormSheetState extends State<_FormSheet> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(_error!,
-                  style: const TextStyle(color: _rojo, fontSize: 12)),
+                  style: TextStyle(color: AppColors.errorText, fontSize: 12)),
             ),
           Row(
             children: [
@@ -1144,7 +1143,7 @@ class _FormSheetState extends State<_FormSheet> {
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.textMuted,
-                    side: const BorderSide(color: AppColors.cardBorder),
+                    side: BorderSide(color: AppColors.cardBorder),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),

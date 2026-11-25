@@ -166,7 +166,7 @@ class _OperariosScreenState extends State<OperariosScreen> {
       return Container(
         color: AppColors.pageBg,
         child: _loadingSugerencias
-            ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+            ? Center(child: CircularProgressIndicator(color: AppColors.navy))
             : _errorSugerencias != null
                 ? _buildErrorSugerencias()
                 : ReassignOrdersView(
@@ -192,10 +192,10 @@ class _OperariosScreenState extends State<OperariosScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
+            Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
             const SizedBox(height: 12),
             Text(_errorSugerencias!,
-                textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                textAlign: TextAlign.center, style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
             const SizedBox(height: 16),
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -224,7 +224,7 @@ class _OperariosScreenState extends State<OperariosScreen> {
 
   Widget _buildEficienciaBody() {
     return _loadingEficiencia
-        ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+        ? Center(child: CircularProgressIndicator(color: AppColors.navy))
         : _errorEficiencia != null
             ? _buildErrorEficiencia()
             : RefreshIndicator(
@@ -320,7 +320,7 @@ class _OperariosScreenState extends State<OperariosScreen> {
       borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.pageBg,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.cardBorder),
         ),
@@ -344,7 +344,7 @@ class _OperariosScreenState extends State<OperariosScreen> {
                           Text(s.label,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 9.5, fontWeight: FontWeight.w500, color: AppColors.textMuted)),
                         ],
                       ),
@@ -369,16 +369,16 @@ class _OperariosScreenState extends State<OperariosScreen> {
   Widget _buildSectionHeaderEficiencia(int count) {
     return Row(
       children: [
-        const Icon(Icons.bar_chart_rounded, size: 16, color: AppColors.textMuted),
+        Icon(Icons.bar_chart_rounded, size: 16, color: AppColors.textMuted),
         const SizedBox(width: 6),
-        const Text('Ranking de Operarios',
+        Text('Ranking de Operarios',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         const SizedBox(width: 8),
         Container(
           width: 22,
           height: 22,
           alignment: Alignment.center,
-          decoration: const BoxDecoration(color: AppColors.navy, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: AppColors.navy, shape: BoxShape.circle),
           child: Text('$count',
               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
         ),
@@ -387,7 +387,7 @@ class _OperariosScreenState extends State<OperariosScreen> {
   }
 
   Widget _buildEmptyEficiencia() {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(vertical: 40),
       child: Column(
         children: [
@@ -406,10 +406,10 @@ class _OperariosScreenState extends State<OperariosScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
+            Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
             const SizedBox(height: 12),
             Text(_errorEficiencia!,
-                textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                textAlign: TextAlign.center, style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _cargarEficiencia,
@@ -433,7 +433,7 @@ class _OperariosScreenState extends State<OperariosScreen> {
     final ordenesActivas = _totalOrdenesActivas;
 
     return _loading
-        ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+        ? Center(child: CircularProgressIndicator(color: AppColors.navy))
         : _error != null
             ? _buildError()
             : RefreshIndicator(
@@ -564,14 +564,14 @@ class _OperariosScreenState extends State<OperariosScreen> {
   Widget _buildSectionHeader(int count) {
     return Row(
       children: [
-        const Text('Operarios',
+        Text('Operarios',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         const SizedBox(width: 8),
         Container(
           width: 22,
           height: 22,
           alignment: Alignment.center,
-          decoration: const BoxDecoration(color: AppColors.navy, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: AppColors.navy, shape: BoxShape.circle),
           child: Text('$count',
               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
         ),
@@ -623,7 +623,7 @@ class _OperariosScreenState extends State<OperariosScreen> {
         borderRadius: BorderRadius.circular(18),
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.pageBg,
+            color: AppColors.surface,
             border: Border.all(color: AppColors.cardBorder),
             borderRadius: BorderRadius.circular(18),
           ),
@@ -653,13 +653,13 @@ class _OperariosScreenState extends State<OperariosScreen> {
                                     c.nombreCompleto,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
                                     '${c.ordenesActivas} órdenes activas · ${c.fasesActivas} fases',
-                                    style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+                                    style: TextStyle(fontSize: 11.5, color: AppColors.textMuted),
                                   ),
                                 ],
                               ),
@@ -704,12 +704,12 @@ class _OperariosScreenState extends State<OperariosScreen> {
   /// Botón circular del ojo (mismo estilo que el de las órdenes de producción).
   Widget _verDetalleButton(CargaOperario c) {
     return Material(
-      color: AppColors.pageBg,
-      shape: const CircleBorder(side: BorderSide(color: AppColors.cardBorder)),
+      color: AppColors.surface,
+      shape: CircleBorder(side: BorderSide(color: AppColors.cardBorder)),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: () => _verDetalle(c),
-        child: const SizedBox(
+        child: SizedBox(
           width: 36,
           height: 36,
           child: Icon(Icons.visibility_outlined, size: 18, color: AppColors.navy),
@@ -727,7 +727,7 @@ class _OperariosScreenState extends State<OperariosScreen> {
   }
 
   Widget _buildEmpty() {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(vertical: 40),
       child: Column(
         children: [
@@ -747,11 +747,11 @@ class _OperariosScreenState extends State<OperariosScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
+            Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
             const SizedBox(height: 12),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _cargar,
@@ -783,7 +783,7 @@ class _StatMiniCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
-        color: AppColors.pageBg,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.cardBorder),
       ),
@@ -803,7 +803,7 @@ class _StatMiniCard extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+              style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
         ],
       ),
     );

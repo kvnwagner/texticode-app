@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/theme_toggle.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/google_auth_repository.dart';
 import '../../domain/models/user_role.dart';
@@ -93,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -131,6 +132,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     onGoogleSubmit: _handleGoogleLogin,
                     onForgotPassword: () => showForgotPasswordSheet(context),
                   ),
+                ),
+              ),
+            ),
+
+            // Tema: sol / luna (comparte la preferencia con toda la app)
+            const SafeArea(
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: ThemeToggleButton(sobreFondoOscuro: true),
                 ),
               ),
             ),
@@ -199,13 +211,13 @@ class _LoginCard extends StatelessWidget {
           const SizedBox(height: 28),
           _Logo(),
           const SizedBox(height: 12),
-          const Divider(height: 1, color: AppColors.cardBorder),
+          Divider(height: 1, color: AppColors.cardBorder),
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                Text(
                   'Bienvenido',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -215,7 +227,7 @@ class _LoginCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Ingresa tus credenciales para continuar',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 12, color: AppColors.subtitle),
@@ -296,13 +308,13 @@ class _LoginCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.close,
+                        Icon(Icons.close,
                             size: 14, color: AppColors.errorText),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             error!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                               color: AppColors.errorText,
@@ -324,7 +336,7 @@ class _LoginCard extends StatelessWidget {
                       minimumSize: const Size(0, 0),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text(
+                    child: Text(
                       '¿Olvidaste tu contraseña?',
                       style: TextStyle(
                         fontSize: 12,
@@ -355,7 +367,7 @@ class _LoginCard extends StatelessWidget {
                     ),
                     child: Ink(
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
+                        gradient: LinearGradient(
                             colors: AppColors.primaryGradient),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -402,7 +414,7 @@ class _LoginCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                const Row(
+                Row(
                   children: [
                     Expanded(child: Divider(color: AppColors.inputBorder)),
                     Padding(
@@ -423,8 +435,8 @@ class _LoginCard extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: loading ? null : onGoogleSubmit,
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      side: const BorderSide(
+                      backgroundColor: AppColors.surface,
+                      side: BorderSide(
                           color: AppColors.googleBorder, width: 1.5),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -452,7 +464,7 @@ class _LoginCard extends StatelessWidget {
                                 fontSize: 11)),
                       ),
                     ),
-                    label: const Text(
+                    label: Text(
                       'Continuar con Google',
                       style: TextStyle(
                           color: AppColors.googleText,
@@ -463,7 +475,7 @@ class _LoginCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
 
-                const Text(
+                Text(
                   '${AppConstants.appName} © 2026 · ${AppConstants.appTagline}',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 10, color: AppColors.footerText),
@@ -499,7 +511,7 @@ class _Logo extends StatelessWidget {
           filterQuality: FilterQuality.high,
           // Si aún no tienes el logo en assets/images/, este builder
           // muestra un placeholder para que la UI no se rompa.
-          errorBuilder: (_, __, ___) => const Icon(
+          errorBuilder: (_, __, ___) => Icon(
             Icons.checkroom,
             color: AppColors.navy,
             size: 36,
@@ -518,7 +530,7 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w600,
         color: AppColors.labelColor,

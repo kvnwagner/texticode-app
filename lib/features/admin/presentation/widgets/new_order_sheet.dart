@@ -482,7 +482,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
     }
   }
 
-  static const _labelStyle = TextStyle(
+  static TextStyle get _labelStyle => TextStyle(
     fontSize: 10,
     fontWeight: FontWeight.bold,
     letterSpacing: 0.6,
@@ -495,7 +495,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
   InputDecoration _dec(String hint) => InputDecoration(
         hintText: hint,
         hintMaxLines: 1,
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           color: AppColors.inputPlaceholder,
           fontSize: 13,
           overflow: TextOverflow.ellipsis,
@@ -506,15 +506,15 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.inputBorder),
+          borderSide: BorderSide(color: AppColors.inputBorder),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.inputBorder),
+          borderSide: BorderSide(color: AppColors.inputBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.navy, width: 1.5),
+          borderSide: BorderSide(color: AppColors.navy, width: 1.5),
         ),
       );
 
@@ -552,7 +552,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
       keyboardType: keyboardType,
       maxLines: maxLines,
       decoration: _dec(hint),
-      style: const TextStyle(fontSize: 13, color: AppColors.inputText),
+      style: TextStyle(fontSize: 13, color: AppColors.inputText),
       validator: validator,
     );
   }
@@ -601,8 +601,8 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
         child: Container(
           constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.9),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: SafeArea(
@@ -650,7 +650,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                                           : 'Nueva Orden de Producción',
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontSize: 17,
                                           fontWeight: FontWeight.bold,
                                           color: AppColors.textPrimary)),
@@ -661,7 +661,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                                           : 'Completa los campos para registrar la orden',
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontSize: 11,
                                           color: AppColors.textMuted)),
                                 ],
@@ -679,7 +679,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                                   border:
                                       Border.all(color: AppColors.cardBorder),
                                 ),
-                                child: const Icon(Icons.close,
+                                child: Icon(Icons.close,
                                     size: 15, color: AppColors.textMuted),
                               ),
                             ),
@@ -698,9 +698,9 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                           decoration: _dec(_loadingDatos
                               ? 'Cargando...'
                               : 'Selecciona un cliente'),
-                          icon: const Icon(Icons.keyboard_arrow_down,
+                          icon: Icon(Icons.keyboard_arrow_down,
                               color: AppColors.textFaint),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 13, color: AppColors.inputText),
                           items: _clientes
                               .map((c) => DropdownMenuItem(
@@ -798,9 +798,9 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                           decoration: _dec(_loadingDatos
                               ? 'Cargando...'
                               : 'Seleccionar operario'),
-                          icon: const Icon(Icons.keyboard_arrow_down,
+                          icon: Icon(Icons.keyboard_arrow_down,
                               color: AppColors.textFaint),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 13, color: AppColors.inputText),
                           items: _operarios
                               .map((o) => DropdownMenuItem(
@@ -873,9 +873,9 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                                     isExpanded: true,
                                     initialValue: _prioridad,
                                     decoration: _dec('Media'),
-                                    icon: const Icon(Icons.keyboard_arrow_down,
+                                    icon: Icon(Icons.keyboard_arrow_down,
                                         color: AppColors.textFaint),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontSize: 13,
                                         color: AppColors.inputText),
                                     items: const ['Baja', 'Media', 'Alta']
@@ -904,9 +904,9 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                                     isExpanded: true,
                                     initialValue: _dificultad,
                                     decoration: _dec('Media'),
-                                    icon: const Icon(Icons.keyboard_arrow_down,
+                                    icon: Icon(Icons.keyboard_arrow_down,
                                         color: AppColors.textFaint),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontSize: 13,
                                         color: AppColors.inputText),
                                     items: const ['Baja', 'Media', 'Alta']
@@ -969,7 +969,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                               border: Border.all(color: AppColors.errorBorder),
                             ),
                             child: Text(_error!,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: AppColors.errorText, fontSize: 12)),
                           ),
                         ],
@@ -987,13 +987,13 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                                   style: OutlinedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 8),
-                                    side: const BorderSide(
+                                    side: BorderSide(
                                         color: AppColors.cardBorder),
                                     shape: RoundedRectangleBorder(
                                         borderRadius:
                                             BorderRadius.circular(16)),
                                   ),
-                                  child: const Text('Cancelar',
+                                  child: Text('Cancelar',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
@@ -1072,8 +1072,8 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                             : 'Ya agregaste todos los materiales con stock')
                         : '+ Agregar material...')),
       ),
-      icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textFaint),
-      style: const TextStyle(fontSize: 13, color: AppColors.inputText),
+      icon: Icon(Icons.keyboard_arrow_down, color: AppColors.textFaint),
+      style: TextStyle(fontSize: 13, color: AppColors.inputText),
       items: _materialesDisponiblesParaAgregar
           .map((m) => DropdownMenuItem(
                 value: m,
@@ -1097,7 +1097,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
       keyboardType: TextInputType.number,
       textAlign: TextAlign.center,
       decoration: _dec('Fase'),
-      style: const TextStyle(fontSize: 13, color: AppColors.inputText),
+      style: TextStyle(fontSize: 13, color: AppColors.inputText),
     );
   }
 
@@ -1105,7 +1105,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
     return TextFormField(
       controller: _descripcionFaseCtrl,
       decoration: _dec('Descripción de la fase'),
-      style: const TextStyle(fontSize: 13, color: AppColors.inputText),
+      style: TextStyle(fontSize: 13, color: AppColors.inputText),
     );
   }
 
@@ -1130,7 +1130,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                   fase.operario.nombreCompleto,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -1168,9 +1168,9 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                   width: 30,
                   height: 30,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                       color: AppColors.errorBg, shape: BoxShape.circle),
-                  child: const Icon(Icons.close,
+                  child: Icon(Icons.close,
                       size: 14, color: AppColors.errorText),
                 ),
               ),
@@ -1186,7 +1186,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
                   decoration: _dec('Fase'),
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 12.5, color: AppColors.inputText),
                   onChanged: (v) =>
                       fase.numeroFase = int.tryParse(v) ?? fase.numeroFase,
@@ -1197,7 +1197,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                 child: TextFormField(
                   controller: fase.descripcionCtrl,
                   decoration: _dec('Descripción'),
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 12.5, color: AppColors.inputText),
                 ),
               ),
@@ -1226,7 +1226,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                 Text(s.material.nombre,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary)),
@@ -1234,7 +1234,7 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
                     'Disponible: ${s.material.stockActual} ${s.material.unidad}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 10.5, color: AppColors.textFaint)),
               ],
             ),
@@ -1248,12 +1248,12 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               textAlign: TextAlign.center,
               style:
-                  const TextStyle(fontSize: 12.5, color: AppColors.inputText),
+                  TextStyle(fontSize: 12.5, color: AppColors.inputText),
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: AppColors.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   // Borde rojo mientras la cantidad sea menor que 1
@@ -1299,10 +1299,10 @@ class _NewOrderSheetState extends State<NewOrderSheet> {
               width: 30,
               height: 30,
               alignment: Alignment.center,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                   color: AppColors.errorBg, shape: BoxShape.circle),
               child:
-                  const Icon(Icons.close, size: 14, color: AppColors.errorText),
+                  Icon(Icons.close, size: 14, color: AppColors.errorText),
             ),
           ),
         ],

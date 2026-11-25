@@ -75,7 +75,7 @@ class _MainShellState extends State<MainShell> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
@@ -91,7 +91,7 @@ class _MainShellState extends State<MainShell> {
                 height: 46,
                 fit: BoxFit.cover,
                 filterQuality: FilterQuality.high,
-                errorBuilder: (context, error, stackTrace) => const AvatarWidget(
+                errorBuilder: (context, error, stackTrace) => AvatarWidget(
                   initials: 'TC',
                   size: 46,
                   bg: AppColors.navy,
@@ -101,7 +101,7 @@ class _MainShellState extends State<MainShell> {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text('Gestión de Usuarios',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -146,7 +146,7 @@ class _MainShellState extends State<MainShell> {
     const tabs = ['Usuarios', 'Clientes', 'Operarios'];
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(

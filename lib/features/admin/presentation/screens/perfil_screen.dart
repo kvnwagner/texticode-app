@@ -4,6 +4,7 @@ import '../../../../core/routing/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import '../../../../shared/widgets/editar_perfil_sheet.dart';
+import '../../../../shared/widgets/theme_toggle.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import '../../../auth/data/repositories/google_auth_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
@@ -253,7 +254,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           _buildHeader(),
           Expanded(
             child: _loading
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(color: AppColors.navy))
                 : SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -298,8 +299,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
                               : 'Sincronizar Ahora',
                           onTap: _sincronizar,
                         ),
+                        const SizedBox(height: 16),
+                        const ThemeModeSelector(),
                         const SizedBox(height: 28),
-                        const Divider(height: 1, color: AppColors.cardBorder),
+                        Divider(height: 1, color: AppColors.cardBorder),
                         const SizedBox(height: 20),
                         _LogoutButton(onTap: () => _logout(context)),
                       ],
@@ -316,8 +319,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
@@ -343,7 +346,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text('Mi Perfil',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -380,7 +383,7 @@ class _ProfileCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: AppColors.primaryGradient,
@@ -434,7 +437,7 @@ class _ProfileCard extends StatelessWidget {
                         color: AppColors.badgeAdminBg,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text('Administrador',
+                      child: Text('Administrador',
                           style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -621,11 +624,11 @@ class _LogoutButton extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           backgroundColor: AppColors.errorBg,
-          side: const BorderSide(color: AppColors.errorBorder),
+          side: BorderSide(color: AppColors.errorBorder),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.close, size: 15, color: AppColors.errorText),

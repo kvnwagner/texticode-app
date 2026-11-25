@@ -405,7 +405,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
               _buildHeader(),
               Expanded(
                 child: _loading
-                    ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+                    ? Center(child: CircularProgressIndicator(color: AppColors.navy))
                     : _error != null
                         ? _buildError()
                         : RefreshIndicator(
@@ -471,7 +471,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
             Positioned.fill(
               child: Container(
                 color: Colors.black.withValues(alpha: 0.15),
-                child: const Center(
+                child: Center(
                   child: CircularProgressIndicator(color: AppColors.navy),
                 ),
               ),
@@ -484,7 +484,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
@@ -512,7 +512,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
               'Reportes',
               maxLines: 1,
@@ -574,7 +574,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
       borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.pageBg,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.cardBorder),
         ),
@@ -603,7 +603,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
                           Text(metric.label,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.textMuted)),
                         ],
                       ),
@@ -634,11 +634,11 @@ class _ReportesScreenState extends State<ReportesScreen> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           PopupMenuButton<String>(
-            color: Colors.white,
+            color: AppColors.surface,
             offset: const Offset(0, 32),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
-              side: const BorderSide(color: AppColors.cardBorder),
+              side: BorderSide(color: AppColors.cardBorder),
             ),
             onSelected: (v) => setState(() => _filtro = v),
             itemBuilder: (context) => _tiposFiltro.map((t) {
@@ -666,7 +666,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.filter_alt_outlined, size: 13, color: AppColors.textMuted),
+                  Icon(Icons.filter_alt_outlined, size: 13, color: AppColors.textMuted),
                   const SizedBox(width: 6),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 90),
@@ -674,23 +674,23 @@ class _ReportesScreenState extends State<ReportesScreen> {
                       _filtro,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.keyboard_arrow_down, size: 15, color: AppColors.textFaint),
+                  Icon(Icons.keyboard_arrow_down, size: 15, color: AppColors.textFaint),
                 ],
               ),
             ),
           ),
           const SizedBox(width: 8),
           PopupMenuButton<String>(
-            color: Colors.white,
+            color: AppColors.surface,
             offset: const Offset(0, 32),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
-              side: const BorderSide(color: AppColors.cardBorder),
+              side: BorderSide(color: AppColors.cardBorder),
             ),
             onSelected: (v) {
               setState(() => _mesFiltro = v);
@@ -738,7 +738,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.calendar_month_outlined, size: 13, color: AppColors.textMuted),
+                  Icon(Icons.calendar_month_outlined, size: 13, color: AppColors.textMuted),
                   const SizedBox(width: 6),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 100),
@@ -746,12 +746,12 @@ class _ReportesScreenState extends State<ReportesScreen> {
                       _periodoLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.keyboard_arrow_down, size: 15, color: AppColors.textFaint),
+                  Icon(Icons.keyboard_arrow_down, size: 15, color: AppColors.textFaint),
                 ],
               ),
             ),
@@ -774,7 +774,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.pageBg,
+          color: AppColors.surface,
           border: Border.all(color: AppColors.cardBorder),
           borderRadius: BorderRadius.circular(18),
         ),
@@ -797,10 +797,10 @@ class _ReportesScreenState extends State<ReportesScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(titulo,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                       const SizedBox(height: 2),
-                      Text(subtitulo, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                      Text(subtitulo, style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
                     ],
                   ),
                 ),
@@ -808,7 +808,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration:
                       BoxDecoration(color: AppColors.badgeOpGreenBg, borderRadius: BorderRadius.circular(20)),
-                  child: const Text('Generado',
+                  child: Text('Generado',
                       style: TextStyle(
                           fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.badgeOpGreenText)),
                 ),
@@ -824,7 +824,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
                     label: const Text('Ver', style: TextStyle(fontSize: 11, color: Colors.white)),
                     style: OutlinedButton.styleFrom(
                       backgroundColor: AppColors.navy,
-                      side: const BorderSide(color: AppColors.navy),
+                      side: BorderSide(color: AppColors.navy),
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -875,11 +875,11 @@ class _ReportesScreenState extends State<ReportesScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
+            Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
             const SizedBox(height: 12),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _cargar,
@@ -953,8 +953,8 @@ class _ReportePdfPreviewSheetState extends State<_ReportePdfPreviewSheet> {
       expand: false,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -977,7 +977,7 @@ class _ReportePdfPreviewSheetState extends State<_ReportePdfPreviewSheet> {
                         'Reporte de ${widget.titulo}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
@@ -985,13 +985,13 @@ class _ReportePdfPreviewSheetState extends State<_ReportePdfPreviewSheet> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: AppColors.textMuted),
+                      icon: Icon(Icons.close, color: AppColors.textMuted),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
               ),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Text(
                   'Pellizca con dos dedos para ampliar cualquier zona del reporte.',
@@ -1004,13 +1004,13 @@ class _ReportePdfPreviewSheetState extends State<_ReportePdfPreviewSheet> {
                   future: _bytesFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState != ConnectionState.done) {
-                      return const Center(
+                      return Center(
                         child: CircularProgressIndicator(color: AppColors.navy),
                       );
                     }
 
                     if (snapshot.hasError || !snapshot.hasData) {
-                      return const Center(
+                      return Center(
                         child: Text(
                           'No se pudo generar la vista previa.',
                           style: TextStyle(fontSize: 12, color: AppColors.textMuted),
@@ -1075,13 +1075,13 @@ class _PdfZoomableViewState extends State<_PdfZoomableView> {
       future: _pagesFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(
+          return Center(
             child: CircularProgressIndicator(color: AppColors.navy),
           );
         }
 
         if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
               'No se pudo generar la vista previa.',
               style: TextStyle(fontSize: 12, color: AppColors.textMuted),
@@ -1107,7 +1107,7 @@ class _PdfZoomableViewState extends State<_PdfZoomableView> {
                       child: Text(
                         'Página ${i + 1} de ${paginas.length}',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 10, color: AppColors.textFaint),
+                        style: TextStyle(fontSize: 10, color: AppColors.textFaint),
                       ),
                     ),
                   ClipRRect(

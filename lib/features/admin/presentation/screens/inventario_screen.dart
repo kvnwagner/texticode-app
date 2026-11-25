@@ -71,7 +71,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
               onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar', style: TextStyle(color: AppColors.errorText)),
+            child: Text('Eliminar', style: TextStyle(color: AppColors.errorText)),
           ),
         ],
       ),
@@ -100,7 +100,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
               _buildHeader(),
               Expanded(
                 child: _loading
-                    ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+                    ? Center(child: CircularProgressIndicator(color: AppColors.navy))
                     : _error != null
                         ? _buildError()
                         : RefreshIndicator(
@@ -149,7 +149,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
@@ -177,7 +177,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
               'Gestión de Inventario',
               maxLines: 1,
@@ -211,7 +211,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.search, size: 16, color: AppColors.textFaint),
+                  Icon(Icons.search, size: 16, color: AppColors.textFaint),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
@@ -221,7 +221,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                         border: InputBorder.none,
                         isDense: true,
                       ),
-                      style: const TextStyle(fontSize: 13, color: AppColors.inputText),
+                      style: TextStyle(fontSize: 13, color: AppColors.inputText),
                     ),
                   ),
                 ],
@@ -243,9 +243,9 @@ class _InventarioScreenState extends State<InventarioScreen> {
                 child: DropdownButton<String>(
                   value: _catFiltro,
                   isExpanded: true,
-                  icon: const Icon(Icons.keyboard_arrow_down,
+                  icon: Icon(Icons.keyboard_arrow_down,
                       size: 16, color: AppColors.textFaint),
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
                   items: _categoriasFiltro
                       .map((c) => DropdownMenuItem(
@@ -289,7 +289,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
       borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.pageBg,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.cardBorder),
         ),
@@ -320,7 +320,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                         textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                        style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
                   ],
                 ),
               ),
@@ -349,9 +349,9 @@ class _InventarioScreenState extends State<InventarioScreen> {
                 color: AppColors.errorBg,
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, size: 16, color: AppColors.errorText),
+                    Icon(Icons.error_outline, size: 16, color: AppColors.errorText),
                     const SizedBox(width: 8),
-                    const Expanded(
+                    Expanded(
                       child: Text('Alertas de Inventario',
                           style: TextStyle(
                               fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.errorText)),
@@ -394,14 +394,14 @@ class _InventarioScreenState extends State<InventarioScreen> {
                             children: [
                               Text(m.nombre,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.textPrimary)),
                               const SizedBox(height: 2),
                               Row(
                                 children: [
-                                  const Icon(Icons.person_outline,
+                                  Icon(Icons.person_outline,
                                       size: 11,
                                       color: AppColors.textMuted),
                                   const SizedBox(width: 3),
@@ -409,7 +409,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                                     child: Text(
                                         m.nombreCliente ?? 'Sin cliente asignado',
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 10.5,
                                             color: AppColors.textMuted)),
                                   ),
@@ -419,7 +419,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                           ),
                         ),
                         Text('${m.stockActual} ${m.unidad}',
-                            style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                            style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -454,19 +454,19 @@ class _InventarioScreenState extends State<InventarioScreen> {
             height: 26,
             decoration: BoxDecoration(
                 color: AppColors.navy.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(9)),
-            child: const Icon(Icons.inventory_2_outlined, size: 13, color: AppColors.navy),
+            child: Icon(Icons.inventory_2_outlined, size: 13, color: AppColors.navy),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(title,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           ),
           Container(
             width: 22,
             height: 22,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(color: AppColors.navy, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: AppColors.navy, shape: BoxShape.circle),
             child: Text('$count',
                 style: const TextStyle(
                     fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
@@ -501,7 +501,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.pageBg,
+          color: AppColors.surface,
           border: Border.all(
               color: low ? AppColors.iconClient.withValues(alpha: 0.4) : AppColors.cardBorder,
               width: low ? 1.5 : 1),
@@ -535,7 +535,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                           Expanded(
                             child: Text(m.nombre,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.textPrimary)),
@@ -565,7 +565,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                           Expanded(
                             child: Text('Min ${m.stockMinimo} / Max ${m.stockMaximo}',
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 10, color: AppColors.textFaint)),
+                                style: TextStyle(fontSize: 10, color: AppColors.textFaint)),
                           ),
                         ],
                       ),
@@ -604,7 +604,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                             decoration: BoxDecoration(
                                 color: AppColors.navy.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8)),
-                            child: const Icon(Icons.edit_outlined, size: 12, color: AppColors.navy),
+                            child: Icon(Icons.edit_outlined, size: 12, color: AppColors.navy),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -616,7 +616,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                             decoration: BoxDecoration(
                                 color: AppColors.errorBg,
                                 borderRadius: BorderRadius.circular(8)),
-                            child: const Icon(Icons.delete_outline,
+                            child: Icon(Icons.delete_outline,
                                 size: 12, color: AppColors.errorText),
                           ),
                         ),
@@ -642,7 +642,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
               children: [
                 Text(m.nombreCliente ?? 'Sin cliente asignado',
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 9, color: AppColors.textFaint)),
+                    style: TextStyle(fontSize: 9, color: AppColors.textFaint)),
                 Text('${(m.stockPct * 100).round()}%',
                     style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: barColor)),
               ],
@@ -654,7 +654,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
   }
 
   Widget _buildEmpty() {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(vertical: 40),
       child: Column(
         children: [
@@ -674,13 +674,13 @@ class _InventarioScreenState extends State<InventarioScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
+            Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textFaint),
             const SizedBox(height: 12),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Verifica que tu backend Express siga corriendo en el puerto 3001\ny que la IP en api_constants.dart sea correcta.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textFaint, fontSize: 11),

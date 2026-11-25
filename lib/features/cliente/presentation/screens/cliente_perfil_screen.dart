@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import '../../../../shared/widgets/editar_perfil_sheet.dart';
+import '../../../../shared/widgets/theme_toggle.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import '../../../auth/data/repositories/google_auth_repository.dart';
 import '../../../admin/data/repositories/calendar_repository.dart';
@@ -319,7 +320,7 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
           _buildHeader(),
           Expanded(
             child: _loading
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(
                       color: AppColors.navy,
                     ),
@@ -378,8 +379,10 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
                               : 'Sincronizar Ahora',
                           onTap: _sincronizar,
                         ),
+                        const SizedBox(height: 16),
+                        const ThemeModeSelector(),
                         const SizedBox(height: 28),
-                        const Divider(
+                        Divider(
                           height: 1,
                           color: AppColors.cardBorder,
                         ),
@@ -404,8 +407,8 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
         horizontal: 16,
         vertical: 12,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         border: Border(
           bottom: BorderSide(color: AppColors.cardBorder),
         ),
@@ -433,7 +436,7 @@ class _ClientePerfilScreenState extends State<ClientePerfilScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
               'Mi Perfil',
               maxLines: 1,
@@ -473,7 +476,7 @@ class _ProfileCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: AppColors.primaryGradient,
@@ -542,7 +545,7 @@ class _ProfileCard extends StatelessWidget {
                         color: AppColors.badgeClientBg,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Cliente',
                         style: TextStyle(
                           fontSize: 10,
@@ -806,14 +809,14 @@ class _LogoutButton extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           backgroundColor: AppColors.errorBg,
-          side: const BorderSide(
+          side: BorderSide(
             color: AppColors.errorBorder,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(

@@ -184,8 +184,8 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
       expand: false,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -222,7 +222,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                     Expanded(
                       child: Text(
                         _detalle?['Nombre_Completo'] ?? 'Detalle del operario',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                       ),
                     ),
@@ -245,7 +245,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                 ),
                 if (_detalle?['Nombre_Usuario'] != null)
                   Text('@${_detalle!['Nombre_Usuario']}',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                      style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
               ],
             ),
           ),
@@ -260,7 +260,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.cardBorder),
               ),
-              child: const Icon(Icons.close, size: 15, color: AppColors.textMuted),
+              child: Icon(Icons.close, size: 15, color: AppColors.textMuted),
             ),
           ),
         ],
@@ -270,7 +270,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
 
   Widget _buildBody(ScrollController scrollController) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.navy));
+      return Center(child: CircularProgressIndicator(color: AppColors.navy));
     }
     if (_error != null) {
       return Center(
@@ -279,7 +279,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted)),
+              Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.textMuted)),
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: _cargar,
@@ -329,11 +329,11 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
         const SizedBox(height: 20),
         _buildTendencia(),
         const SizedBox(height: 20),
-        const Text('Órdenes',
+        Text('Órdenes',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         const SizedBox(height: 10),
         if (ordenes.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
             child: Text('Sin órdenes asignadas', style: TextStyle(color: AppColors.textFaint)),
           ),
@@ -354,9 +354,9 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
         child: Column(
           children: [
             Text(value,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.navy)),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.brandText)),
             const SizedBox(height: 2),
-            Text(label, style: const TextStyle(fontSize: 9, color: AppColors.textMuted)),
+            Text(label, style: TextStyle(fontSize: 9, color: AppColors.textMuted)),
           ],
         ),
       ),
@@ -376,7 +376,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
           children: [
             Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
             const SizedBox(height: 2),
-            Text(label, style: const TextStyle(fontSize: 9, color: AppColors.textMuted)),
+            Text(label, style: TextStyle(fontSize: 9, color: AppColors.textMuted)),
           ],
         ),
       ),
@@ -388,7 +388,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.pageBg,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.cardBorder),
       ),
@@ -397,9 +397,9 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
         children: [
           Row(
             children: [
-              const Icon(Icons.trending_up_rounded, size: 16, color: AppColors.textMuted),
+              Icon(Icons.trending_up_rounded, size: 16, color: AppColors.textMuted),
               const SizedBox(width: 6),
-              const Expanded(
+              Expanded(
                 child: Text('Tendencia de rendimiento',
                     style: TextStyle(
                         fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
@@ -416,7 +416,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                       SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))),
             )
           else if (_historial == null)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Text('No se pudo cargar la tendencia.',
                   style: TextStyle(fontSize: 11, color: AppColors.textFaint)),
@@ -499,7 +499,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                     Text(label,
                         style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color)),
                     Text(diferenciaLabel,
-                        style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                        style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
                   ],
                 ),
               ),
@@ -509,7 +509,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                   decoration: BoxDecoration(
                       color: AppColors.errorBg, borderRadius: BorderRadius.circular(999)),
                   child: Text('${h.actual.retrasos} retraso(s)',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.errorText)),
                 ),
             ],
@@ -532,7 +532,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.cardBorder),
       ),
@@ -540,18 +540,18 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(titulo,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: AppColors.textFaint)),
           const SizedBox(height: 4),
           Text('${p.prendasPorDia} prendas/día',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.navy)),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.brandText)),
           const SizedBox(height: 6),
           Row(
             children: [
-              const Icon(Icons.check_circle_outline, size: 11, color: AppColors.iconActive),
+              Icon(Icons.check_circle_outline, size: 11, color: AppColors.iconActive),
               const SizedBox(width: 3),
               Text('${p.completadas} completadas',
-                  style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                  style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
             ],
           ),
           const SizedBox(height: 2),
@@ -561,7 +561,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                   size: 11, color: p.retrasos > 0 ? AppColors.errorText : AppColors.textFaint),
               const SizedBox(width: 3),
               Text('${p.retrasos} retrasos',
-                  style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                  style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
             ],
           ),
         ],
@@ -581,7 +581,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
       curve: Curves.easeOut,
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: AppColors.pageBg,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: expanded
@@ -614,7 +614,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                         child: Text(o.producto,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                       ),
                       if (o.tieneProblema) ...[
@@ -627,11 +627,11 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.report_problem_outlined,
+                              Icon(Icons.report_problem_outlined,
                                   size: 11, color: AppColors.iconClient),
                               const SizedBox(width: 3),
                               Text('${o.observaciones.length}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.iconClient)),
                             ],
                           ),
@@ -645,7 +645,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                             color: AppColors.errorBg,
                             borderRadius: BorderRadius.circular(999),
                           ),
-                          child: const Text('Vencida',
+                          child: Text('Vencida',
                               style: TextStyle(
                                   fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.errorText)),
                         ),
@@ -653,7 +653,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                       AnimatedRotation(
                         turns: expanded ? 0.5 : 0,
                         duration: const Duration(milliseconds: 180),
-                        child: const Icon(Icons.keyboard_arrow_down_rounded,
+                        child: Icon(Icons.keyboard_arrow_down_rounded,
                             size: 20, color: AppColors.textFaint),
                       ),
                     ],
@@ -663,7 +663,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(o.estado,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textMuted)),
                       Text('${(o.avance * 100).round()}%',
                           style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: accent)),
@@ -691,7 +691,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
             firstChild: Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: AppColors.cardBorder)),
               ),
               child: Column(
@@ -711,10 +711,10 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                   const SizedBox(height: 14),
                   Row(
                     children: [
-                      const Icon(Icons.forum_outlined, size: 14, color: AppColors.textMuted),
+                      Icon(Icons.forum_outlined, size: 14, color: AppColors.textMuted),
                       const SizedBox(width: 6),
                       Text('Observaciones — Orden #${o.idOrden}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w800,
                               color: AppColors.textPrimary)),
@@ -722,7 +722,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                   ),
                   const SizedBox(height: 10),
                   if (o.observaciones.isEmpty)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(vertical: 6),
                       child: Text('Sin observaciones registradas.',
                           style: TextStyle(fontSize: 11, color: AppColors.textFaint)),
@@ -740,21 +740,21 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                       isDense: true,
                       counterText: '',
                       hintText: 'Describe el problema de la orden #${o.idOrden}...',
-                      hintStyle: const TextStyle(fontSize: 11, color: AppColors.textFaint),
+                      hintStyle: TextStyle(fontSize: 11, color: AppColors.textFaint),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: AppColors.surface,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.cardBorder),
+                        borderSide: BorderSide(color: AppColors.cardBorder),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.cardBorder),
+                        borderSide: BorderSide(color: AppColors.cardBorder),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.navy, width: 1.4),
+                        borderSide: BorderSide(color: AppColors.navy, width: 1.4),
                       ),
                     ),
                   ),
@@ -797,11 +797,11 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.4, color: AppColors.textFaint)),
         const SizedBox(height: 2),
         Text(value,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
       ],
     );
   }
@@ -826,7 +826,7 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
             alignment: Alignment.center,
             decoration: BoxDecoration(
                 color: AppColors.iconClient.withValues(alpha: 0.14), shape: BoxShape.circle),
-            child: const Icon(Icons.person_outline, size: 13, color: AppColors.iconClient),
+            child: Icon(Icons.person_outline, size: 13, color: AppColors.iconClient),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -839,16 +839,16 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                       child: Text(obs.admin,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                     ),
                     Text(obs.fechaCorta,
-                        style: const TextStyle(fontSize: 9, color: AppColors.textFaint)),
+                        style: TextStyle(fontSize: 9, color: AppColors.textFaint)),
                   ],
                 ),
                 const SizedBox(height: 3),
                 Text(obs.observacion,
-                    style: const TextStyle(fontSize: 11.5, height: 1.3, color: AppColors.textSecondary)),
+                    style: TextStyle(fontSize: 11.5, height: 1.3, color: AppColors.textSecondary)),
               ],
             ),
           ),
@@ -865,11 +865,11 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: eliminando
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 12,
                       height: 12,
                       child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.errorText))
-                  : const Icon(Icons.delete_outline, size: 14, color: AppColors.errorText),
+                  : Icon(Icons.delete_outline, size: 14, color: AppColors.errorText),
             ),
           ),
         ],
