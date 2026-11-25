@@ -1,3 +1,27 @@
+import 'dart:convert';
+
+/// Material asociado a la orden de una fase (la API devuelve un arreglo
+/// `Materiales` con todos los materiales de la orden).
+class MaterialFase {
+  final int idMaterial;
+  final String nombre;
+  final num? cantidadUsada;
+
+  const MaterialFase({
+    required this.idMaterial,
+    required this.nombre,
+    this.cantidadUsada,
+  });
+
+  factory MaterialFase.fromJson(Map<String, dynamic> json) => MaterialFase(
+        idMaterial: OrdenOperario._toInt(json['Id_Material']),
+        nombre: json['Nombre_Material']?.toString() ?? 'Material',
+        cantidadUsada: json['Cantidad_Usada'] is num
+            ? json['Cantidad_Usada'] as num
+            : num.tryParse('${json['Cantidad_Usada'] ?? ''}'),
+      );
+}
+
 class OrdenOperario {
   final int idOrdenOperario;
   final int idOrden;
@@ -17,9 +41,18 @@ class OrdenOperario {
   final String? fechaLimite;
   final int? idCliente;
   final String? cliente;
-  final String? nombreMaterial;
+  final String? _nombreMaterialLegacy;
+  final List<MaterialFase> materiales;
   final String? notaOperario;
   final String? fechaCompletada;
+  final String? fechaCreacion;
+
+  /// Prendas que le tocan a este operario (la orden se reparte entre los
+  /// operarios asignados). Si la API no la envía se usa la cantidad total.
+  final int? cuota;
+
+  /// true/false si la fase se completó antes/después de la fecha límite.
+  final bool? completadaATiempo;
 
   OrdenOperario({
     required this.idOrdenOperario,
@@ -39,10 +72,26 @@ class OrdenOperario {
     this.fechaLimite,
     this.idCliente,
     this.cliente,
-    this.nombreMaterial,
+    String? nombreMaterial,
+    this.materiales = const [],
     this.notaOperario,
     this.fechaCompletada,
-  });
+    this.fechaCreacion,
+    this.cuota,
+    this.completadaATiempo,
+  }) : _nombreMaterialLegacy = nombreMaterial;
+
+  /// Nombres de los materiales separados por coma. Mantiene compatibilidad
+  /// con la API antigua, que solo enviaba `NombreMaterial`.
+  String? get nombreMaterial {
+    if (materiales.isNotEmpty) {
+      return materiales.map((m) => m.nombre).join(', ');
+    }
+    return _nombreMaterialLegacy;
+  }
+
+  /// Total de prendas de esta fase para el operario.
+  int get cantidadAsignada => cuota ?? cantidadOrden ?? 0;
 
   factory OrdenOperario.fromJson(Map<String, dynamic> json) {
     return OrdenOperario(
@@ -64,9 +113,31 @@ class OrdenOperario {
       idCliente: _toIntOrNull(json['Id_Cliente']),
       cliente: json['Cliente']?.toString(),
       nombreMaterial: json['NombreMaterial']?.toString(),
+      materiales: _parseMateriales(json['Materiales']),
       notaOperario: json['Nota_Operario']?.toString(),
       fechaCompletada: json['Fecha_Completada']?.toString(),
+      fechaCreacion: json['Fecha_Creacion']?.toString(),
+      cuota: _toIntOrNull(json['Cuota']),
+      completadaATiempo: json['Completada_A_Tiempo'] is bool
+          ? json['Completada_A_Tiempo'] as bool
+          : null,
     );
+  }
+
+  static List<MaterialFase> _parseMateriales(dynamic value) {
+    dynamic raw = value;
+    if (raw is String && raw.trim().isNotEmpty) {
+      try {
+        raw = jsonDecode(raw);
+      } catch (_) {
+        return const [];
+      }
+    }
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((m) => MaterialFase.fromJson(Map<String, dynamic>.from(m)))
+        .toList();
   }
 
   static int _toInt(dynamic value) => _toIntOrNull(value) ?? 0;
@@ -113,7 +184,7 @@ class OrdenOperario {
   }
 
   double get progresoFase {
-    final total = cantidadOrden ?? 0;
+    final total = cantidadAsignada;
     if (total <= 0) return 0;
     return (cantidadRealizada / total).clamp(0.0, 1.0);
   }
@@ -121,7 +192,7 @@ class OrdenOperario {
   int get progresoFasePorcentaje => (progresoFase * 100).round();
 
   int get cantidadRestante {
-    final total = cantidadOrden ?? 0;
+    final total = cantidadAsignada;
     return (total - cantidadRealizada).clamp(0, total).toInt();
   }
 

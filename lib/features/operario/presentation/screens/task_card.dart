@@ -254,7 +254,7 @@ class FaseTaskCard extends StatelessWidget {
     final priority = fasePriorityColors(fase);
     final progressColor = faseProgresoColor(fase);
     final producto = fase.producto ?? 'Orden #${fase.idOrden}';
-    final total = fase.cantidadOrden ?? 0;
+    final total = fase.cantidadAsignada;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
@@ -345,23 +345,41 @@ class FaseTaskCard extends StatelessWidget {
                         ],
                       ),
                       if (showMateriales &&
-                          (fase.nombreMaterial ?? '').trim().isNotEmpty) ...[
+                          (fase.materiales.isNotEmpty ||
+                              (fase.nombreMaterial ?? '').trim().isNotEmpty)) ...[
                         const SizedBox(height: 8),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.layers_outlined,
-                                size: 12, color: AppColors.textFaint),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                fase.nombreMaterial!,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                    fontSize: 10, color: AppColors.textMuted),
-                              ),
-                            ),
-                          ],
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: (fase.materiales.isNotEmpty
+                                  ? fase.materiales.map((m) => m.nombre)
+                                  : [fase.nombreMaterial!])
+                              .map((nombre) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.searchBg,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                          color: AppColors.cardBorder),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.layers_outlined,
+                                            size: 11,
+                                            color: AppColors.textFaint),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          nombre,
+                                          style: const TextStyle(
+                                              fontSize: 10,
+                                              color: AppColors.textMuted),
+                                        ),
+                                      ],
+                                    ),
+                                  ))
+                              .toList(),
                         ),
                       ],
                       const SizedBox(height: 10),
