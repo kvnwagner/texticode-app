@@ -237,7 +237,9 @@ class _HistoryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: 6,
             children: [
               Text(
                 fase.codigoOrden,
@@ -258,6 +260,18 @@ class _HistoryCard extends StatelessWidget {
                   label: fase.prioridadLabel,
                   bg: priority.$1,
                   text: priority.$2),
+              if (fase.completadaATiempo != null) ...[
+                const SizedBox(width: 6),
+                StatusBadge(
+                  label: fase.completadaATiempo! ? 'A tiempo' : 'Con retraso',
+                  bg: fase.completadaATiempo!
+                      ? AppColors.badgeOpGreenBg
+                      : AppColors.errorBg,
+                  text: fase.completadaATiempo!
+                      ? AppColors.badgeOpGreenText
+                      : AppColors.errorText,
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 8),
@@ -514,7 +528,7 @@ class _ReportProgressSheetState extends State<ReportProgressSheet> {
                       flex: 2,
                       child: _SummaryItem(
                         label: 'PRENDAS ASIGNADAS',
-                        value: '${fase.cantidadOrden ?? 0}',
+                        value: '${fase.cantidadAsignada}',
                       ),
                     ),
                   ],
