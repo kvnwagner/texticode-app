@@ -156,7 +156,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
       children: [
         _buildHeader(),
         if (_error != null) _buildErrorBanner(),
-        const Text(
+        Text(
           'OPERARIO SOBRECARGADO',
           style: TextStyle(
               fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textFaint, letterSpacing: 0.4),
@@ -175,7 +175,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
               'Órdenes de ${seleccionado.nombreCompleto.split(' ').first}', _ordenesOperario.length),
           const SizedBox(height: 10),
           if (_loadingOrdenes)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 30),
               child: Center(child: CircularProgressIndicator(color: AppColors.navy)),
             )
@@ -215,12 +215,12 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.cardBorder),
                   ),
-                  child: const Icon(Icons.arrow_back_ios_new_rounded,
+                  child: Icon(Icons.arrow_back_ios_new_rounded,
                       size: 15, color: AppColors.textPrimary),
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Reasignación de Órdenes',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
@@ -245,7 +245,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.errorBorder),
       ),
-      child: Text(_error!, style: const TextStyle(color: AppColors.errorText, fontSize: 12)),
+      child: Text(_error!, style: TextStyle(color: AppColors.errorText, fontSize: 12)),
     );
   }
 
@@ -254,10 +254,10 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: Column(
         children: [
-          const Icon(Icons.wifi_off_rounded, size: 30, color: AppColors.textFaint),
+          Icon(Icons.wifi_off_rounded, size: 30, color: AppColors.textFaint),
           const SizedBox(height: 8),
           Text(_errorOrdenes!,
-              textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              textAlign: TextAlign.center, style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
           const SizedBox(height: 10),
           TextButton(
             onPressed: () => _cargarOrdenesOperario(_operarioSeleccionadoId!),
@@ -294,15 +294,15 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
                 children: [
                   Text(o.nombreCompleto,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                   const SizedBox(height: 2),
                   Text('${o.ordenesActivas} órdenes activas',
-                      style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted)),
+                      style: TextStyle(fontSize: 11.5, color: AppColors.textMuted)),
                 ],
               ),
             ),
-            if (seleccionado) const Icon(Icons.check_circle, size: 22, color: AppColors.errorText),
+            if (seleccionado) Icon(Icons.check_circle, size: 22, color: AppColors.errorText),
           ],
         ),
       ),
@@ -310,7 +310,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
   }
 
   Widget _buildSinSobrecargados() {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
@@ -330,14 +330,14 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
       children: [
         Expanded(
           child: Text(title,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         ),
         const SizedBox(width: 8),
         Container(
           width: 22,
           height: 22,
           alignment: Alignment.center,
-          decoration: const BoxDecoration(color: AppColors.navy, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: AppColors.navy, shape: BoxShape.circle),
           child: Text('$count',
               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
         ),
@@ -346,7 +346,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
   }
 
   Widget _buildSinMovimientos() {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(vertical: 20),
       child: Text(
         'Este operario no tiene fases u órdenes activas en este momento.',
@@ -359,7 +359,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.pageBg,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.cardBorder),
       ),
@@ -372,7 +372,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
               Expanded(
                 child: Text(m.producto,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
               ),
               const SizedBox(width: 8),
@@ -381,7 +381,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
                 decoration:
                     BoxDecoration(color: AppColors.badgeOpBlueBg, borderRadius: BorderRadius.circular(20)),
                 child: Text('ORD-${m.idOrden}',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.badgeOpBlueText)),
               ),
             ],
@@ -391,26 +391,26 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
             Text(m.titulo,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted)),
+                style: TextStyle(fontSize: 11.5, color: AppColors.textMuted)),
           ],
           const SizedBox(height: 4),
           Text(
             m.fechaLimite != null && m.fechaLimite!.isNotEmpty
                 ? 'Vence: ${_formatFecha(m.fechaLimite!)}${m.vencida ? ' · Vencida' : ''}'
                 : (m.vencida ? 'Vencida' : ''),
-            style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+            style: TextStyle(fontSize: 11.5, color: AppColors.textMuted),
           ),
           const SizedBox(height: 12),
           Container(height: 1, color: AppColors.cardBorder),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'REASIGNAR A',
             style: TextStyle(
                 fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.textFaint, letterSpacing: 0.4),
           ),
           const SizedBox(height: 8),
           if (widget.disponibles.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 6),
               child: Text('No hay operarios con capacidad disponible.',
                   style: TextStyle(fontSize: 11.5, color: AppColors.textFaint)),
@@ -448,10 +448,10 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
               children: [
                 Text(u.nombreCompleto,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                 Text('${u.ordenesActivas} órdenes',
-                    style: const TextStyle(fontSize: 10.5, color: AppColors.textFaint)),
+                    style: TextStyle(fontSize: 10.5, color: AppColors.textFaint)),
               ],
             ),
           ),
@@ -462,7 +462,7 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
               onPressed: loading ? null : () => _reasignar(m, u),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.navy,
-                disabledBackgroundColor: AppColors.navy.withValues(alpha: 0.5),
+                disabledBackgroundColor: AppColors.brandTint.withValues(alpha: 0.5),
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -485,4 +485,4 @@ class _ReassignOrdersViewState extends State<ReassignOrdersView> {
       ),
     );
   }
-}
+}

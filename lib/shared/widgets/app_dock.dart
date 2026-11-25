@@ -52,7 +52,7 @@ class _AppDockState extends State<AppDock> {
       child: Container(
         height: dockHeight,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.dockBg,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(color: AppColors.cardBorder),
           boxShadow: [
@@ -145,7 +145,7 @@ class _AppDockState extends State<AppDock> {
                       width: pillWidth,
                       height: pillHeight,
                       decoration: BoxDecoration(
-                        color: AppColors.navy,
+                        color: AppColors.navPillActive,
                         borderRadius: BorderRadius.circular(pillHeight / 2),
                       ),
                     ),
@@ -169,7 +169,7 @@ class _AppDockState extends State<AppDock> {
                                 key: ValueKey(selected),
                                 size: 20,
                                 color: selected
-                                    ? Colors.white
+                                    ? AppColors.navIconActive
                                     : AppColors.textFaint,
                               ),
                             ),

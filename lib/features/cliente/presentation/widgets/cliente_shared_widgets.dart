@@ -20,8 +20,8 @@ class ClienteLogoHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Row(
@@ -33,6 +33,10 @@ class ClienteLogoHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               child: Image.asset(
                 AppConstants.logoAssetPath,
+                // En oscuro el logo va blanco, como en la web
+                // (filter: brightness(0) invert(0.95)).
+                color: AppColors.logoTint,
+                colorBlendMode: BlendMode.srcIn,
                 width: 38,
                 height: 38,
                 fit: BoxFit.cover,
@@ -56,12 +60,12 @@ class ClienteLogoHeader extends StatelessWidget {
                 Text(title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                 Text(subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                    style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
               ],
             ),
           ),
@@ -83,7 +87,7 @@ class ClienteSectionHeader extends StatelessWidget {
       child: Row(
         children: [
           Text(title,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           if (count != null) ...[
             const SizedBox(width: 8),
@@ -162,7 +166,7 @@ class ClienteStatCard extends StatelessWidget {
                               Text(label,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 9.5,
                                       fontWeight: FontWeight.w500,
                                       color: AppColors.textMuted)),
@@ -247,16 +251,16 @@ class ClienteOrderCard extends StatelessWidget {
         curve: Curves.easeOut,
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: expanded ? AppColors.navy.withValues(alpha: 0.35) : AppColors.cardBorder,
+            color: expanded ? AppColors.brandTint.withValues(alpha: 0.35) : AppColors.cardBorder,
             width: expanded ? 1.4 : 1,
           ),
           boxShadow: expanded
               ? [
                   BoxShadow(
-                    color: AppColors.navy.withValues(alpha: 0.12),
+                    color: AppColors.brandTint.withValues(alpha: 0.12),
                     blurRadius: 18,
                     offset: const Offset(0, 8),
                   ),
@@ -301,7 +305,7 @@ class ClienteOrderCard extends StatelessWidget {
                                 duration: const Duration(milliseconds: 200),
                                 child: Icon(Icons.keyboard_arrow_down_rounded,
                                     size: 20,
-                                    color: expanded ? AppColors.navy : AppColors.textFaint),
+                                    color: expanded ? AppColors.brandIcon : AppColors.textFaint),
                               ),
                             ],
                           ),
@@ -334,7 +338,7 @@ class ClienteOrderCard extends StatelessWidget {
                                           border: Border.all(color: AppColors.cardBorder),
                                         ),
                                         child: Text(m,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                                 fontSize: 9,
                                                 fontWeight: FontWeight.w600,
                                                 color: AppColors.textSecondary)),
@@ -348,7 +352,7 @@ class ClienteOrderCard extends StatelessWidget {
                             const SizedBox(height: 8),
                             Text(
                               orden.descripcion!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 12, height: 1.4, color: AppColors.textSecondary),
                             ),
                           ],
@@ -460,15 +464,15 @@ class ClienteOrderCard extends StatelessWidget {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: orden.isCompletada
                                       ? AppColors.navy
-                                      : AppColors.navy.withValues(alpha: 0.12),
+                                      : AppColors.brandTint.withValues(alpha: 0.12),
                                   disabledBackgroundColor: orden.isCompletada
-                                      ? AppColors.navy.withValues(alpha: 0.5)
-                                      : AppColors.navy.withValues(alpha: 0.12),
+                                      ? AppColors.brandTint.withValues(alpha: 0.5)
+                                      : AppColors.brandTint.withValues(alpha: 0.12),
                                   foregroundColor: orden.isCompletada
                                       ? Colors.white
-                                      : AppColors.navy.withValues(alpha: 0.35),
+                                      : AppColors.brandTint.withValues(alpha: 0.35),
                                   disabledForegroundColor:
-                                      AppColors.navy.withValues(alpha: 0.35),
+                                      AppColors.brandTint.withValues(alpha: 0.35),
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14)),
@@ -501,7 +505,7 @@ class ClienteOrderCard extends StatelessWidget {
                             const SizedBox(height: 10),
                             Container(
                               padding: const EdgeInsets.only(top: 10),
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 border: Border(top: BorderSide(color: AppColors.cardBorder)),
                               ),
                               child: Row(
@@ -512,7 +516,7 @@ class ClienteOrderCard extends StatelessWidget {
                                           ? 'Material: ${materialesReales.first}'
                                           : 'Material: —',
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.textSecondary,
@@ -523,7 +527,7 @@ class ClienteOrderCard extends StatelessWidget {
                                     orden.fechaCorta.isEmpty
                                         ? 'Sin fecha'
                                         : 'Entrega: ${orden.fechaCorta}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.textFaint,
@@ -565,12 +569,12 @@ class _DetailRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 14, color: AppColors.navy),
+        Icon(icon, size: 14, color: AppColors.brandIcon),
         const SizedBox(width: 8),
         SizedBox(
           width: 78,
           child: Text(label,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
         ),
         Expanded(
@@ -578,11 +582,11 @@ class _DetailRow extends StatelessWidget {
             value,
             maxLines: multiline ? 3 : 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
           ),
         ),
       ],
     );
   }
-}
+}
