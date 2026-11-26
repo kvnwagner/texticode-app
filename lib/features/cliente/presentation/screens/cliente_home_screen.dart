@@ -3,8 +3,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_dock.dart';
+import '../../../admin/data/models/comprobante_model.dart';
 import '../../../admin/data/models/orden_model.dart';
+import '../../../admin/data/models/usuario_model.dart';
+import '../../../admin/data/repositories/comprobante_repository.dart';
 import '../../../admin/data/repositories/orden_repository.dart';
+import '../../../admin/data/repositories/usuario_repository.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import 'cliente_pedidos_screen.dart';
 import 'cliente_soporte_screen.dart';
@@ -21,12 +25,16 @@ class ClienteHomeScreen extends StatefulWidget {
 class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
   final _authRepo = AuthRepository();
   final _ordenRepo = OrdenRepository();
+  final _comprobanteRepo = ComprobanteRepository();
+  final _usuarioRepo = UsuarioRepository();
 
   // ⬅️ Ya no hay pestaña "Comprobantes" (dashboard). La app de cliente
   // ahora abre directo en "Mis Pedidos", que además ya incluye las
   // stat cards que antes vivían solo en el dashboard.
   int _tab = 0;
   List<Orden> _ordenes = [];
+  Map<int, List<Comprobante>> _comprobantesPorOrden = {};
+  Usuario? _cliente;
   bool _loading = true;
   String? _error;
 
@@ -54,9 +62,32 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
         if (mounted) context.go(AppRoutes.login);
         return;
       }
-      final propias = await _ordenRepo.getOrdenesDeCliente(authUser.idUsuario);
+      final resultados = await Future.wait([
+        _ordenRepo.getOrdenesDeCliente(authUser.idUsuario),
+        _comprobanteRepo.getComprobantesPorCliente(authUser.idUsuario),
+        _usuarioRepo.getUsuario(authUser.idUsuario).onError(
+              (_, __) => Usuario(
+                idUsuario: authUser.idUsuario,
+                nombreCompleto: authUser.nombreCompleto,
+                nombreUsuario: authUser.nombreUsuario,
+                correo: authUser.correo,
+                estado: authUser.estado,
+                rol: authUser.rol,
+                idRol: authUser.idRol,
+              ),
+            ),
+      ]);
       if (!mounted) return;
-      setState(() => _ordenes = propias);
+
+      final porOrden = <int, List<Comprobante>>{};
+      for (final comprobante in resultados[1] as List<Comprobante>) {
+        (porOrden[comprobante.idOrden] ??= []).add(comprobante);
+      }
+      setState(() {
+        _ordenes = resultados[0] as List<Orden>;
+        _comprobantesPorOrden = porOrden;
+        _cliente = resultados[2] as Usuario;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -74,6 +105,8 @@ class _ClienteHomeScreenState extends State<ClienteHomeScreen> {
     final pages = [
       ClientePedidosScreen(
         ordenes: _ordenes,
+        comprobantesPorOrden: _comprobantesPorOrden,
+        cliente: _cliente,
         loading: _loading,
         error: _error,
         onRefresh: _cargar,

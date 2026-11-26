@@ -1,648 +1,210 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
-
-import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:pdf/pdf.dart';
 
-import 'package:pdf/widgets.dart' as pw;
-
+import '../../../auth/data/repositories/auth_repository.dart';
 import '../models/comprobante_model.dart';
-
+import '../models/orden_model.dart';
 import '../models/usuario_model.dart';
-
-// Genera el PDF del comprobante de entrega replicando el diseño de la
-// versión web (GestionClientes.vue → descargarPDF, con jsPDF).
+import 'documento_pdf.dart';
 
 class ComprobantePdfService {
-  static const _azul = PdfColor.fromInt(0xFF0F2236);
-  static const _grisTexto = PdfColor.fromInt(0xFF4B5563);
-  static const _negro = PdfColor.fromInt(0xFF111827);
-  static const _grisBg = PdfColor.fromInt(0xFFF9FAFB);
-  static const _grisLinea = PdfColor.fromInt(0xFFE5E7EB);
-  static const _verdeBg = PdfColor.fromInt(0xFFD1FAE5);
-  static const _verdeTexto = PdfColor.fromInt(0xFF065F46);
-  static const _amarilloBg = PdfColor.fromInt(0xFFFFEDD5);
-  static const _amarilloTexto = PdfColor.fromInt(0xFF92400E);
-
   static Future<Uint8List> generar({
     required Comprobante comprobante,
+    Orden? orden,
     Usuario? cliente,
+    List<String> detalles = const [],
   }) async {
-    final doc = pw.Document();
-
-    final logoBytes =
-        await rootBundle.load('assets/images/logo_texticode.png');
-
-    final logo = pw.MemoryImage(logoBytes.buffer.asUint8List());
-
-    // El estado que importa aquí es el de la ORDEN (ordenEstado), no el
-    // campo `estado` propio del comprobante (que por defecto llega como
-    // "Pendiente" y no refleja si la orden ya se completó).
-    final estadoOrden =
-        (comprobante.ordenEstado ?? comprobante.estado).toLowerCase();
-
-    final completado = estadoOrden.contains('completad');
-
-    final estadoBg = completado ? _verdeBg : _amarilloBg;
-    final estadoTexto = completado ? _verdeTexto : _amarilloTexto;
-    final estadoLabel = completado ? 'Completada' : 'Pendiente';
-
-    final numero =
-        comprobante.idComprobante.toString().padLeft(4, '0');
-
-    final fechaHoy = _fechaLarga(DateTime.now());
-
-    final clienteEmail = cliente?.correo ?? '';
-    final clienteTel = cliente?.telefono ?? '';
-
-    // Igual que en la web: el "Producto" es el título en negrita de la
-    // fila, y la "Descripcion" es una línea secundaria debajo, y solo se
-    // muestra si aporta algo distinto del título (si no hay Producto o
-    // es igual a la descripción, se muestra solo una línea).
-    final producto =
-        comprobante.ordenProducto ?? comprobante.ordenDescripcion ?? '—';
-    final descripcionDetalle =
-        (comprobante.ordenDescripcion != null &&
-                comprobante.ordenDescripcion!.isNotEmpty &&
-                comprobante.ordenDescripcion != producto)
-            ? comprobante.ordenDescripcion
-            : null;
-
-    // Cantidad real del producto en la orden (igual que en la web, que
-    // la lee del endpoint de órdenes). Si por algún motivo llega null
-    // (backend viejo sin el JOIN de Cantidad), se cae a 1.
-    final cantidad = comprobante.ordenCantidad ?? 1;
-
-    const observaciones =
-        'Ninguna observación registrada para este pedido.';
-
-    doc.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(0),
-        build: (context) {
-          return pw.Container(
-            color: _grisBg,
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                // ── Cabecera azul ──
-                pw.Container(
-                  width: double.infinity,
-                  color: _azul,
-                  padding: const pw.EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 18,
-                  ),
-                  child: pw.Row(
-                    mainAxisAlignment:
-                        pw.MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment:
-                        pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Row(
-                        children: [
-                          pw.Container(
-                            width: 40,
-                            height: 40,
-                            decoration: const pw.BoxDecoration(
-                              color: PdfColors.white,
-                              shape: pw.BoxShape.circle,
-                            ),
-                            child: pw.Center(
-                              child: pw.Image(
-                                logo,
-                                width: 30,
-                                height: 30,
-                              ),
-                            ),
-                          ),
-                          pw.SizedBox(width: 12),
-                          pw.Column(
-                            crossAxisAlignment:
-                                pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text(
-                                'TEXTICODE',
-                                style: pw.TextStyle(
-                                  color: PdfColors.white,
-                                  fontSize: 16,
-                                  fontWeight: pw.FontWeight.bold,
-                                  letterSpacing: 2,
-                                ),
-                              ),
-                              pw.SizedBox(height: 3),
-                              pw.Text(
-                                'Bogotá, Colombia  ·  texticode@correo.com  ·  +57 300 000 0000',
-                                style: const pw.TextStyle(
-                                  color: PdfColor.fromInt(
-                                    0xFF93C5FD,
-                                  ),
-                                  fontSize: 8,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      pw.Column(
-                        crossAxisAlignment:
-                            pw.CrossAxisAlignment.end,
-                        children: [
-                          pw.Text(
-                            'COMPROBANTE DE ENTREGA',
-                            style: const pw.TextStyle(
-                              color: PdfColor.fromInt(
-                                0xFF93C5FD,
-                              ),
-                              fontSize: 9,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                          pw.SizedBox(height: 3),
-                          pw.Text(
-                            'N.° $numero',
-                            style: pw.TextStyle(
-                              color: PdfColors.white,
-                              fontSize: 20,
-                              fontWeight: pw.FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // ── Bloque de info: cliente / fechas / estado ──
-                pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 18,
-                  ),
-                  decoration: const pw.BoxDecoration(
-                    border: pw.Border(
-                      bottom: pw.BorderSide(
-                        color: _grisLinea,
-                      ),
-                    ),
-                  ),
-                  child: pw.Row(
-                    crossAxisAlignment:
-                        pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Expanded(
-                        child: pw.Column(
-                          crossAxisAlignment:
-                              pw.CrossAxisAlignment.start,
-                          children: [
-                            _label('CLIENTE'),
-                            pw.SizedBox(height: 4),
-                            pw.Text(
-                              cliente?.nombreCompleto ?? comprobante.cliente,
-                              style: pw.TextStyle(
-                                fontSize: 12,
-                                fontWeight: pw.FontWeight.bold,
-                                color: _negro,
-                              ),
-                            ),
-                            if (clienteEmail.isNotEmpty) ...[
-                              pw.SizedBox(height: 2),
-                              pw.Text(
-                                clienteEmail,
-                                style: const pw.TextStyle(
-                                  fontSize: 9,
-                                  color: _grisTexto,
-                                ),
-                              ),
-                            ],
-                            if (clienteTel.isNotEmpty) ...[
-                              pw.SizedBox(height: 2),
-                              pw.Text(
-                                'Tel: $clienteTel',
-                                style: const pw.TextStyle(
-                                  fontSize: 9,
-                                  color: _grisTexto,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      pw.Expanded(
-                        child: pw.Container(
-                          // Línea separadora a los lados, igual que
-                          // .cp-info-bloque--center en GestionClientes.vue
-                          // (border-left + border-right). Con esto, la
-                          // columna de CLIENTE queda separada de FECHA y
-                          // FECHA queda separada de ESTADO DEL PEDIDO.
-                          padding: const pw.EdgeInsets.symmetric(horizontal: 14),
-                          decoration: const pw.BoxDecoration(
-                            border: pw.Border(
-                              left: pw.BorderSide(color: _grisLinea),
-                              right: pw.BorderSide(color: _grisLinea),
-                            ),
-                          ),
-                          child: pw.Column(
-                            crossAxisAlignment:
-                                pw.CrossAxisAlignment.start,
-                            children: [
-                              _label('FECHA DE EMISIÓN'),
-                              pw.SizedBox(height: 4),
-                              pw.Text(
-                                fechaHoy,
-                                style: const pw.TextStyle(
-                                  fontSize: 10,
-                                  color: _negro,
-                                ),
-                              ),
-                              pw.SizedBox(height: 12),
-                              _label('FECHA DE ENTREGA'),
-                              pw.SizedBox(height: 4),
-                              pw.Text(
-                                comprobante.fechaCorta,
-                                style: const pw.TextStyle(
-                                  fontSize: 10,
-                                  color: _negro,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      pw.Expanded(
-                        child: pw.Column(
-                          crossAxisAlignment:
-                              pw.CrossAxisAlignment.end,
-                          children: [
-                            _label('ESTADO DEL PEDIDO'),
-                            pw.SizedBox(height: 4),
-                            pw.Container(
-                              padding: const pw.EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: pw.BoxDecoration(
-                                color: estadoBg,
-                                borderRadius:
-                                    pw.BorderRadius.circular(2),
-                              ),
-                              child: pw.Text(
-                                estadoLabel,
-                                style: pw.TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: pw.FontWeight.bold,
-                                  color: estadoTexto,
-                                ),
-                              ),
-                            ),
-                            pw.SizedBox(height: 12),
-                            _label('ORDEN DE REFERENCIA'),
-                            pw.SizedBox(height: 4),
-                            pw.Text(
-                              '#$numero',
-                              style: const pw.TextStyle(
-                                fontSize: 10,
-                                color: _negro,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // ── Tabla de producto/orden ──
-                pw.Table(
-                  border: null,
-                  columnWidths: const {
-                    0: pw.FixedColumnWidth(34),
-                    1: pw.FlexColumnWidth(),
-                    2: pw.FixedColumnWidth(60),
-                    3: pw.FixedColumnWidth(90),
-                  },
-                  children: [
-                    pw.TableRow(
-                      decoration: const pw.BoxDecoration(
-                        color: _azul,
-                      ),
-                      children: [
-                        _thCell(
-                          '#',
-                          align: pw.TextAlign.left,
-                        ),
-                        _thCell(
-                          'DESCRIPCIÓN DEL PRODUCTO / SERVICIO',
-                          align: pw.TextAlign.left,
-                        ),
-                        _thCell(
-                          'CANTIDAD',
-                          align: pw.TextAlign.center,
-                        ),
-                        _thCell(
-                          'ESTADO ENTREGA',
-                          align: pw.TextAlign.right,
-                        ),
-                      ],
-                    ),
-                    pw.TableRow(
-                      decoration: const pw.BoxDecoration(
-                        color: PdfColors.white,
-                      ),
-                      children: [
-                        _tdCell(
-                          '01',
-                          color: const PdfColor.fromInt(
-                            0xFF9CA3AF,
-                          ),
-                        ),
-                        pw.Padding(
-                          padding: const pw.EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          child: pw.Column(
-                            crossAxisAlignment:
-                                pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text(
-                                producto,
-                                style: pw.TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: pw.FontWeight.bold,
-                                  color: _negro,
-                                ),
-                              ),
-                              if (descripcionDetalle != null) ...[
-                                pw.SizedBox(height: 2),
-                                pw.Text(
-                                  descripcionDetalle,
-                                  style: const pw.TextStyle(
-                                    fontSize: 8,
-                                    color: _grisTexto,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        _tdCell(
-                          '$cantidad',
-                          align: pw.TextAlign.center,
-                        ),
-                        pw.Padding(
-                          padding: const pw.EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          child: pw.Align(
-                            alignment:
-                                pw.Alignment.centerRight,
-                            child: pw.Container(
-                              padding:
-                                  const pw.EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: pw.BoxDecoration(
-                                color: estadoBg,
-                                borderRadius:
-                                    pw.BorderRadius.circular(2),
-                              ),
-                              child: pw.Text(
-                                estadoLabel,
-                                style: pw.TextStyle(
-                                  fontSize: 8,
-                                  fontWeight:
-                                      pw.FontWeight.bold,
-                                  color: estadoTexto,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-
-                pw.Container(
-                  height: 1,
-                  color: _grisLinea,
-                  margin: const pw.EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 18,
-                  ),
-                ),
-
-                // ── Observaciones + Firmas ──
-                pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(
-                    horizontal: 32,
-                  ),
-                  child: pw.Row(
-                    crossAxisAlignment:
-                        pw.CrossAxisAlignment.end,
-                    children: [
-                      pw.Expanded(
-                        child: pw.Column(
-                          crossAxisAlignment:
-                              pw.CrossAxisAlignment.start,
-                          children: [
-                            _label('OBSERVACIONES'),
-                            pw.SizedBox(height: 6),
-                            pw.Container(
-                              width: double.infinity,
-                              padding: const pw.EdgeInsets.all(10),
-                              decoration: pw.BoxDecoration(
-                                border: pw.Border.all(
-                                  color: _grisLinea,
-                                ),
-                              ),
-                              child: pw.Text(
-                                observaciones,
-                                style: const pw.TextStyle(
-                                  fontSize: 9,
-                                  color: _grisTexto,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      pw.SizedBox(width: 24),
-                      pw.Column(
-                        children: [
-                          pw.Container(
-                            width: 110,
-                            height: 1,
-                            color: _negro,
-                          ),
-                          pw.SizedBox(height: 4),
-                          pw.Text(
-                            'Entregado por',
-                            style: const pw.TextStyle(
-                              fontSize: 8,
-                              color: _grisTexto,
-                            ),
-                          ),
-                          pw.Text(
-                            'TEXTICODE S.A.S.',
-                            style: pw.TextStyle(
-                              fontSize: 8,
-                              fontWeight: pw.FontWeight.bold,
-                              color: _azul,
-                            ),
-                          ),
-                        ],
-                      ),
-                      pw.SizedBox(width: 24),
-                      pw.Column(
-                        children: [
-                          pw.Container(
-                            width: 110,
-                            height: 1,
-                            color: _negro,
-                          ),
-                          pw.SizedBox(height: 4),
-                          pw.Text(
-                            'Recibido por',
-                            style: const pw.TextStyle(
-                              fontSize: 8,
-                              color: _grisTexto,
-                            ),
-                          ),
-                          pw.Text(
-                            cliente?.nombreCompleto ?? comprobante.cliente,
-                            style: pw.TextStyle(
-                              fontSize: 8,
-                              fontWeight: pw.FontWeight.bold,
-                              color: _azul,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                pw.Spacer(),
-
-                // ── Pie de página ──
-                pw.Container(
-                  width: double.infinity,
-                  color: _azul,
-                  padding: const pw.EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 10,
-                  ),
-                  child: pw.Row(
-                    mainAxisAlignment:
-                        pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text(
-                        'Documento de uso oficial · TEXTICODE S.A.S.',
-                        style: const pw.TextStyle(
-                          color: PdfColor.fromInt(
-                            0xFF93C5FD,
-                          ),
-                          fontSize: 8,
-                        ),
-                      ),
-                      pw.Text(
-                        'Generado el $fechaHoy',
-                        style: const pw.TextStyle(
-                          color: PdfColor.fromInt(
-                            0xFF93C5FD,
-                          ),
-                          fontSize: 8,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+    final usuario = await AuthRepository().getUsuarioGuardado();
+    final pdf = _ComprobantePdf(await DocumentoPdf.crear(
+      titulo: 'Comprobante de entrega',
+      subtitulo: 'N.º ${comprobante.numero}',
+      pie: 'Documento de uso oficial · TEXTICODE S.A.S.',
+    ));
+    pdf.dibujar(
+      empresa: usuario?.empresa,
+      referencia: comprobante.referenciaOrden,
+      estado: orden?.estado ?? comprobante.estadoPedido,
+      entregado: (orden?.isCompletada ?? comprobante.isCompletado) ||
+          comprobante.estado.toLowerCase() == 'entregado',
+      cliente: cliente?.nombreCompleto ?? comprobante.cliente,
+      correo: cliente?.correo,
+      telefono: cliente?.telefono,
+      fechaLimite: orden?.fechaLimite ?? comprobante.fechaLimite,
+      producto: orden?.producto ?? comprobante.ordenProducto,
+      descripcion: orden?.descripcion ?? comprobante.ordenDescripcion,
+      cantidad: orden?.cantidadTotal ?? comprobante.ordenCantidad,
+      observaciones: orden?.observaciones,
+      detalles: detalles,
     );
-
-    return doc.save();
+    return pdf.documento.guardar();
   }
+}
 
-  static pw.Widget _label(String text) {
-    return pw.Text(
-      text,
-      style: pw.TextStyle(
-        fontSize: 8,
-        fontWeight: pw.FontWeight.bold,
-        color: _grisTexto,
-        letterSpacing: 1,
-      ),
-    );
-  }
+class _ComprobantePdf {
+  static const _izquierda = DocumentoPdf.izquierda;
+  static const _ancho = DocumentoPdf.ancho;
+  static const _limite = DocumentoPdf.limite;
+  static const _gris = DocumentoPdf.gris;
+  static const _textoTabla = DocumentoPdf.textoTabla;
 
-  static pw.Widget _thCell(
-    String text, {
-    pw.TextAlign align = pw.TextAlign.left,
+  final DocumentoPdf documento;
+  late double _y;
+
+  _ComprobantePdf(this.documento);
+
+  void dibujar({
+    required String? empresa,
+    required String referencia,
+    required String estado,
+    required bool entregado,
+    required String cliente,
+    required String? correo,
+    required String? telefono,
+    required String? fechaLimite,
+    required String? producto,
+    required String? descripcion,
+    required int? cantidad,
+    required String? observaciones,
+    required List<String> detalles,
   }) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 8,
-      ),
-      child: pw.Text(
-        text,
-        textAlign: align,
-        style: pw.TextStyle(
-          fontSize: 7.5,
-          fontWeight: pw.FontWeight.bold,
-          color: PdfColors.white,
-          letterSpacing: 0.5,
-        ),
-      ),
+    final colorEstado = entregado
+        ? const PdfColor.fromInt(0xFF166534)
+        : const PdfColor.fromInt(0xFF92400E);
+    final fondoEstado = entregado
+        ? const PdfColor.fromInt(0xFFDCFCE7)
+        : const PdfColor.fromInt(0xFFFEF3C7);
+
+    _y = documento.nuevaPagina();
+    final contacto = telefono?.trim();
+    _y = math.max(
+      _campo(
+          'CLIENTE',
+          [
+            cliente,
+            correo,
+            if (contacto != null && contacto.isNotEmpty && contacto != '-')
+              'Tel: $contacto',
+          ],
+          _izquierda),
+      _campo('ORDEN DE REFERENCIA', [referencia], 110),
     );
+    _y = math.max(
+      _campo('FECHA DE GENERACIÓN',
+          [DocumentoPdf.fecha(DateTime.now().toIso8601String())], _izquierda),
+      _campo('FECHA LÍMITE DE ENTREGA', [DocumentoPdf.fecha(fechaLimite)], 110),
+    );
+
+    _asegurarEspacio(14);
+    documento.escribir('ESTADO DEL PEDIDO', _izquierda, _y,
+        tamano: 8, color: _gris, negrita: true);
+    final anchoEstado = documento.medir(estado, 10, negrita: true) + 7;
+    documento.rectangulo(_izquierda, _y + 2, anchoEstado, 6,
+        radio: 3, fondo: fondoEstado);
+    documento.escribir(estado, _izquierda + 3.5, _y + 6.2,
+        color: colorEstado, negrita: true);
+    _y += 14;
+
+    final nombre = _valor(producto) ?? _valor(descripcion) ?? '—';
+    final lineas = [
+      nombre,
+      if (_valor(descripcion) case final String valor when valor != nombre)
+        valor,
+      ...detalles,
+    ].expand((parrafo) => documento.dividir(parrafo, 105)).toList();
+    _asegurarEspacio(20);
+    _encabezadoTabla();
+    for (var inicio = 0; inicio < lineas.length;) {
+      final capacidad = ((_limite - _y - 5) / 4.4).floor();
+      final fin = math.min(inicio + capacidad, lineas.length);
+      final alto = (fin - inicio) * 4.4 + 5;
+      documento.rectangulo(_izquierda, _y, _ancho, alto,
+          borde: DocumentoPdf.borde);
+      for (var i = inicio; i < fin; i++) {
+        documento.escribir(lineas[i], 32, _y + 5 + (i - inicio) * 4.4);
+      }
+      if (inicio == 0) {
+        documento.escribir('1', 21, _y + 5);
+        documento.escribir(cantidad?.toString() ?? '—', 148, _y + 5,
+            alineacion: 0.5);
+        documento.escribir(entregado ? 'Entregado' : 'Pendiente', 188, _y + 5,
+            tamano: 9, color: colorEstado, negrita: true, alineacion: 1);
+      }
+      _y += alto;
+      inicio = fin;
+      if (inicio < lineas.length) {
+        _y = documento.nuevaPagina();
+        _encabezadoTabla();
+      }
+    }
+
+    _y += 9;
+    _asegurarEspacio(14);
+    documento.escribir('OBSERVACIONES', _izquierda, _y,
+        tamano: 8, color: _gris, negrita: true);
+    _y += 6;
+    for (final linea in documento.dividir(
+      _valor(observaciones) ?? 'Ninguna observación registrada.',
+      _ancho,
+    )) {
+      _asegurarEspacio(5);
+      documento.escribir(linea, _izquierda, _y, color: _textoTabla);
+      _y += 4.4;
+    }
+
+    final firmas = [_valor(empresa) ?? '—', _valor(cliente) ?? '—']
+        .map((nombre) => documento.dividir(nombre, 77, negrita: true))
+        .toList();
+    _asegurarEspacio(23 + math.max(firmas[0].length, firmas[1].length) * 4.4);
+    _y += 15;
+    for (var i = 0; i < firmas.length; i++) {
+      final x = i == 0 ? 57.0 : 153.0;
+      documento.linea(
+          x - 40, x + 40, _y, const PdfColor.fromInt(0xFF9CA3AF), 0.25);
+      documento.escribir(i == 0 ? 'Entregado por' : 'Recibido por', x, _y + 5,
+          tamano: 9, color: _gris, alineacion: 0.5);
+      for (var j = 0; j < firmas[i].length; j++) {
+        documento.escribir(firmas[i][j], x, _y + 10 + j * 4.4,
+            negrita: true, alineacion: 0.5);
+      }
+    }
   }
 
-  static pw.Widget _tdCell(
-    String text, {
-    pw.TextAlign align = pw.TextAlign.left,
-    PdfColor color = _negro,
-  }) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 10,
-      ),
-      child: pw.Text(
-        text,
-        textAlign: align,
-        style: pw.TextStyle(
-          fontSize: 9,
-          color: color,
-        ),
-      ),
-    );
+  double _campo(String titulo, List<String?> valores, double x) {
+    documento.escribir(titulo, x, _y, tamano: 8, color: _gris, negrita: true);
+    final lineas = valores
+        .map(_valor)
+        .whereType<String>()
+        .expand((valor) => documento.dividir(valor, 81))
+        .toList();
+    if (lineas.isEmpty) lineas.add('—');
+    for (var i = 0; i < lineas.length; i++) {
+      documento.escribir(lineas[i], x, _y + 5 + i * 4.4);
+    }
+    return _y + lineas.length * 4.5 + 8;
   }
 
-  static String _fechaLarga(DateTime d) {
-    const meses = [
-      'enero',
-      'febrero',
-      'marzo',
-      'abril',
-      'mayo',
-      'junio',
-      'julio',
-      'agosto',
-      'septiembre',
-      'octubre',
-      'noviembre',
-      'diciembre',
-    ];
+  void _encabezadoTabla() {
+    documento.rectangulo(_izquierda, _y, _ancho, 9,
+        radio: 2, fondo: DocumentoPdf.fondoTabla, borde: DocumentoPdf.borde);
+    documento.escribir('#', 21, _y + 5.8,
+        tamano: 9, color: _textoTabla, negrita: true);
+    documento.escribir('Descripción del producto / servicio', 32, _y + 5.8,
+        tamano: 9, color: _textoTabla, negrita: true);
+    documento.escribir('Cantidad', 148, _y + 5.8,
+        tamano: 9, color: _textoTabla, negrita: true, alineacion: 0.5);
+    documento.escribir('Estado entrega', 188, _y + 5.8,
+        tamano: 9, color: _textoTabla, negrita: true, alineacion: 1);
+    _y += 9;
+  }
 
-    return '${d.day} de ${meses[d.month - 1]} de ${d.year}';
+  void _asegurarEspacio(double alto) {
+    if (_y + alto > _limite) _y = documento.nuevaPagina();
+  }
+
+  static String? _valor(String? valor) {
+    final limpio = valor?.trim();
+    return limpio == null || limpio.isEmpty || limpio == '-' ? null : limpio;
   }
 }

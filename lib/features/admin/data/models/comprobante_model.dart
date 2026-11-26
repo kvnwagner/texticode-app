@@ -1,3 +1,5 @@
+import 'orden_model.dart';
+
 /// Mapea las columnas que devuelve tu backend en GET /api/comprobantes
 /// (comprobantes.js), que hace JOIN con `usuario` (dos veces) y
 /// `orden_produccion`:
@@ -72,13 +74,13 @@ class Comprobante {
       ordenCantidad: json['Orden_Cantidad'] == null
           ? null
           : (json['Orden_Cantidad'] is int
-          ? json['Orden_Cantidad']
-          : int.tryParse('${json['Orden_Cantidad']}')),
+              ? json['Orden_Cantidad']
+              : int.tryParse('${json['Orden_Cantidad']}')),
       idCliente: json['Id_Cliente'] == null
           ? null
           : (json['Id_Cliente'] is int
-          ? json['Id_Cliente']
-          : int.tryParse('${json['Id_Cliente']}')),
+              ? json['Id_Cliente']
+              : int.tryParse('${json['Id_Cliente']}')),
       // Si el backend todavía no tiene el fix (respuesta vieja sin
       // "Cliente"), cae de vuelta a "Usuario" para no romper la UI,
       // aunque en ese caso el nombre seguirá siendo el incorrecto.
@@ -86,7 +88,38 @@ class Comprobante {
     );
   }
 
-  bool get isCompletado => estado.toLowerCase() == 'completado';
+  factory Comprobante.deOrden(Orden orden) => Comprobante(
+        idComprobante: 0,
+        idUsuario: 0,
+        idOrden: orden.idOrden,
+        estado: orden.estado,
+        fechaLimite: orden.fechaLimite,
+        usuario: '',
+        ordenDescripcion: orden.descripcion,
+        ordenProducto: orden.producto,
+        ordenEstado: orden.estado,
+        ordenCantidad: orden.cantidadTotal,
+        idCliente: orden.idCliente,
+        cliente: orden.cliente,
+      );
+
+  String get referenciaOrden => 'ORD-${idOrden.toString().padLeft(4, '0')}';
+
+  String get numero => idComprobante > 0
+      ? idComprobante.toString().padLeft(4, '0')
+      : referenciaOrden;
+
+  String get estadoPedido {
+    final valor = ordenEstado?.trim();
+    return valor == null || valor.isEmpty ? estado : valor;
+  }
+
+  bool get isCompletado {
+    final valor = estadoPedido.toLowerCase();
+    return valor == 'completada' ||
+        valor == 'completado' ||
+        estado.trim().toLowerCase() == 'entregado';
+  }
 
   /// Formatea Fecha_Limite (ISO) a "d/m/yyyy"
   String get fechaCorta {

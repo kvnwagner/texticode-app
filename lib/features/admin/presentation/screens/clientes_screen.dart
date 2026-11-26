@@ -1,17 +1,20 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:printing/printing.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import '../../../../shared/widgets/impresion_overlay.dart';
 
 import '../../data/models/comprobante_model.dart';
+import '../../data/models/orden_model.dart';
 import '../../data/models/usuario_model.dart';
 import '../../data/repositories/comprobante_repository.dart';
+import '../../data/repositories/orden_repository.dart';
 import '../../data/repositories/usuario_repository.dart';
+import '../../data/services/pdf_descarga.dart';
 import '../../data/services/comprobante_pdf_service.dart';
+import '../widgets/comprobante_preview_sheet.dart';
 
 class ClientesScreen extends StatefulWidget {
   const ClientesScreen({super.key});
@@ -23,16 +26,18 @@ class ClientesScreen extends StatefulWidget {
 class _ClientesScreenState extends State<ClientesScreen> {
   final _usuarioRepo = UsuarioRepository();
   final _comprobanteRepo = ComprobanteRepository();
+  final _ordenRepo = OrdenRepository();
 
   List<Usuario> _clientes = [];
   List<Comprobante> _comprobantes = [];
+  Map<int, Orden> _ordenesPorId = {};
 
   bool _loading = true;
   String? _error;
   String _query = '';
 
   // ID del comprobante que se está generando.
-  int? _descargando;
+  String? _descargando;
 
   @override
   void initState() {
@@ -52,16 +57,26 @@ class _ClientesScreenState extends State<ClientesScreen> {
       final resultados = await Future.wait([
         _usuarioRepo.getUsuarios(),
         _comprobanteRepo.getComprobantes(),
+        _ordenRepo.getOrdenes(),
       ]);
 
       if (!mounted) return;
 
       setState(() {
-        _clientes = (resultados[0] as List<Usuario>)
-            .where((u) => u.isCliente)
-            .toList();
+        _clientes =
+            (resultados[0] as List<Usuario>).where((u) => u.isCliente).toList();
 
-        _comprobantes = resultados[1] as List<Comprobante>;
+        final comprobantes = resultados[1] as List<Comprobante>;
+        final ordenes = resultados[2] as List<Orden>;
+        final idsConComprobante = comprobantes.map((c) => c.idOrden).toSet();
+        _ordenesPorId = {for (final orden in ordenes) orden.idOrden: orden};
+        _comprobantes = [
+          ...comprobantes,
+          for (final orden in ordenes)
+            if (orden.isCompletada &&
+                !idsConComprobante.contains(orden.idOrden))
+              Comprobante.deOrden(orden),
+        ];
       });
     } catch (e) {
       if (!mounted) return;
@@ -103,47 +118,42 @@ class _ClientesScreenState extends State<ClientesScreen> {
     return null;
   }
 
-  // Solo se cuentan/muestran los comprobantes cuya orden esté "Completada".
-  List<Comprobante> _comprobantesCompletados(Usuario cliente) {
-    return _comprobantes.where((comprobante) {
-      if (comprobante.idCliente != cliente.idUsuario) return false;
-
-      final estado = _obtenerEstadoComprobante(comprobante).toLowerCase();
-      return estado == 'completada' || estado == 'completado';
-    }).toList();
+  List<Comprobante> _comprobantesDeCliente(Usuario cliente) {
+    return _comprobantes
+        .where((comprobante) => comprobante.idCliente == cliente.idUsuario)
+        .toList();
   }
 
-  // Genera el PDF real y abre la vista previa nativa.
   Future<void> _descargarComprobante(Comprobante comprobante) async {
     if (_descargando != null) return;
 
     setState(() {
-      _descargando = comprobante.idComprobante;
+      _descargando = comprobante.numero;
     });
 
     try {
-      final numero = comprobante.idComprobante.toString().padLeft(4, '0');
+      final numero = comprobante.numero;
       // Animación de impresora, igual que en Gestión de Clientes de la web.
       await ImpresionOverlay.ejecutar<Uint8List>(
         context: context,
         tipo: TipoImpresion.comprobante,
-        numero: 'COMP-$numero',
+        numero: numero,
         detalle: comprobante.cliente,
         generar: () => ComprobantePdfService.generar(
           comprobante: comprobante,
           cliente: _clienteDe(comprobante),
+          orden: _ordenesPorId[comprobante.idOrden],
         ),
-        entregar: (bytes) => Printing.layoutPdf(
-          onLayout: (format) async => bytes,
-          name: 'comprobante-$numero.pdf',
-        ),
+        entregar: (bytes) async {
+          await PdfDescarga.guardar(bytes, 'comprobante-$numero.pdf');
+        },
       );
     } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No se pudo generar el PDF.'),
+          content: Text('No se pudo guardar el PDF.'),
         ),
       );
     } finally {
@@ -160,9 +170,10 @@ class _ClientesScreenState extends State<ClientesScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ComprobantePreviewSheet(
+      builder: (_) => ComprobantePreviewSheet(
         comprobante: comprobante,
         cliente: _clienteDe(comprobante),
+        orden: _ordenesPorId[comprobante.idOrden],
       ),
     );
   }
@@ -288,7 +299,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
   // ── Tarjeta desplegable del cliente ───────────────────────────────────
 
   Widget _buildClienteTile(Usuario cliente) {
-    final comprobantesCliente = _comprobantesCompletados(cliente);
+    final comprobantesCliente = _comprobantesDeCliente(cliente);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -457,7 +468,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
     Comprobante comprobante, {
     bool insideCliente = false,
   }) {
-    final descargando = _descargando == comprobante.idComprobante;
+    final descargando = _descargando == comprobante.numero;
 
     return Container(
       margin: EdgeInsets.only(
@@ -500,7 +511,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Comprobante #${comprobante.idComprobante.toString().padLeft(4, '0')}',
+                    'Comprobante #${comprobante.numero}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -594,46 +605,39 @@ class _ClientesScreenState extends State<ClientesScreen> {
   Widget _buildEstadoComprobante(
     Comprobante comprobante,
   ) {
-    // Estos tiles solo se renderizan para comprobantes cuya orden ya está
-    // completada (ver _comprobantesCompletados), así que el badge siempre
-    // refleja ese estado sin depender de qué campo trajo el backend.
+    final entregado = comprobante.isCompletado ||
+        (_ordenesPorId[comprobante.idOrden]?.isCompletada ?? false);
+    final color = entregado ? AppColors.iconActive : AppColors.badgeClientText;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 7,
         vertical: 3,
       ),
       decoration: BoxDecoration(
-        color: AppColors.iconActive.withValues(alpha: 0.09),
+        color: color.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.check_circle_outline,
+            entregado ? Icons.check_circle_outline : Icons.schedule,
             size: 12,
-            color: AppColors.iconActive,
+            color: color,
           ),
-          SizedBox(width: 4),
+          const SizedBox(width: 4),
           Text(
-            'Completada',
+            _ordenesPorId[comprobante.idOrden]?.estado ??
+                comprobante.estadoPedido,
             style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w600,
-              color: AppColors.iconActive,
+              color: color,
             ),
           ),
         ],
       ),
     );
-  }
-
-  String _obtenerEstadoComprobante(Comprobante comprobante) {
-    final ordenEstado = comprobante.ordenEstado;
-    if (ordenEstado != null && ordenEstado.trim().isNotEmpty) {
-      return ordenEstado;
-    }
-    return comprobante.estado;
   }
 
   String _textoFechaComprobante(
@@ -774,111 +778,6 @@ class _ClientesScreenState extends State<ClientesScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ── Vista previa del comprobante (bottom sheet con el PDF) ───────────────
-
-class _ComprobantePreviewSheet extends StatelessWidget {
-  final Comprobante comprobante;
-  final Usuario? cliente;
-
-  const _ComprobantePreviewSheet({
-    required this.comprobante,
-    required this.cliente,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.85,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.cardBorder,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Comprobante #${comprobante.idComprobante.toString().padLeft(4, '0')}',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close,
-                        color: AppColors.textMuted,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: FutureBuilder<Uint8List>(
-                  future: ComprobantePdfService.generar(
-                    comprobante: comprobante,
-                    cliente: cliente,
-                  ),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.done) {
-                      return Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.navy,
-                        ),
-                      );
-                    }
-
-                    if (snapshot.hasError || !snapshot.hasData) {
-                      return Center(
-                        child: Text(
-                          'No se pudo generar la vista previa.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                      );
-                    }
-
-                    return PdfPreview(
-                      build: (format) async => snapshot.data!,
-                      canChangeOrientation: false,
-                      canChangePageFormat: false,
-                      canDebug: false,
-                      allowSharing: true,
-                      allowPrinting: true,
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

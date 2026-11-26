@@ -47,24 +47,29 @@ cd android
 
 ## Ejecutar la app
 
-Verifica primero la IP del backend:
+Arranca el backend con `npm start` desde su carpeta y verifica que
+`http://127.0.0.1:3001/health` responda con `"ok":true`.
 
-```dart
-// lib/core/constants/api_constants.dart
-static const String baseUrl = 'http://192.168.0.6:3001/api';
+Para un celular Android conectado por USB con la depuración habilitada, ejecuta
+estos comandos desde la carpeta de la app.
+
+```powershell
+& "$env:LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe" reverse tcp:3001 tcp:3001
+flutter run --dart-define=API_BASE_URL=http://127.0.0.1:3001/api
 ```
 
-Ejecuta Flutter pasando el Web Client ID:
+Después de configurar el túnel USB, también puedes elegir el perfil
+**Texticode Android (USB)** en VS Code. Si se pierde la conexión al desconectar
+el cable, vuelve a ejecutar `adb reverse`.
 
-```bash
-flutter run --dart-define=GOOGLE_WEB_CLIENT_ID=TU_WEB_CLIENT_ID.apps.googleusercontent.com
-```
+Para usar Wi-Fi, comprueba que el navegador del celular abra
+`http://IP_DEL_PC:3001/health` y ejecuta
+`flutter run --dart-define=API_BASE_URL=http://IP_DEL_PC:3001/api`, reemplazando
+`IP_DEL_PC` por la dirección IPv4 del PC.
 
-Si no pasas ese valor, la app mostrará:
-
-```text
-Falta configurar GOOGLE_WEB_CLIENT_ID.
-```
+Si usas otro cliente OAuth de Google, agrega
+`--dart-define=GOOGLE_WEB_CLIENT_ID=TU_WEB_CLIENT_ID.apps.googleusercontent.com`
+al comando de Flutter.
 
 ## Login con Google
 
