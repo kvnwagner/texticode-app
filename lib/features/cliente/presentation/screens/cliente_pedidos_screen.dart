@@ -1,15 +1,22 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
-import 'package:printing/printing.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/impresion_overlay.dart';
+import '../../../admin/data/models/comprobante_model.dart';
 import '../../../admin/data/models/orden_model.dart';
+import '../../../admin/data/models/usuario_model.dart';
 import '../../../admin/data/repositories/orden_material_repository.dart';
-import '../../../operario/presentation/screens/operario_shared_widgets.dart' show ErrorState;
-import '../../data/services/orden_pdf_service.dart';
+import '../../../admin/data/services/pdf_descarga.dart';
+import '../../../admin/data/services/comprobante_pdf_service.dart';
+import '../../../operario/presentation/screens/operario_shared_widgets.dart'
+    show ErrorState;
 import '../widgets/cliente_shared_widgets.dart';
 
 class ClientePedidosScreen extends StatefulWidget {
   final List<Orden> ordenes;
+  final Map<int, List<Comprobante>> comprobantesPorOrden;
+  final Usuario? cliente;
   final bool loading;
   final String? error;
   final Future<void> Function() onRefresh;
@@ -17,6 +24,8 @@ class ClientePedidosScreen extends StatefulWidget {
   const ClientePedidosScreen({
     super.key,
     required this.ordenes,
+    this.comprobantesPorOrden = const {},
+    this.cliente,
     required this.loading,
     required this.error,
     required this.onRefresh,
@@ -48,7 +57,8 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
   // `orden.materiales` casi siempre llega vacío porque /api/ordenes no
   // incluye ese campo — por eso las cards mostraban "Material: —" aunque
   // la orden sí tuviera materiales asignados.
-  final Map<int, List<String>> _materialesPorOrden = {};
+  final Map<int, List<({String nombre, Object? cantidad})>>
+      _materialesPorOrden = {};
 
   @override
   void initState() {
@@ -68,21 +78,25 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
   /// el backend no puede resolver el nombre en algún registro, cae a un
   /// fallback con el Id_Producto para no dejar la card vacía en silencio.
   Future<void> _cargarMaterialesDeOrdenes(List<Orden> ordenes) async {
-    final mapa = <int, List<String>>{};
+    final mapa = <int, List<({String nombre, Object? cantidad})>>{};
     for (final o in ordenes) {
       try {
-        final materiales = await _ordenMaterialRepo.getMaterialesDeOrden(o.idOrden);
-        mapa[o.idOrden] = materiales.map((m) {
-          final nombre = m['Nombre_Material'] ??
-              m['nombre_material'] ??
-              m['Nombre_Producto'] ??
-              m['NombreMaterial'];
-          final cantidad = m['Cantidad_Usada'] ?? m['cantidad_usada'];
-          if (nombre != null) {
-            return cantidad != null ? '$nombre ($cantidad)' : '$nombre';
-          }
-          return 'Material #${m['Id_Producto'] ?? ''}';
-        }).where((s) => s.trim().isNotEmpty).toList();
+        final materiales =
+            await _ordenMaterialRepo.getMaterialesDeOrden(o.idOrden);
+        mapa[o.idOrden] = materiales
+            .map((m) {
+              final nombre = m['Nombre_Material'] ??
+                  m['nombre_material'] ??
+                  m['Nombre_Producto'] ??
+                  m['NombreMaterial'];
+              return (
+                nombre:
+                    nombre?.toString() ?? "Material #${m['Id_Producto'] ?? ''}",
+                cantidad: m['Cantidad_Usada'] ?? m['cantidad_usada'],
+              );
+            })
+            .where((m) => m.nombre.trim().isNotEmpty)
+            .toList();
       } catch (_) {
         mapa[o.idOrden] = const [];
       }
@@ -125,26 +139,65 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
   }
 
   Future<void> _descargarPdf(Orden orden) async {
-    setState(() => _descargandoOrdenId = orden.idOrden);
-    final codigo =
-        orden.codigoOrden.isEmpty ? '${orden.idOrden}' : orden.codigoOrden;
-    try {
-      // Animación de impresora, igual que "Pedidos y entregas" en la web.
-      await ImpresionOverlay.ejecutar(
+    if (_descargandoOrdenId != null) return;
+    final comprobantes = widget.comprobantesPorOrden[orden.idOrden] ?? [];
+    Comprobante? comprobante;
+    if (comprobantes.length > 1) {
+      comprobante = await showDialog<Comprobante>(
         context: context,
-        tipo: TipoImpresion.comprobante,
-        numero: codigo,
-        detalle: orden.producto,
-        generar: () => OrdenPdfService.generar(orden: orden),
-        entregar: (bytes) => Printing.layoutPdf(
-          onLayout: (format) async => bytes,
-          name: 'pedido-$codigo.pdf',
+        builder: (context) => SimpleDialog(
+          title: const Text('Selecciona un comprobante'),
+          children: [
+            for (final item in comprobantes)
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, item),
+                child: Text('Comprobante #${item.numero}'),
+              ),
+          ],
         ),
       );
-    } catch (e) {
+    } else if (comprobantes.length == 1) {
+      comprobante = comprobantes.single;
+    } else if (orden.isCompletada) {
+      comprobante = Comprobante.deOrden(orden);
+    }
+    if (!mounted || comprobante == null) return;
+
+    final seleccionado = comprobante;
+    final materiales = _materialesPorOrden[orden.idOrden] ?? [];
+    final nombres = materiales.isNotEmpty
+        ? materiales.map((m) => m.nombre).join(', ')
+        : orden.materiales.isNotEmpty
+            ? orden.materiales.join(', ')
+            : orden.nombreMaterial ?? '—';
+
+    setState(() => _descargandoOrdenId = orden.idOrden);
+    try {
+      await ImpresionOverlay.ejecutar<Uint8List>(
+        context: context,
+        tipo: TipoImpresion.comprobante,
+        numero: seleccionado.numero,
+        detalle: orden.producto,
+        generar: () => ComprobantePdfService.generar(
+          comprobante: seleccionado,
+          orden: orden,
+          cliente: widget.cliente,
+          detalles: [
+            'Prioridad: ${orden.prioridad}',
+            'Materiales: $nombres',
+            'Unidades realizadas: ${orden.cantidadActual}',
+          ],
+        ),
+        entregar: (bytes) async {
+          await PdfDescarga.guardar(
+              bytes, 'comprobante-${seleccionado.numero}.pdf');
+        },
+      );
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo generar el PDF del pedido.')),
+          const SnackBar(
+              content: Text('No se pudo guardar el PDF del pedido.')),
         );
       }
     } finally {
@@ -288,11 +341,21 @@ class _ClientePedidosScreenState extends State<ClientePedidosScreen> {
                                   final isExpanded = _expandedOrdenId == orden.idOrden;
                                   return ClienteOrderCard(
                                     orden: orden,
-                                    materiales: _materialesPorOrden[orden.idOrden],
+                                    materiales:
+                                        _materialesPorOrden[orden.idOrden]
+                                            ?.map((m) => m.cantidad == null
+                                                ? m.nombre
+                                                : '${m.nombre} (${m.cantidad})')
+                                            .toList(),
                                     expanded: isExpanded,
                                     onTap: () => _toggleExpanded(orden.idOrden),
-                                    onDownloadPdf: () => _descargarPdf(orden),
-                                    downloading: _descargandoOrdenId == orden.idOrden,
+                                    onDownloadPdf: orden.isCompletada ||
+                                            widget.comprobantesPorOrden
+                                                .containsKey(orden.idOrden)
+                                        ? () => _descargarPdf(orden)
+                                        : null,
+                                    downloading:
+                                        _descargandoOrdenId == orden.idOrden,
                                   );
                                 }).toList(),
                               ),

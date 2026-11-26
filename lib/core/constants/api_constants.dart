@@ -3,7 +3,7 @@ class ApiConstants {
   // flutter run --dart-define=API_BASE_URL=http://192.168.0.7:3001/api
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: '',
+   defaultValue: 'http://192.168.80.12:3001/api',
   );
 
   static const String usuarios = '$baseUrl/usuarios';

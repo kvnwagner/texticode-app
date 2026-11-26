@@ -1,7 +1,6 @@
-import 'dart:convert';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:http/http.dart' as http;
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/network/api_client.dart';
 import '../models/auth_user_model.dart';
 import 'auth_repository.dart';
 
@@ -80,31 +79,24 @@ class GoogleAuthRepository {
       throw Exception('No se pudo obtener el token de Google.');
     }
 
-    final http.Response res;
-    try {
-      res = await http.post(
-        Uri.parse(ApiConstants.googleMobileLogin),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'idToken': googleAuth.idToken,
-          'accessToken': googleAuth.accessToken,
-          'serverAuthCode': serverAuthCode,
-        }),
-      );
-    } catch (e) {
+    final body = await ApiClient.post(
+      '/auth/google/mobile',
+      authenticated: false,
+      body: {
+        'idToken': googleAuth.idToken,
+        'accessToken': googleAuth.accessToken,
+        'serverAuthCode': serverAuthCode,
+      },
+    );
+
+    if (body is! Map<String, dynamic> ||
+        body['token'] is! String ||
+        body['usuario'] is! Map<String, dynamic>) {
       throw Exception(
-        'No se pudo conectar con el servidor en ${ApiConstants.baseUrl}. '
-        'Verifica que el backend esté corriendo y que el dispositivo esté en la misma red Wi-Fi.',
-      );
+          'La respuesta de inicio de sesión con Google no es válida.');
     }
 
-    final body = _tryDecode(res.body);
-    if (res.statusCode != 200) {
-      throw Exception(
-          body?['error'] ?? 'No se pudo iniciar sesión con Google.');
-    }
-
-    final token = body!['token'] as String;
+    final token = body['token'] as String;
     final usuarioJson = body['usuario'] as Map<String, dynamic>;
     final usuario = AuthUser.fromJson(usuarioJson);
 
@@ -149,14 +141,6 @@ class GoogleAuthRepository {
         'Falta configurar GOOGLE_WEB_CLIENT_ID. Ejecuta la app con '
         '--dart-define=GOOGLE_WEB_CLIENT_ID=tu-web-client-id.apps.googleusercontent.com',
       );
-    }
-  }
-
-  Map<String, dynamic>? _tryDecode(String body) {
-    try {
-      return jsonDecode(body) as Map<String, dynamic>;
-    } catch (_) {
-      return null;
     }
   }
 }

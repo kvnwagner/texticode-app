@@ -88,38 +88,35 @@ class ThemeModeSelector extends StatelessWidget {
     return ListenableBuilder(
       listenable: tema,
       builder: (context, _) {
-        Widget opcion(ModoTema modo, IconData icono, String texto) {
+        Widget opcion(ModoTema modo, String texto) {
           final activo = tema.modo == modo;
           return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                tema.setModo(modo);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: activo ? AppColors.navy : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icono,
-                        size: 18,
-                        color: activo ? AppColors.onBrand : AppColors.textMuted),
-                    const SizedBox(height: 4),
-                    Text(
-                      texto,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: activo ? AppColors.onBrand : AppColors.textMuted,
-                      ),
+            child: Semantics(
+              selected: activo,
+              button: true,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  tema.setModo(modo);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 2, vertical: 11),
+                  decoration: BoxDecoration(
+                    color: activo ? AppColors.navy : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    texto,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: activo ? AppColors.onBrand : AppColors.textMuted,
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -144,12 +141,7 @@ class ThemeModeSelector extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                'Elige cómo quieres ver Texticode',
-                style: TextStyle(fontSize: 11, color: AppColors.textMuted),
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
@@ -159,10 +151,9 @@ class ThemeModeSelector extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    opcion(ModoTema.claro, Icons.light_mode_outlined, 'Claro'),
-                    opcion(ModoTema.oscuro, Icons.dark_mode_outlined, 'Oscuro'),
-                    opcion(ModoTema.auto, Icons.brightness_auto_outlined,
-                        'Automático'),
+                    opcion(ModoTema.claro, 'Claro'),
+                    opcion(ModoTema.oscuro, 'Oscuro'),
+                    opcion(ModoTema.auto, 'Automático'),
                   ],
                 ),
               ),

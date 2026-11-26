@@ -33,6 +33,7 @@ class Orden {
   final String codigoOrden;
   final String producto;
   final String? descripcion;
+  final String? observaciones;
   final List<String> materiales;
 
   /// FK a la tabla `material`. Requerida por el backend en POST/PUT.
@@ -74,6 +75,7 @@ class Orden {
     required this.codigoOrden,
     required this.producto,
     this.descripcion,
+    this.observaciones,
     this.materiales = const [],
     required this.idMaterial,
     this.nombreMaterial,
@@ -190,6 +192,7 @@ class Orden {
       codigoOrden: codigoOrden,
       producto: producto,
       descripcion: descripcion,
+      observaciones: json['Observaciones']?.toString(),
       materiales: materiales,
       idMaterial: idMaterial,
       nombreMaterial: nombreMaterial,

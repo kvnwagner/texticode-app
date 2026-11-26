@@ -210,13 +210,7 @@ class ClienteStatCard extends StatelessWidget {
 /// al padre (quien decide cuál card queda expandida — solo una a la
 /// vez). Cuando [expanded] es true se muestra información adicional
 /// más organizada (materiales completos, descripción completa, fechas
-/// detalladas) y aparece el botón "Descargar PDF" ([onDownloadPdf]),
-/// que solo se muestra en este estado.
-///
-/// El botón de descarga solo está DISPONIBLE (habilitado, color sólido)
-/// cuando la orden está completada. Si no lo está, se muestra
-/// deshabilitado y semi-transparente para comunicar que la descarga
-/// aún no está disponible.
+/// detalladas) y aparece el botón para descargar el comprobante.
 class ClienteOrderCard extends StatelessWidget {
   final Orden orden;
   final bool expanded;
@@ -242,6 +236,7 @@ class ClienteOrderCard extends StatelessWidget {
     final progressColor = status.$2;
 
     final materialesReales = materiales ?? orden.materiales;
+    final permiteDescarga = onDownloadPdf != null;
 
     return GestureDetector(
       onTap: onTap,
@@ -450,29 +445,29 @@ class ClienteOrderCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 14),
-                            // ⬅️ El botón solo se habilita (color sólido, tocable)
-                            // cuando la orden ya está completada. Si no lo está,
-                            // se muestra deshabilitado y semi-transparente para
-                            // comunicar que la descarga todavía no está disponible.
                             SizedBox(
                               width: double.infinity,
                               height: 46,
                               child: ElevatedButton.icon(
-                                onPressed: (!orden.isCompletada || downloading)
+                                onPressed: (!permiteDescarga || downloading)
                                     ? null
                                     : onDownloadPdf,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: orden.isCompletada
+                                  backgroundColor: permiteDescarga
                                       ? AppColors.navy
-                                      : AppColors.brandTint.withValues(alpha: 0.12),
-                                  disabledBackgroundColor: orden.isCompletada
-                                      ? AppColors.brandTint.withValues(alpha: 0.5)
-                                      : AppColors.brandTint.withValues(alpha: 0.12),
-                                  foregroundColor: orden.isCompletada
+                                      : AppColors.brandTint
+                                          .withValues(alpha: 0.12),
+                                  disabledBackgroundColor: permiteDescarga
+                                      ? AppColors.brandTint
+                                          .withValues(alpha: 0.5)
+                                      : AppColors.brandTint
+                                          .withValues(alpha: 0.12),
+                                  foregroundColor: permiteDescarga
                                       ? Colors.white
-                                      : AppColors.brandTint.withValues(alpha: 0.35),
-                                  disabledForegroundColor:
-                                      AppColors.brandTint.withValues(alpha: 0.35),
+                                      : AppColors.brandTint
+                                          .withValues(alpha: 0.35),
+                                  disabledForegroundColor: AppColors.brandTint
+                                      .withValues(alpha: 0.35),
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14)),
@@ -482,10 +477,11 @@ class ClienteOrderCard extends StatelessWidget {
                                         width: 16,
                                         height: 16,
                                         child: CircularProgressIndicator(
-                                            strokeWidth: 2, color: Colors.white),
+                                            strokeWidth: 2,
+                                            color: Colors.white),
                                       )
                                     : Icon(
-                                        orden.isCompletada
+                                        permiteDescarga
                                             ? Icons.picture_as_pdf_outlined
                                             : Icons.lock_outline_rounded,
                                         size: 18,
@@ -493,11 +489,12 @@ class ClienteOrderCard extends StatelessWidget {
                                 label: Text(
                                   downloading
                                       ? 'Generando PDF...'
-                                      : (orden.isCompletada
+                                      : (permiteDescarga
                                           ? 'Descargar PDF'
                                           : 'Disponible al completar el pedido'),
                                   style: const TextStyle(
-                                      fontSize: 13, fontWeight: FontWeight.w700),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700),
                                 ),
                               ),
                             ),

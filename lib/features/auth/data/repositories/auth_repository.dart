@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/network/api_client.dart';
 import '../models/auth_user_model.dart';
 
 /// Autenticación real contra tu backend Express (auth.route.js), que
@@ -20,32 +21,27 @@ class AuthRepository {
   /// Lanza Exception con el mensaje exacto que devuelve el backend
   /// ("Credenciales incorrectas.", "Tu cuenta está inactiva...", etc.)
   Future<AuthUser> login(String correoOUsuario, String contrasena) async {
-    final res = await http.post(
-      Uri.parse('${ApiConstants.auth}/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
+    final body = await ApiClient.post(
+      '/auth/login',
+      authenticated: false,
+      body: {
         'correo': correoOUsuario.trim(),
         'contrasena': contrasena,
-      }),
+      },
     );
 
-    final body = _tryDecode(res.body);
-
-    if (res.statusCode != 200) {
-      throw Exception(body?['error'] ?? 'No se pudo iniciar sesión.');
-    }
-
-    if (body?['requiresEmpresaSelection'] == true) {
+    if (body is Map<String, dynamic> &&
+        body['requiresEmpresaSelection'] == true) {
       throw Exception(
           'La cuenta tiene más de una empresa activa. Contacta al administrador.');
     }
-    if (body?['token'] is! String ||
-        body?['usuario'] is! Map<String, dynamic>) {
-      throw Exception(
-          body?['error'] ?? 'La respuesta de inicio de sesión no es válida.');
+    if (body is! Map<String, dynamic> ||
+        body['token'] is! String ||
+        body['usuario'] is! Map<String, dynamic>) {
+      throw Exception('La respuesta de inicio de sesión no es válida.');
     }
 
-    final token = body!['token'] as String;
+    final token = body['token'] as String;
     final usuarioJson = body['usuario'] as Map<String, dynamic>;
     final usuario = AuthUser.fromJson(usuarioJson);
 

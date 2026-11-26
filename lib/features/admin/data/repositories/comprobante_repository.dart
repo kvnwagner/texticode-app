@@ -7,26 +7,13 @@ import '../models/comprobante_model.dart';
 /// Habla directo con tu backend Express (comprobantes.js).
 class ComprobanteRepository {
   Future<List<Comprobante>> getComprobantes() async {
-    final res = await http.get(Uri.parse(ApiConstants.comprobantes),
-        headers: await ApiClient.headers());
-    if (res.statusCode == 200) {
-      final List data = jsonDecode(res.body);
-      return data.map((e) => Comprobante.fromJson(e)).toList();
-    }
-    throw Exception(
-        'No se pudieron cargar los comprobantes (${res.statusCode}).');
+    final List data = await ApiClient.get('/comprobantes');
+    return data.map((e) => Comprobante.fromJson(e)).toList();
   }
 
   Future<List<Comprobante>> getComprobantesPorCliente(int idCliente) async {
-    final res = await http.get(
-        Uri.parse('${ApiConstants.comprobantes}/cliente/$idCliente'),
-        headers: await ApiClient.headers());
-    if (res.statusCode == 200) {
-      final List data = jsonDecode(res.body);
-      return data.map((e) => Comprobante.fromJson(e)).toList();
-    }
-    throw Exception(
-        'No se pudieron cargar los comprobantes del cliente (${res.statusCode}).');
+    final List data = await ApiClient.get('/comprobantes/cliente/$idCliente');
+    return data.map((e) => Comprobante.fromJson(e)).toList();
   }
 
   Future<void> actualizarEstado({
