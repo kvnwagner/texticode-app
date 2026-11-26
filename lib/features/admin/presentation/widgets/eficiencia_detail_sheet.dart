@@ -876,4 +876,4 @@ class _EficienciaDetailSheetState extends State<EficienciaDetailSheet> {
       ),
     );
   }
-}
+}

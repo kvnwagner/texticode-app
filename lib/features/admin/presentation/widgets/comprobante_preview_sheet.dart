@@ -557,4 +557,4 @@ class _EstadoPill extends StatelessWidget {
       ),
     );
   }
-}
+}

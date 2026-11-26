@@ -515,4 +515,4 @@ class _StatItem {
   final Color color;
   final _FiltroUsuario filtro;
   _StatItem(this.label, this.value, this.icon, this.color, this.filtro);
-}
+}

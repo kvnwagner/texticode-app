@@ -816,4 +816,4 @@ class _EficienciaStatItem {
   final IconData icon;
   final Color color;
   _EficienciaStatItem(this.label, this.value, this.icon, this.color);
-}
+}

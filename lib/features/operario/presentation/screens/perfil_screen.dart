@@ -660,4 +660,4 @@ class _LogoutButton extends StatelessWidget {
       ),
     );
   }
-}
+}

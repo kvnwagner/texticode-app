@@ -1155,4 +1155,4 @@ class _PdfZoomableViewState extends State<_PdfZoomableView> {
       },
     );
   }
-}
+}
