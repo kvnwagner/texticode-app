@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import '../../../../shared/widgets/theme_toggle.dart';
+import '../../../auth/data/models/auth_user_model.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../data/repositories/superadmin_repository.dart';
@@ -13,10 +15,8 @@ enum _Filtro { todos, activos, inactivos }
 
 // Colores de estado (mismo criterio que los badges de rol en AdminHomeScreen).
 
-// Header: ajusta la ruta del logo a la que usa el header de Gestión de Usuarios
-// (revisa la sección `assets:` de pubspec.yaml) y el título si quieres otro.
-const _logoAsset = 'assets/images/logo.png';
-const _tituloHeader = 'Panel Superadmin';
+// Header: mismo logo que el resto de la app (assets/images/logo_texticode.png).
+const _tituloHeader = 'Panel Super Admin';
 
 class SuperadminHomeScreen extends StatefulWidget {
   const SuperadminHomeScreen({super.key});
@@ -31,17 +31,26 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
 
   bool _loading = true;
   String? _error;
-  int _section = 0; // 0 = Empresas, 1 = Roles
+  int _section = 0; // 0 = Empresas, 1 = Mi perfil
+  AuthUser? _usuario;
   List<Map<String, dynamic>> _items = [];
   String _query = '';
   _Filtro _filtro = _Filtro.todos;
 
-  bool get _isEmpresa => _section == 0;
+  // La vista de Roles se quitó de la app: el superadmin solo gestiona
+  // empresas (los roles son globales y se administran desde la web).
+  bool get _isEmpresa => true;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _cargarUsuario();
+  }
+
+  Future<void> _cargarUsuario() async {
+    final u = await AuthRepository().getUsuarioGuardado();
+    if (mounted) setState(() => _usuario = u);
   }
 
   @override
@@ -73,14 +82,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
 
   void _cambiarSeccion(int i) {
     if (i == _section) return;
-    _searchCtrl.clear();
-    setState(() {
-      _section = i;
-      _query = '';
-      _filtro = _Filtro.todos;
-      _items = [];
-    });
-    _load();
+    setState(() => _section = i);
   }
 
   bool _isActive(Map<String, dynamic> item) =>
@@ -365,7 +367,9 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
           _buildHeader(),
           _buildTabs(),
           Expanded(
-            child: Stack(
+            child: _section == 1
+                ? _buildPerfil()
+                : Stack(
               children: [
                 _loading
                     ? Center(
@@ -420,21 +424,21 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
       ),
       child: Row(
         children: [
-          Image.asset(
-            _logoAsset,
-            // En oscuro el logo va blanco, como en la web
-            // (filter: brightness(0) invert(0.95)).
-            color: AppColors.logoTint,
-            colorBlendMode: BlendMode.srcIn,
-            height: 36,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => Text('TEXTICODE',
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.brandText)),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(
+              AppConstants.logoAssetPath,
+              // En oscuro el logo va blanco, como en la web
+              // (filter: brightness(0) invert(0.95)).
+              color: AppColors.logoTint,
+              colorBlendMode: BlendMode.srcIn,
+              width: 46,
+              height: 46,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.high,
+            ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               _tituloHeader,
@@ -442,24 +446,8 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                   fontSize: 20,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary),
-            ),
-          ),
-          const ThemeToggleButton(size: 32),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _logout,
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: AppColors.searchBg,
-                border: Border.all(color: AppColors.cardBorder),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.logout,
-                  size: 18, color: AppColors.textMuted),
             ),
           ),
         ],
@@ -469,7 +457,7 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
 
   /// Tabs de texto con subrayado, igual que Usuarios / Clientes / Operarios.
   Widget _buildTabs() {
-    const labels = ['Empresas', 'Roles'];
+    const labels = ['Empresas', 'Mi perfil'];
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -515,6 +503,160 @@ class _SuperadminHomeScreenState extends State<SuperadminHomeScreen> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  /// Mi perfil: datos del superadmin, modo oscuro y cerrar sesión.
+  Widget _buildPerfil() {
+    final u = _usuario;
+    final nombre = u?.nombreCompleto ?? '...';
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: AppColors.perfilCardGradient,
+            ),
+            borderRadius: BorderRadius.circular(22),
+            border: AppColors.isDark
+                ? Border.all(color: AppColors.perfilCardBorder)
+                : null,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.perfilCardShadow,
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      // Igual que .perfil-avatar de la web
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: AppColors.perfilAvatarGradient,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(_initials(nombre),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 18)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(nombre,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16)),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.purpleBg,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text('Super Admin',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.purple)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _datoPerfil(Icons.mail_outline, 'EMAIL', u?.correo ?? '—'),
+              const SizedBox(height: 10),
+              _datoPerfil(
+                  Icons.alternate_email, 'USUARIO', u?.nombreUsuario ?? '—'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        const ThemeModeSelector(),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 50,
+          child: ElevatedButton.icon(
+            onPressed: _logout,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.perfilPeligroBg,
+              foregroundColor: AppColors.perfilPeligroFg,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: AppColors.isDark
+                    ? BorderSide(color: AppColors.perfilPeligroBorde)
+                    : BorderSide.none,
+              ),
+            ),
+            icon: const Icon(Icons.logout, size: 18),
+            label: const Text('Cerrar sesión',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _datoPerfil(IconData icon, String label, String valor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: Colors.white.withValues(alpha: 0.8)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                        color: Colors.white.withValues(alpha: 0.7))),
+                const SizedBox(height: 2),
+                Text(valor,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white)),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -1176,4 +1318,4 @@ class _FormSheetState extends State<_FormSheet> {
       ),
     );
   }
-}
+}

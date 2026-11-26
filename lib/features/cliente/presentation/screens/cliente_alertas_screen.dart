@@ -381,4 +381,4 @@ class _ClienteAlertasScreenState extends State<ClienteAlertasScreen> {
   }
 }
 
-enum _Estado { agotado, bajo, ok }
+enum _Estado { agotado, bajo, ok }

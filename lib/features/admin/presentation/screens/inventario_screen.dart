@@ -708,4 +708,4 @@ class _StatItem {
   final IconData icon;
   final Color color;
   _StatItem(this.label, this.value, this.icon, this.color);
-}
+}

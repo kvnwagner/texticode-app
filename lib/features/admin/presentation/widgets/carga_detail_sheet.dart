@@ -401,4 +401,4 @@ class _CargaDetailSheetState extends State<CargaDetailSheet> {
       child: Text(prioridad, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: fg)),
     );
   }
-}
+}
